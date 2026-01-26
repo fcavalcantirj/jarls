@@ -318,3 +318,34 @@
 **Files Modified**:
 - packages/shared/src/index.ts (added axialToCube and cubeToAxial functions)
 - packages/shared/src/index.test.ts (added unit tests for conversion functions)
+
+---
+
+### 2026-01-25: Core Logic - Hex Distance Function
+
+**Feature Completed**: "hexDistance function calculates correct distance"
+
+**Work Done**:
+- Implemented `hexDistance(a: CubeCoord, b: CubeCoord): number` function
+  - Calculates shortest path length between two hexes using cube coordinates
+  - Uses Manhattan distance formula: (|Δq| + |Δr| + |Δs|) / 2
+- Implemented `hexDistanceAxial(a: AxialCoord, b: AxialCoord): number` function
+  - Convenience wrapper that converts axial to cube coordinates internally
+- Added comprehensive unit tests covering:
+  - Distance from hex to itself is 0
+  - Adjacent hexes have distance 1 (tested all 6 directions)
+  - Hexes 2 steps away have distance 2
+  - Hexes 3 steps away (board radius) have distance 3
+  - Symmetry: distance(a, b) === distance(b, a)
+  - Negative coordinates
+  - Diagonal movement
+  - Axial coordinate version matches cube version
+  - Common game scenarios (edge to throne, opposite edges)
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (30 tests total, 11 new tests for hexDistance)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added hexDistance and hexDistanceAxial functions)
+- packages/shared/src/index.test.ts (added unit tests for hexDistance functions)

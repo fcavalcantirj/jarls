@@ -195,7 +195,7 @@
       "Adjacent hexes have distance 1",
       "Unit tests cover edge cases"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

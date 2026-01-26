@@ -56,6 +56,23 @@ export function cubeToAxial(cube: CubeCoord): AxialCoord {
   };
 }
 
+/**
+ * Calculate the distance between two hexes in cube coordinates.
+ * The distance is the minimum number of steps to reach from one hex to another.
+ * In cube coordinates, the distance is half the Manhattan distance.
+ */
+export function hexDistance(a: CubeCoord, b: CubeCoord): number {
+  return (Math.abs(a.q - b.q) + Math.abs(a.r - b.r) + Math.abs(a.s - b.s)) / 2;
+}
+
+/**
+ * Calculate the distance between two hexes in axial coordinates.
+ * Converts to cube coordinates internally.
+ */
+export function hexDistanceAxial(a: AxialCoord, b: AxialCoord): number {
+  return hexDistance(axialToCube(a), axialToCube(b));
+}
+
 // Piece types
 export type PieceType = 'jarl' | 'warrior' | 'shield';
 

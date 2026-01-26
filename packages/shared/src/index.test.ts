@@ -4,6 +4,8 @@ import {
   HexDirection,
   axialToCube,
   cubeToAxial,
+  hexDistance,
+  hexDistanceAxial,
   AxialCoord,
   CubeCoord,
 } from './index';
@@ -165,6 +167,113 @@ describe('@jarls/shared', () => {
         // s is recalculated and should satisfy the constraint q + r + s = 0
         expect(result.q + result.r + result.s).toBe(0);
       }
+    });
+  });
+
+  describe('hexDistance', () => {
+    it('should return 0 for distance from hex to itself', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+      expect(hexDistance(origin, origin)).toBe(0);
+
+      const otherHex: CubeCoord = { q: 3, r: -1, s: -2 };
+      expect(hexDistance(otherHex, otherHex)).toBe(0);
+    });
+
+    it('should return 1 for adjacent hexes', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+
+      // Test all 6 adjacent hexes
+      for (const dir of DIRECTIONS) {
+        const adjacent: CubeCoord = {
+          q: origin.q + dir.q,
+          r: origin.r + dir.r,
+          s: origin.s + dir.s,
+        };
+        expect(hexDistance(origin, adjacent)).toBe(1);
+      }
+    });
+
+    it('should return 2 for hexes two steps away', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+
+      // Moving 2 hexes East: (0,0,0) -> (1,0,-1) -> (2,0,-2)
+      const twoEast: CubeCoord = { q: 2, r: 0, s: -2 };
+      expect(hexDistance(origin, twoEast)).toBe(2);
+
+      // Moving 2 hexes Northwest: (0,0,0) -> (0,-1,1) -> (0,-2,2)
+      const twoNW: CubeCoord = { q: 0, r: -2, s: 2 };
+      expect(hexDistance(origin, twoNW)).toBe(2);
+    });
+
+    it('should return 3 for hexes three steps away (board radius)', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+
+      // Edge of radius-3 board
+      const edge: CubeCoord = { q: 3, r: 0, s: -3 };
+      expect(hexDistance(origin, edge)).toBe(3);
+
+      // Another edge position
+      const edge2: CubeCoord = { q: 0, r: 3, s: -3 };
+      expect(hexDistance(origin, edge2)).toBe(3);
+    });
+
+    it('should be symmetric (distance a to b equals distance b to a)', () => {
+      const a: CubeCoord = { q: 2, r: -1, s: -1 };
+      const b: CubeCoord = { q: -1, r: 3, s: -2 };
+
+      expect(hexDistance(a, b)).toBe(hexDistance(b, a));
+    });
+
+    it('should handle negative coordinates', () => {
+      const a: CubeCoord = { q: -2, r: -1, s: 3 };
+      const b: CubeCoord = { q: 1, r: 2, s: -3 };
+
+      // Manhattan distance: |(-2)-1| + |(-1)-2| + |3-(-3)| = 3 + 3 + 6 = 12
+      // Hex distance = 12 / 2 = 6
+      expect(hexDistance(a, b)).toBe(6);
+    });
+
+    it('should calculate correct distance for diagonal movement', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+
+      // Diagonal path that requires multiple direction changes
+      const diagonal: CubeCoord = { q: 2, r: 2, s: -4 };
+      expect(hexDistance(origin, diagonal)).toBe(4);
+    });
+  });
+
+  describe('hexDistanceAxial', () => {
+    it('should return 0 for distance from hex to itself', () => {
+      const origin: AxialCoord = { q: 0, r: 0 };
+      expect(hexDistanceAxial(origin, origin)).toBe(0);
+    });
+
+    it('should return 1 for adjacent hexes', () => {
+      const origin: AxialCoord = { q: 0, r: 0 };
+      const adjacent: AxialCoord = { q: 1, r: 0 };
+      expect(hexDistanceAxial(origin, adjacent)).toBe(1);
+    });
+
+    it('should match hexDistance when using equivalent coordinates', () => {
+      const axialA: AxialCoord = { q: 2, r: -1 };
+      const axialB: AxialCoord = { q: -1, r: 3 };
+
+      const cubeA = axialToCube(axialA);
+      const cubeB = axialToCube(axialB);
+
+      expect(hexDistanceAxial(axialA, axialB)).toBe(hexDistance(cubeA, cubeB));
+    });
+
+    it('should calculate correct distances for common game scenarios', () => {
+      // Jarl at edge (radius 3) to Throne at center
+      const edge: AxialCoord = { q: 3, r: 0 };
+      const throne: AxialCoord = { q: 0, r: 0 };
+      expect(hexDistanceAxial(edge, throne)).toBe(3);
+
+      // Opposite edges of the board
+      const eastEdge: AxialCoord = { q: 3, r: 0 };
+      const westEdge: AxialCoord = { q: -3, r: 0 };
+      expect(hexDistanceAxial(eastEdge, westEdge)).toBe(6);
     });
   });
 });
