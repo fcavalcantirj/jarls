@@ -2793,3 +2793,46 @@ export function eliminatePlayer(state: GameState, playerId: string): EliminatePl
     removedPieceIds,
   };
 }
+
+/**
+ * Result of checking for last-standing victory condition.
+ */
+export interface LastStandingResult {
+  /** Whether a last-standing victory occurred */
+  isVictory: boolean;
+  /** The player ID who won (if victory) */
+  winnerId: string | null;
+}
+
+/**
+ * Check if a last-standing victory has occurred.
+ * A last-standing victory occurs when only one Jarl remains on the board.
+ *
+ * This should be called after any elimination to check if the game should end.
+ *
+ * @param state - The current game state
+ * @returns LastStandingResult indicating if victory occurred and who won
+ */
+export function checkLastStanding(state: GameState): LastStandingResult {
+  const noVictory: LastStandingResult = { isVictory: false, winnerId: null };
+
+  // Find all Jarls on the board
+  const jarls = state.pieces.filter((p) => p.type === 'jarl');
+
+  // If there's more than one Jarl, no last-standing victory
+  if (jarls.length > 1) {
+    return noVictory;
+  }
+
+  // If there's exactly one Jarl, that player wins
+  if (jarls.length === 1) {
+    return {
+      isVictory: true,
+      winnerId: jarls[0].playerId,
+    };
+  }
+
+  // If there are no Jarls (edge case - shouldn't happen in normal gameplay),
+  // no victory can be determined
+  return noVictory;
+}

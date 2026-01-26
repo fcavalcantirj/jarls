@@ -1430,3 +1430,44 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added EliminatePlayerResult interface and eliminatePlayer function)
 - packages/shared/src/index.test.ts (added import for eliminatePlayer, added unit tests)
+
+---
+
+### 2026-01-26: Core Logic - checkLastStanding Function
+
+**Feature Completed**: "checkLastStanding detects sole survivor"
+
+**Work Done**:
+- Implemented `LastStandingResult` interface:
+  - `isVictory`: Boolean indicating if last-standing victory occurred
+  - `winnerId`: The player ID who won (or null if no victory)
+- Implemented `checkLastStanding(state)` function:
+  - Checks if only one Jarl remains on the board
+  - Returns victory when exactly one Jarl exists
+  - Returns no victory if multiple Jarls exist
+  - Returns no victory if no Jarls exist (edge case)
+  - Shields and Warriors are not counted as Jarls
+  - Should be called after any elimination to check for game end
+- Follows the ruleset rules:
+  - Victory is immediate when only one Jarl remains
+  - Triggers as soon as the last opponent Jarl is eliminated
+- Added comprehensive unit tests (14 new tests) covering:
+  - Returns player 1 as winner when only their Jarl remains
+  - Returns player 2 as winner when only their Jarl remains
+  - Detects victory with only Jarl remaining (no warriors)
+  - Returns no victory when both Jarls exist
+  - Returns no victory when both Jarls exist with Warriors
+  - Triggers immediately after eliminating opponent Jarl
+  - Multi-player scenarios (3 players with 2 or 1 Jarl remaining)
+  - Edge cases: no Jarls, empty pieces array
+  - Does not count shields as Jarls
+  - Does not count warriors as Jarls
+  - Result structure verification for victory and no victory
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (660 tests total, 14 new tests for checkLastStanding)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added LastStandingResult interface and checkLastStanding function)
+- packages/shared/src/index.test.ts (added import for checkLastStanding, added unit tests)

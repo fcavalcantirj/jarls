@@ -511,7 +511,7 @@
       "Returns null if multiple Jarls exist",
       "Triggers immediately on last elimination"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
