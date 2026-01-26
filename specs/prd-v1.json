@@ -111,7 +111,7 @@
       "Import types from types.ts",
       "Update index.ts to re-export from hex.ts"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
