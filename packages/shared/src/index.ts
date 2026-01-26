@@ -2097,3 +2097,151 @@ export function detectChain(
     currentPos = nextPos;
   }
 }
+
+/**
+ * Result of resolving an edge push (pieces eliminated at board edge).
+ */
+export interface EdgePushResult {
+  /** The new game state after the push (with eliminated pieces removed) */
+  newState: GameState;
+  /** Events generated (MOVE for attacker, PUSH for chain pieces, ELIMINATED for eliminated pieces) */
+  events: GameEvent[];
+  /** IDs of pieces that were eliminated */
+  eliminatedPieceIds: string[];
+}
+
+/**
+ * Resolve a push where the chain terminates at the board edge.
+ * Pieces at the edge are eliminated (pushed off the board).
+ * The chain compresses toward the edge, with pieces filling in positions
+ * from those that were eliminated.
+ *
+ * Example: If pieces A, B, C are in a chain being pushed toward the edge,
+ * and C is at the edge, then C is eliminated, B moves to C's position,
+ * A moves to B's position, and the attacker takes A's original position.
+ *
+ * @param state - The current game state
+ * @param attackerId - The ID of the attacking piece
+ * @param attackerFrom - The attacker's original position (before moving to attack)
+ * @param defenderPosition - The defender's current position (first piece in chain)
+ * @param pushDirection - The direction of the push
+ * @param hasMomentum - Whether the attacker moved 2 hexes (for MOVE event)
+ * @param chain - The detected chain result from detectChain
+ * @returns EdgePushResult with new state, events, and eliminated piece IDs
+ */
+export function resolveEdgePush(
+  state: GameState,
+  attackerId: string,
+  attackerFrom: AxialCoord,
+  defenderPosition: AxialCoord,
+  pushDirection: HexDirection,
+  hasMomentum: boolean,
+  chain: ChainResult
+): EdgePushResult {
+  const events: GameEvent[] = [];
+  const eliminatedPieceIds: string[] = [];
+
+  // Get the attacker
+  const attacker = getPieceById(state, attackerId);
+  if (!attacker) {
+    throw new Error(`Attacker with ID ${attackerId} not found`);
+  }
+
+  // Validate chain terminator is edge
+  if (chain.terminator !== 'edge') {
+    throw new Error(`resolveEdgePush called with non-edge terminator: ${chain.terminator}`);
+  }
+
+  // The chain pieces are ordered from first pushed (closest to attacker) to last (closest to edge)
+  // When pushed to an edge, the last piece(s) get eliminated
+  // We need to figure out how many pieces get eliminated based on the chain length
+  // and available space
+
+  // All pieces in the chain will move one position in the push direction
+  // The piece at the end (closest to edge) gets pushed off and eliminated
+  // If there's only one piece, it's eliminated and attacker takes its position
+
+  // Build a list of positions in the chain, from defender position toward edge
+  const chainPositions: AxialCoord[] = [];
+  let pos = defenderPosition;
+  for (let i = 0; i < chain.pieces.length; i++) {
+    chainPositions.push(pos);
+    if (i < chain.pieces.length - 1) {
+      pos = getNeighborAxial(pos, pushDirection);
+    }
+  }
+
+  // The last piece in the chain is at the edge and will be eliminated
+  const lastPiece = chain.pieces[chain.pieces.length - 1];
+  const lastPosition = chainPositions[chainPositions.length - 1];
+
+  // Create eliminated event for the last piece
+  const eliminatedEvent: EliminatedEvent = {
+    type: 'ELIMINATED',
+    pieceId: lastPiece.id,
+    playerId: lastPiece.playerId,
+    position: lastPosition,
+    cause: 'edge',
+  };
+  events.push(eliminatedEvent);
+  eliminatedPieceIds.push(lastPiece.id);
+
+  // Create a set of piece IDs to remove (eliminated pieces)
+  const piecesToRemove = new Set(eliminatedPieceIds);
+
+  // Build the new positions for surviving pieces
+  // Each surviving piece moves to the position of the piece ahead of it in the chain
+  const newPositions = new Map<string, AxialCoord>();
+
+  // For pieces in the chain (except the eliminated one), they shift toward the edge
+  for (let i = 0; i < chain.pieces.length - 1; i++) {
+    const piece = chain.pieces[i];
+    // This piece moves to the position of the next piece in the chain
+    const newPos = chainPositions[i + 1];
+    newPositions.set(piece.id, newPos);
+
+    // Create PUSH event for this piece
+    const pushEvent: PushEvent = {
+      type: 'PUSH',
+      pieceId: piece.id,
+      from: chainPositions[i],
+      to: newPos,
+      pushDirection,
+      depth: i, // Depth for staggered animation
+    };
+    events.push(pushEvent);
+  }
+
+  // The attacker moves to the defender's original position (first in chain)
+  newPositions.set(attacker.id, defenderPosition);
+
+  // Create MOVE event for attacker (should be first in the events array for proper ordering)
+  const moveEvent: MoveEvent = {
+    type: 'MOVE',
+    pieceId: attacker.id,
+    from: attackerFrom,
+    to: defenderPosition,
+    hasMomentum,
+  };
+  // Insert at beginning so MOVE comes before PUSH events
+  events.unshift(moveEvent);
+
+  // Create the new pieces array
+  const newPieces = state.pieces
+    .filter((piece) => !piecesToRemove.has(piece.id))
+    .map((piece) => {
+      const newPos = newPositions.get(piece.id);
+      if (newPos) {
+        return { ...piece, position: newPos };
+      }
+      return piece;
+    });
+
+  // Create the new state
+  const newState: GameState = {
+    ...state,
+    pieces: newPieces,
+  };
+
+  return { newState, events, eliminatedPieceIds };
+}

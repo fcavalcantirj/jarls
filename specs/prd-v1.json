@@ -460,7 +460,7 @@
       "Multiple eliminations handled",
       "Generates ELIMINATED events"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
