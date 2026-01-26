@@ -11,6 +11,9 @@ import {
   getNeighborAxial,
   getAllNeighborsAxial,
   getOppositeDirection,
+  cubeRound,
+  hexLine,
+  hexLineAxial,
   AxialCoord,
   CubeCoord,
 } from './index';
@@ -552,6 +555,245 @@ describe('@jarls/shared', () => {
         const backToOrigin = getNeighbor(neighbor, opposite);
         expect(backToOrigin).toEqual(origin);
       }
+    });
+  });
+
+  describe('cubeRound', () => {
+    it('should round exact integer coordinates unchanged', () => {
+      expect(cubeRound(1, 2, -3)).toEqual({ q: 1, r: 2, s: -3 });
+      expect(cubeRound(0, 0, 0)).toEqual({ q: 0, r: 0, s: 0 });
+    });
+
+    it('should round fractional coordinates to nearest hex', () => {
+      // Close to (1, 0, -1)
+      expect(cubeRound(1.1, -0.1, -1.0)).toEqual({ q: 1, r: 0, s: -1 });
+    });
+
+    it('should maintain cube coordinate constraint (q + r + s = 0)', () => {
+      const testCases = [
+        [0.5, 0.5, -1.0],
+        [1.3, -0.7, -0.6],
+        [-0.9, 2.1, -1.2],
+        [0.1, 0.1, -0.2],
+      ];
+
+      for (const [q, r, s] of testCases) {
+        const result = cubeRound(q, r, s);
+        expect(result.q + result.r + result.s).toBe(0);
+      }
+    });
+
+    it('should handle edge cases near hex boundaries', () => {
+      // Exactly between two hexes - should still satisfy constraint
+      const result = cubeRound(0.5, -0.5, 0);
+      expect(result.q + result.r + result.s).toBe(0);
+    });
+  });
+
+  describe('hexLine', () => {
+    it('should return single hex when start equals end', () => {
+      const hex: CubeCoord = { q: 2, r: -1, s: -1 };
+      const line = hexLine(hex, hex);
+      expect(line).toHaveLength(1);
+      expect(line[0]).toEqual(hex);
+    });
+
+    it('should return two hexes for adjacent hexes', () => {
+      const start: CubeCoord = { q: 0, r: 0, s: 0 };
+      const end: CubeCoord = { q: 1, r: 0, s: -1 }; // East neighbor
+      const line = hexLine(start, end);
+      expect(line).toHaveLength(2);
+      expect(line[0]).toEqual(start);
+      expect(line[1]).toEqual(end);
+    });
+
+    it('should include start and end hexes', () => {
+      const start: CubeCoord = { q: 0, r: 0, s: 0 };
+      const end: CubeCoord = { q: 3, r: 0, s: -3 }; // 3 hexes East
+      const line = hexLine(start, end);
+
+      expect(line[0]).toEqual(start);
+      expect(line[line.length - 1]).toEqual(end);
+    });
+
+    it('should return correct number of hexes (distance + 1)', () => {
+      const start: CubeCoord = { q: 0, r: 0, s: 0 };
+      const end: CubeCoord = { q: 3, r: 0, s: -3 };
+      const line = hexLine(start, end);
+
+      const distance = hexDistance(start, end);
+      expect(line).toHaveLength(distance + 1);
+    });
+
+    it('should draw straight line East', () => {
+      const start: CubeCoord = { q: 0, r: 0, s: 0 };
+      const end: CubeCoord = { q: 3, r: 0, s: -3 };
+      const line = hexLine(start, end);
+
+      expect(line).toEqual([
+        { q: 0, r: 0, s: 0 },
+        { q: 1, r: 0, s: -1 },
+        { q: 2, r: 0, s: -2 },
+        { q: 3, r: 0, s: -3 },
+      ]);
+    });
+
+    it('should draw straight line West', () => {
+      const start: CubeCoord = { q: 0, r: 0, s: 0 };
+      const end: CubeCoord = { q: -3, r: 0, s: 3 };
+      const line = hexLine(start, end);
+
+      expect(line).toEqual([
+        { q: 0, r: 0, s: 0 },
+        { q: -1, r: 0, s: 1 },
+        { q: -2, r: 0, s: 2 },
+        { q: -3, r: 0, s: 3 },
+      ]);
+    });
+
+    it('should draw straight line Northeast', () => {
+      const start: CubeCoord = { q: 0, r: 0, s: 0 };
+      const end: CubeCoord = { q: 2, r: -2, s: 0 };
+      const line = hexLine(start, end);
+
+      expect(line).toEqual([
+        { q: 0, r: 0, s: 0 },
+        { q: 1, r: -1, s: 0 },
+        { q: 2, r: -2, s: 0 },
+      ]);
+    });
+
+    it('should return hexes that all satisfy cube coordinate constraint', () => {
+      const start: CubeCoord = { q: -2, r: 3, s: -1 };
+      const end: CubeCoord = { q: 2, r: -1, s: -1 };
+      const line = hexLine(start, end);
+
+      for (const hex of line) {
+        expect(hex.q + hex.r + hex.s).toBe(0);
+      }
+    });
+
+    it('should have consecutive hexes at distance 1', () => {
+      const start: CubeCoord = { q: -1, r: 2, s: -1 };
+      const end: CubeCoord = { q: 2, r: -3, s: 1 };
+      const line = hexLine(start, end);
+
+      for (let i = 0; i < line.length - 1; i++) {
+        expect(hexDistance(line[i], line[i + 1])).toBe(1);
+      }
+    });
+
+    it('should handle diagonal lines correctly', () => {
+      const start: CubeCoord = { q: 0, r: 0, s: 0 };
+      const end: CubeCoord = { q: 2, r: 2, s: -4 };
+      const line = hexLine(start, end);
+
+      // Distance is 4, so should have 5 hexes
+      expect(line).toHaveLength(5);
+      expect(line[0]).toEqual(start);
+      expect(line[4]).toEqual(end);
+
+      // All consecutive pairs should be adjacent
+      for (let i = 0; i < line.length - 1; i++) {
+        expect(hexDistance(line[i], line[i + 1])).toBe(1);
+      }
+    });
+
+    it('should handle lines with negative coordinates', () => {
+      const start: CubeCoord = { q: -3, r: 1, s: 2 };
+      const end: CubeCoord = { q: 1, r: -2, s: 1 };
+      const line = hexLine(start, end);
+
+      expect(line[0]).toEqual(start);
+      expect(line[line.length - 1]).toEqual(end);
+
+      for (let i = 0; i < line.length - 1; i++) {
+        expect(hexDistance(line[i], line[i + 1])).toBe(1);
+      }
+    });
+
+    it('should be symmetric (line from a to b equals reversed line from b to a)', () => {
+      const a: CubeCoord = { q: 1, r: -2, s: 1 };
+      const b: CubeCoord = { q: -2, r: 3, s: -1 };
+
+      const lineAB = hexLine(a, b);
+      const lineBA = hexLine(b, a);
+
+      expect(lineAB).toHaveLength(lineBA.length);
+
+      // Reversed lines should match
+      const reversedBA = [...lineBA].reverse();
+      for (let i = 0; i < lineAB.length; i++) {
+        expect(lineAB[i]).toEqual(reversedBA[i]);
+      }
+    });
+
+    it('should handle edge case lines that pass between hexes', () => {
+      // This line passes exactly between hexes at some points
+      const start: CubeCoord = { q: 0, r: 0, s: 0 };
+      const end: CubeCoord = { q: 2, r: -1, s: -1 };
+      const line = hexLine(start, end);
+
+      // Should still produce valid line
+      expect(line.length).toBeGreaterThan(0);
+      expect(line[0]).toEqual(start);
+      expect(line[line.length - 1]).toEqual(end);
+
+      // All hexes should satisfy constraint
+      for (const hex of line) {
+        expect(hex.q + hex.r + hex.s).toBe(0);
+      }
+
+      // All consecutive pairs should be adjacent
+      for (let i = 0; i < line.length - 1; i++) {
+        expect(hexDistance(line[i], line[i + 1])).toBe(1);
+      }
+    });
+  });
+
+  describe('hexLineAxial', () => {
+    it('should return single hex when start equals end', () => {
+      const hex: AxialCoord = { q: 2, r: -1 };
+      const line = hexLineAxial(hex, hex);
+      expect(line).toHaveLength(1);
+      expect(line[0]).toEqual(hex);
+    });
+
+    it('should return two hexes for adjacent hexes', () => {
+      const start: AxialCoord = { q: 0, r: 0 };
+      const end: AxialCoord = { q: 1, r: 0 }; // East neighbor
+      const line = hexLineAxial(start, end);
+      expect(line).toHaveLength(2);
+      expect(line[0]).toEqual(start);
+      expect(line[1]).toEqual(end);
+    });
+
+    it('should be consistent with cube coordinate version', () => {
+      const axialStart: AxialCoord = { q: -1, r: 2 };
+      const axialEnd: AxialCoord = { q: 2, r: -1 };
+
+      const cubeStart = axialToCube(axialStart);
+      const cubeEnd = axialToCube(axialEnd);
+
+      const axialLine = hexLineAxial(axialStart, axialEnd);
+      const cubeLine = hexLine(cubeStart, cubeEnd);
+
+      expect(axialLine).toHaveLength(cubeLine.length);
+
+      for (let i = 0; i < axialLine.length; i++) {
+        expect(axialLine[i]).toEqual(cubeToAxial(cubeLine[i]));
+      }
+    });
+
+    it('should draw line for game scenario: Jarl to Throne', () => {
+      const jarlPosition: AxialCoord = { q: 3, r: 0 }; // Edge position
+      const throne: AxialCoord = { q: 0, r: 0 }; // Center
+
+      const line = hexLineAxial(jarlPosition, throne);
+
+      expect(line).toHaveLength(4); // distance 3 + 1
+      expect(line[0]).toEqual(jarlPosition);
+      expect(line[3]).toEqual(throne);
     });
   });
 });

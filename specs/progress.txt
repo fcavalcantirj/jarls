@@ -411,3 +411,44 @@
 **Files Modified**:
 - packages/shared/src/index.ts (added getOppositeDirection function)
 - packages/shared/src/index.test.ts (added unit tests for getOppositeDirection)
+
+---
+
+### 2026-01-25: Core Logic - hexLine Function
+
+**Feature Completed**: "hexLine function draws line between two hexes"
+
+**Work Done**:
+- Implemented `cubeRound(q, r, s): CubeCoord` helper function
+  - Rounds fractional cube coordinates to nearest valid hex
+  - Uses constraint q + r + s = 0 to ensure valid coordinates
+  - Component with largest rounding error is recalculated
+  - Normalizes -0 to 0 to avoid equality issues
+- Implemented `hexLine(a: CubeCoord, b: CubeCoord): CubeCoord[]` function
+  - Uses linear interpolation in cube coordinates with proper rounding
+  - Returns array of all hexes along the line from a to b (inclusive)
+  - Handles edge cases where line passes exactly between hexes via nudge offset
+  - Returns distance + 1 hexes for any line
+- Implemented `hexLineAxial(a, b): AxialCoord[]` convenience wrapper
+- Added comprehensive unit tests (21 new tests) covering:
+  - Single hex when start equals end
+  - Two hexes for adjacent hexes
+  - Start and end hexes included
+  - Correct number of hexes (distance + 1)
+  - Straight lines in all 6 directions (East, West, Northeast, etc.)
+  - Cube coordinate constraint satisfied for all hexes
+  - Consecutive hexes at distance 1
+  - Diagonal lines
+  - Lines with negative coordinates
+  - Symmetry (line a→b equals reversed line b→a)
+  - Edge cases where lines pass between hexes
+  - Axial coordinate version consistency
+  - Game scenario: Jarl to Throne path
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (86 tests total, 21 new tests for cubeRound/hexLine/hexLineAxial)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added cubeRound, hexLine, hexLineAxial functions)
+- packages/shared/src/index.test.ts (added unit tests for all new functions)

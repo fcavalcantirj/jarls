@@ -226,7 +226,7 @@
       "Proper rounding handles edge cases",
       "Unit tests verify line drawing"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

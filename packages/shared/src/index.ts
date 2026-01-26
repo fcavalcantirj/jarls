@@ -124,6 +124,89 @@ export function getOppositeDirection(direction: HexDirection): HexDirection {
   return ((direction + 3) % 6) as HexDirection;
 }
 
+/**
+ * Round fractional cube coordinates to the nearest valid hex.
+ * Uses the constraint q + r + s = 0 to ensure valid coordinates.
+ * The component with the largest rounding error is recalculated.
+ */
+export function cubeRound(q: number, r: number, s: number): CubeCoord {
+  let rq = Math.round(q);
+  let rr = Math.round(r);
+  let rs = Math.round(s);
+
+  const qDiff = Math.abs(rq - q);
+  const rDiff = Math.abs(rr - r);
+  const sDiff = Math.abs(rs - s);
+
+  // Reset the component with the largest rounding error
+  if (qDiff > rDiff && qDiff > sDiff) {
+    rq = -rr - rs;
+  } else if (rDiff > sDiff) {
+    rr = -rq - rs;
+  } else {
+    rs = -rq - rr;
+  }
+
+  // Normalize -0 to 0 to avoid equality issues
+  return {
+    q: rq === 0 ? 0 : rq,
+    r: rr === 0 ? 0 : rr,
+    s: rs === 0 ? 0 : rs,
+  };
+}
+
+/**
+ * Linear interpolation between two numbers.
+ */
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+/**
+ * Draw a line between two hexes, returning all hexes along the path.
+ * Uses linear interpolation in cube coordinates with proper rounding.
+ * The line includes both the start and end hexes.
+ *
+ * @param a - Starting hex in cube coordinates
+ * @param b - Ending hex in cube coordinates
+ * @returns Array of hexes from a to b, inclusive
+ */
+export function hexLine(a: CubeCoord, b: CubeCoord): CubeCoord[] {
+  const distance = hexDistance(a, b);
+
+  // If both hexes are the same, return just that hex
+  if (distance === 0) {
+    return [{ q: a.q, r: a.r, s: a.s }];
+  }
+
+  const results: CubeCoord[] = [];
+
+  // Add a small offset to handle edge cases where the line passes
+  // exactly between two hexes (nudges toward consistent rounding)
+  const nudge = 1e-6;
+  const aq = a.q + nudge;
+  const ar = a.r + nudge;
+  const as = a.s - 2 * nudge; // Keep constraint: nudge + nudge - 2*nudge = 0
+
+  for (let i = 0; i <= distance; i++) {
+    const t = i / distance;
+    const q = lerp(aq, b.q, t);
+    const r = lerp(ar, b.r, t);
+    const s = lerp(as, b.s, t);
+    results.push(cubeRound(q, r, s));
+  }
+
+  return results;
+}
+
+/**
+ * Draw a line between two hexes using axial coordinates.
+ * Returns all hexes along the path, including start and end.
+ */
+export function hexLineAxial(a: AxialCoord, b: AxialCoord): AxialCoord[] {
+  return hexLine(axialToCube(a), axialToCube(b)).map(cubeToAxial);
+}
+
 // Piece types
 export type PieceType = 'jarl' | 'warrior' | 'shield';
 
