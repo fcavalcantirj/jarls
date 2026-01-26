@@ -2898,3 +2898,141 @@ export function checkWinConditions(
   // No victory condition met
   return noVictory;
 }
+
+/**
+ * Result of finding reachable hexes for a piece.
+ */
+export interface ReachableHex {
+  /** The destination hex position */
+  destination: AxialCoord;
+  /** Whether this is a move or attack */
+  moveType: 'move' | 'attack';
+  /** Whether moving to this hex grants momentum bonus (+1 attack) */
+  hasMomentum: boolean;
+  /** The direction of movement (useful for attack calculations) */
+  direction: HexDirection;
+}
+
+/**
+ * Get all reachable hexes for a piece.
+ * Returns all valid destinations where the piece can move or attack.
+ *
+ * Rules:
+ * - Warriors can move 1 or 2 hexes in straight lines
+ * - Jarls can move 1 hex normally, or 2 hexes with draft formation
+ * - Pieces cannot move through other pieces (path must be clear)
+ * - Pieces cannot land on friendly pieces
+ * - Warriors cannot enter the Throne
+ * - Shields cannot move
+ * - Moving 2 hexes grants momentum (+1 attack)
+ *
+ * @param state - The current game state
+ * @param pieceId - The ID of the piece to get reachable hexes for
+ * @returns Array of ReachableHex objects representing valid destinations
+ */
+export function getReachableHexes(state: GameState, pieceId: string): ReachableHex[] {
+  const piece = getPieceById(state, pieceId);
+  if (!piece) {
+    return [];
+  }
+
+  // Shields cannot move
+  if (piece.type === 'shield') {
+    return [];
+  }
+
+  // At this point, piece is a Warrior or Jarl, which always have a playerId
+  const playerId = piece.playerId;
+  if (!playerId) {
+    return []; // Should never happen for Warriors/Jarls, but TypeScript needs this
+  }
+
+  const results: ReachableHex[] = [];
+  const radius = state.config.boardRadius;
+
+  // Determine maximum move distance based on piece type
+  // Warriors can always move 1-2 hexes
+  // Jarls can move 1 hex, or 2 with draft
+  const maxDistance = piece.type === 'warrior' ? 2 : 1;
+
+  // For Jarls, check which directions have draft formation (can move 2 hexes)
+  const draftDirections =
+    piece.type === 'jarl' ? hasDraftFormation(state, piece.position, playerId) : [];
+
+  // Check all 6 directions
+  for (let dir = 0; dir < 6; dir++) {
+    const direction = dir as HexDirection;
+
+    // Determine max distance for this direction
+    let dirMaxDistance = maxDistance;
+    if (piece.type === 'jarl' && draftDirections.includes(direction)) {
+      // Jarl can move 2 hexes in this direction with draft
+      dirMaxDistance = 2;
+    }
+
+    // Check each distance (1 and possibly 2)
+    let currentPos = piece.position;
+    for (let dist = 1; dist <= dirMaxDistance; dist++) {
+      // Get the next hex in this direction
+      const nextPos = getNeighborAxial(currentPos, direction);
+
+      // Check if the hex is on the board
+      if (!isOnBoardAxial(nextPos, radius)) {
+        break; // Can't go further in this direction
+      }
+
+      // Check if path is blocked (only need to check for distance > 1)
+      // For distance 1, we check if there's a piece at destination
+      // For distance 2, we check if there's a piece at the intermediate hex
+      if (dist > 1) {
+        // Check if the path is clear (intermediate hex has a piece)
+        const intermediatePiece = getPieceAt(state, currentPos);
+        if (intermediatePiece && intermediatePiece.id !== piece.id) {
+          break; // Path is blocked by intermediate piece
+        }
+      }
+
+      // Check what's at the destination
+      const pieceAtDest = getPieceAt(state, nextPos);
+
+      // Cannot land on friendly pieces or shields
+      if (pieceAtDest && (pieceAtDest.playerId === playerId || pieceAtDest.type === 'shield')) {
+        break; // Can't move to or through friendly pieces or shields
+      }
+
+      // Warriors cannot enter the Throne
+      if (piece.type === 'warrior' && nextPos.q === 0 && nextPos.r === 0) {
+        // Continue checking next distance - throne blocks but doesn't stop path
+        currentPos = nextPos;
+        continue;
+      }
+
+      // Determine if this is a move or attack
+      // Attack only when there's an enemy piece (not shield, which we already filtered)
+      const moveType: 'move' | 'attack' =
+        pieceAtDest && pieceAtDest.playerId !== null && pieceAtDest.playerId !== playerId
+          ? 'attack'
+          : 'move';
+
+      // Check if this move grants momentum (moving 2 hexes)
+      const hasMomentum = dist === 2;
+
+      results.push({
+        destination: nextPos,
+        moveType,
+        hasMomentum,
+        direction,
+      });
+
+      // If there's an enemy piece at this hex, we can attack but can't go further
+      if (pieceAtDest) {
+        break;
+      }
+
+      // Update current position for next iteration
+      currentPos = nextPos;
+    }
+  }
+
+  return results;
+}

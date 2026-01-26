@@ -561,7 +561,7 @@
       "Jarl: 1 hex, or 2 with draft",
       "Excludes blocked paths and friendly pieces"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

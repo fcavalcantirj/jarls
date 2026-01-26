@@ -1510,3 +1510,46 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added WinCondition type, WinConditionsResult interface, checkWinConditions function)
 - packages/shared/src/index.test.ts (added import for checkWinConditions, added unit tests)
+
+---
+
+### 2026-01-26: Core Logic - getReachableHexes Function
+
+**Feature Completed**: "getReachableHexes returns all valid destinations"
+
+**Work Done**:
+- Implemented `ReachableHex` interface:
+  - `destination`: AxialCoord target position
+  - `moveType`: 'move' or 'attack' indicator
+  - `hasMomentum`: boolean for 2-hex moves (grants +1 attack)
+  - `direction`: HexDirection of movement
+- Implemented `getReachableHexes(state, pieceId)` function:
+  - Returns all valid destinations where the piece can move or attack
+  - Warriors can move 1 or 2 hexes in straight lines
+  - Jarls can move 1 hex normally, or 2 hexes with draft formation
+  - Pieces cannot move through other pieces (path must be clear)
+  - Pieces cannot land on friendly pieces
+  - Pieces cannot land on or move through shields
+  - Warriors cannot enter the Throne
+  - Shields cannot move (returns empty array)
+  - Identifies moves vs attacks based on destination occupancy
+  - Tracks momentum for 2-hex moves
+  - Returns direction for each move (useful for combat calculations)
+- Added comprehensive unit tests (24 new tests) covering:
+  - Basic functionality: non-existent piece, shield pieces
+  - Warrior movement: 1-hex and 2-hex moves, Throne restriction, off-board handling
+  - Jarl movement: 1-hex without draft, 2-hex with draft, Throne entry
+  - Path blocking: through friendly pieces, through enemy pieces, landing on friendly pieces
+  - Attack detection: moves to enemy hexes, moves to empty hexes, attack with momentum
+  - Direction tracking: valid directions, consistency across distances
+  - Edge cases: piece at board edge, piece at center, null playerId guard
+  - Game scenarios: realistic state, partial draft formation, shield blocking
+  - Result structure: all required fields present
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (700 tests total, 24 new tests for getReachableHexes)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added ReachableHex interface and getReachableHexes function)
+- packages/shared/src/index.test.ts (added import for getReachableHexes, added unit tests)
