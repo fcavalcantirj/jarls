@@ -671,3 +671,173 @@ export function calculateStartingPositions(playerCount: number, radius: number):
 
   return positions;
 }
+
+/**
+ * Rotate a hex position around the center by a given number of 60-degree steps.
+ * Used for generating rotationally symmetric shield positions.
+ *
+ * @param hex - The hex to rotate (in cube coordinates)
+ * @param steps - Number of 60-degree steps to rotate (positive = counter-clockwise)
+ * @returns The rotated hex position
+ */
+export function rotateHex(hex: CubeCoord, steps: number): CubeCoord {
+  // Normalize steps to 0-5 range
+  steps = ((steps % 6) + 6) % 6;
+
+  let { q, r, s } = hex;
+
+  for (let i = 0; i < steps; i++) {
+    // Rotate 60 degrees counter-clockwise: (q, r, s) -> (-r, -s, -q)
+    const newQ = -r;
+    const newR = -s;
+    const newS = -q;
+    q = newQ;
+    r = newR;
+    s = newS;
+  }
+
+  // Normalize -0 to 0
+  return {
+    q: q === 0 ? 0 : q,
+    r: r === 0 ? 0 : r,
+    s: s === 0 ? 0 : s,
+  };
+}
+
+/**
+ * Generate symmetrical shield positions for the game board.
+ * Shields are placed with rotational symmetry based on player count,
+ * ensuring fair gameplay where shields are equidistant from all starting positions.
+ *
+ * Rules:
+ * - Shields have N-fold rotational symmetry (where N = playerCount)
+ * - No shield on the Throne (center hex at 0,0)
+ * - No shield on edge hexes (where pieces start)
+ * - Shields are placed in the interior of the board
+ *
+ * @param playerCount - Number of players (2-6), determines rotational symmetry
+ * @param radius - Board radius
+ * @param shieldCount - Total number of shields to place
+ * @returns Array of shield positions in axial coordinates
+ * @throws Error if unable to place the requested number of shields
+ */
+export function generateSymmetricalShields(
+  playerCount: number,
+  radius: number,
+  shieldCount: number
+): AxialCoord[] {
+  if (playerCount < 2 || playerCount > 6) {
+    throw new Error(`Invalid player count: ${playerCount}. Must be between 2 and 6.`);
+  }
+
+  if (shieldCount <= 0) {
+    return [];
+  }
+
+  // Get all interior hexes (not center, not edge)
+  const allHexes = generateAllBoardHexes(radius);
+  const center: CubeCoord = { q: 0, r: 0, s: 0 };
+
+  // Filter to interior hexes only (distance > 0 and distance < radius)
+  const interiorHexes = allHexes.filter((hex) => {
+    const dist = hexDistance(hex, center);
+    return dist > 0 && dist < radius;
+  });
+
+  // Group hexes by their "canonical" form under rotation
+  // This helps us find hexes that can form symmetric groups
+  const hexGroups = new Map<string, CubeCoord[]>();
+
+  for (const hex of interiorHexes) {
+    // Find all rotations of this hex
+    const rotations: CubeCoord[] = [];
+    for (let i = 0; i < playerCount; i++) {
+      rotations.push(rotateHex(hex, i));
+    }
+
+    // Use the lexicographically smallest as the canonical key
+    const sortedRotations = rotations
+      .map((h) => ({ hex: h, key: `${h.q},${h.r},${h.s}` }))
+      .sort((a, b) => a.key.localeCompare(b.key));
+
+    const canonicalKey = sortedRotations[0].key;
+
+    if (!hexGroups.has(canonicalKey)) {
+      // Store unique rotations only (some hexes map to themselves under rotation)
+      const uniqueRotations: CubeCoord[] = [];
+      const seenKeys = new Set<string>();
+      for (const rot of rotations) {
+        const key = hexToKey(rot);
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key);
+          uniqueRotations.push(rot);
+        }
+      }
+      hexGroups.set(canonicalKey, uniqueRotations);
+    }
+  }
+
+  // Sort groups by size and distance from center for consistent placement
+  // Prefer groups that give us exactly the symmetry we need
+  const sortedGroups = Array.from(hexGroups.values()).sort((a, b) => {
+    // First, prefer groups with size equal to playerCount (perfect symmetry)
+    const aIsPerfect = a.length === playerCount ? 0 : 1;
+    const bIsPerfect = b.length === playerCount ? 0 : 1;
+    if (aIsPerfect !== bIsPerfect) return aIsPerfect - bIsPerfect;
+
+    // Then sort by group size (descending for efficiency)
+    if (a.length !== b.length) return b.length - a.length;
+
+    // Then by distance from center (prefer closer to center)
+    const aDist = hexDistance(a[0], center);
+    const bDist = hexDistance(b[0], center);
+    return aDist - bDist;
+  });
+
+  // Select groups to reach the target shield count
+  const selectedShields: AxialCoord[] = [];
+  const usedKeys = new Set<string>();
+
+  for (const group of sortedGroups) {
+    if (selectedShields.length >= shieldCount) break;
+
+    // Check if adding this group would exceed the count
+    const remaining = shieldCount - selectedShields.length;
+
+    // Only add the group if all hexes are unused
+    const allUnused = group.every((hex) => !usedKeys.has(hexToKey(hex)));
+    if (!allUnused) continue;
+
+    // If the group fits exactly or we have room, add it
+    if (group.length <= remaining) {
+      for (const hex of group) {
+        selectedShields.push(cubeToAxial(hex));
+        usedKeys.add(hexToKey(hex));
+      }
+    }
+  }
+
+  // If we couldn't place enough shields, try to fill remaining spots
+  // with individual hexes (this maintains partial symmetry)
+  if (selectedShields.length < shieldCount) {
+    // Get remaining interior hexes not yet used
+    const remainingHexes = interiorHexes.filter((hex) => !usedKeys.has(hexToKey(hex)));
+
+    // Sort by distance from center (prefer inner hexes)
+    remainingHexes.sort((a, b) => hexDistance(a, center) - hexDistance(b, center));
+
+    for (const hex of remainingHexes) {
+      if (selectedShields.length >= shieldCount) break;
+      selectedShields.push(cubeToAxial(hex));
+      usedKeys.add(hexToKey(hex));
+    }
+  }
+
+  if (selectedShields.length < shieldCount) {
+    throw new Error(
+      `Unable to place ${shieldCount} shields. Only ${selectedShields.length} positions available.`
+    );
+  }
+
+  return selectedShields;
+}

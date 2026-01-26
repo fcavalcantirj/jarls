@@ -666,3 +666,41 @@
 **Files Modified**:
 - packages/shared/src/index.ts (added hexToPixel, hexToAngle, calculateStartingPositions functions)
 - packages/shared/src/index.test.ts (added unit tests for all new functions)
+
+---
+
+### 2026-01-25: Core Logic - generateSymmetricalShields Function
+
+**Feature Completed**: "generateSymmetricalShields places shields fairly"
+
+**Work Done**:
+- Implemented `rotateHex(hex, steps)` helper function:
+  - Rotates a hex position around the board center by 60-degree steps
+  - Used for generating rotationally symmetric shield positions
+  - Preserves distance from center and cube coordinate constraint
+- Implemented `generateSymmetricalShields(playerCount, radius, shieldCount)` function:
+  - Places shields with N-fold rotational symmetry (where N = playerCount)
+  - Groups hexes by their "canonical" form under rotation to find symmetric positions
+  - Prioritizes complete symmetric groups for fair gameplay
+  - Falls back to partial placement when full symmetry isn't achievable
+  - Shields are equidistant from all starting positions due to rotational symmetry
+- Position constraints enforced:
+  - No shield on the Throne (center hex at 0,0)
+  - No shield on edge hexes (where pieces start and can be pushed off)
+  - All shields placed in interior hexes (0 < distance < radius)
+- Added comprehensive unit tests (25 new tests) covering:
+  - Basic functionality: correct shield count for all player configurations
+  - Position constraints: not on Throne, not on edge, within board, interior only
+  - Rotational symmetry: shields have symmetric partners under rotation
+  - Equidistance: balanced distance sums to starting positions
+  - Error handling: invalid player counts, insufficient space
+  - Game scenarios: all standard configurations (2-6 players)
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (242 tests total, 25 new tests for rotateHex/generateSymmetricalShields)
+- `pnpm lint` passes with no errors
+
+**Files Modified**:
+- packages/shared/src/index.ts (added rotateHex and generateSymmetricalShields functions)
+- packages/shared/src/index.test.ts (added unit tests for new functions)

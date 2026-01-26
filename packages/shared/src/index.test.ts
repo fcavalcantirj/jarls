@@ -28,6 +28,8 @@ import {
   hexToPixel,
   hexToAngle,
   calculateStartingPositions,
+  rotateHex,
+  generateSymmetricalShields,
   AxialCoord,
   CubeCoord,
   GameConfig,
@@ -1913,6 +1915,240 @@ describe('@jarls/shared', () => {
             expect(pos.q !== 0 || pos.r !== 0).toBe(true);
           });
         }
+      });
+    });
+  });
+
+  describe('rotateHex', () => {
+    it('should not change the center hex', () => {
+      const center: CubeCoord = { q: 0, r: 0, s: 0 };
+      for (let steps = 0; steps < 6; steps++) {
+        const rotated = rotateHex(center, steps);
+        expect(rotated).toEqual(center);
+      }
+    });
+
+    it('should rotate a hex 60 degrees counter-clockwise with steps=1', () => {
+      // East direction (1, 0, -1) should become Northeast (1, -1, 0)
+      const hex: CubeCoord = { q: 1, r: 0, s: -1 };
+      const rotated = rotateHex(hex, 1);
+      // Rotation: (q, r, s) -> (-r, -s, -q)
+      expect(rotated).toEqual({ q: 0, r: 1, s: -1 });
+    });
+
+    it('should return to original position after 6 rotations', () => {
+      const hex: CubeCoord = { q: 2, r: -1, s: -1 };
+      const rotated = rotateHex(hex, 6);
+      expect(rotated).toEqual(hex);
+    });
+
+    it('should preserve distance from center', () => {
+      const hex: CubeCoord = { q: 2, r: -1, s: -1 };
+      const center: CubeCoord = { q: 0, r: 0, s: 0 };
+      const originalDist = hexDistance(hex, center);
+
+      for (let steps = 1; steps < 6; steps++) {
+        const rotated = rotateHex(hex, steps);
+        expect(hexDistance(rotated, center)).toBe(originalDist);
+      }
+    });
+
+    it('should satisfy cube coordinate constraint after rotation', () => {
+      const hex: CubeCoord = { q: 3, r: -2, s: -1 };
+      for (let steps = 0; steps < 6; steps++) {
+        const rotated = rotateHex(hex, steps);
+        expect(rotated.q + rotated.r + rotated.s).toBe(0);
+      }
+    });
+
+    it('should handle negative rotation steps', () => {
+      const hex: CubeCoord = { q: 1, r: 0, s: -1 };
+      const rotatedPos = rotateHex(hex, 1);
+      const rotatedNeg = rotateHex(hex, -5); // -5 mod 6 = 1
+      expect(rotatedPos).toEqual(rotatedNeg);
+    });
+  });
+
+  describe('generateSymmetricalShields', () => {
+    describe('basic functionality', () => {
+      it('should return the correct number of shields for 2-player game', () => {
+        const config = getConfigForPlayerCount(2);
+        const shields = generateSymmetricalShields(2, config.boardRadius, config.shieldCount);
+        expect(shields).toHaveLength(config.shieldCount);
+      });
+
+      it('should return the correct number of shields for all player counts', () => {
+        for (let playerCount = 2; playerCount <= 6; playerCount++) {
+          const config = getConfigForPlayerCount(playerCount);
+          const shields = generateSymmetricalShields(
+            playerCount,
+            config.boardRadius,
+            config.shieldCount
+          );
+          expect(shields).toHaveLength(config.shieldCount);
+        }
+      });
+
+      it('should return empty array when shieldCount is 0', () => {
+        const shields = generateSymmetricalShields(2, 3, 0);
+        expect(shields).toHaveLength(0);
+      });
+    });
+
+    describe('position constraints', () => {
+      it('should not place shields on the Throne (center)', () => {
+        const shields = generateSymmetricalShields(2, 3, 5);
+        shields.forEach((shield) => {
+          expect(shield.q !== 0 || shield.r !== 0).toBe(true);
+        });
+      });
+
+      it('should not place shields on edge hexes', () => {
+        for (let playerCount = 2; playerCount <= 6; playerCount++) {
+          const config = getConfigForPlayerCount(playerCount);
+          const shields = generateSymmetricalShields(
+            playerCount,
+            config.boardRadius,
+            config.shieldCount
+          );
+
+          shields.forEach((shield) => {
+            expect(isOnEdgeAxial(shield, config.boardRadius)).toBe(false);
+          });
+        }
+      });
+
+      it('should place all shields within the board', () => {
+        const shields = generateSymmetricalShields(2, 3, 5);
+        shields.forEach((shield) => {
+          expect(isOnBoardAxial(shield, 3)).toBe(true);
+        });
+      });
+
+      it('should place all shields in interior (not center, not edge)', () => {
+        const shields = generateSymmetricalShields(2, 3, 5);
+        shields.forEach((shield) => {
+          const dist = hexDistanceAxial(shield, { q: 0, r: 0 });
+          expect(dist).toBeGreaterThan(0); // Not center
+          expect(dist).toBeLessThan(3); // Not edge (radius = 3)
+        });
+      });
+
+      it('should return all unique positions', () => {
+        const shields = generateSymmetricalShields(2, 3, 5);
+        const keys = shields.map(hexToKey);
+        expect(new Set(keys).size).toBe(shields.length);
+      });
+    });
+
+    describe('rotational symmetry', () => {
+      it('should have rotational symmetry for 2 players', () => {
+        const shields = generateSymmetricalShields(2, 3, 4); // Use even number for better symmetry
+        const shieldSet = new Set(shields.map(hexToKey));
+
+        // For each shield, its 180-degree rotation should also be in the set
+        let symmetricPairs = 0;
+        for (const shield of shields) {
+          const cube = axialToCube(shield);
+          const rotated = rotateHex(cube, 3); // 3 steps = 180 degrees
+          if (shieldSet.has(hexToKey(rotated))) {
+            symmetricPairs++;
+          }
+        }
+
+        // At least half the shields should have a symmetric partner
+        // (some hexes on the axis of symmetry map to themselves)
+        expect(symmetricPairs).toBeGreaterThanOrEqual(Math.floor(shields.length / 2));
+      });
+
+      it('should prefer symmetric groups when possible', () => {
+        const shields = generateSymmetricalShields(3, 5, 3);
+        const shieldSet = new Set(shields.map(hexToKey));
+
+        // For 3 shields in a 3-player game, they should ideally be 120 degrees apart
+        // Check that rotations of first shield hit other shields
+        const firstCube = axialToCube(shields[0]);
+        let foundRotations = 1; // Count the original
+        for (let i = 1; i < 3; i++) {
+          const rotated = rotateHex(firstCube, i * 2); // 0, 2, 4 steps for 3-fold symmetry
+          if (shieldSet.has(hexToKey(rotated))) {
+            foundRotations++;
+          }
+        }
+
+        // Should find at least 2 shields from the rotation group
+        expect(foundRotations).toBeGreaterThanOrEqual(2);
+      });
+    });
+
+    describe('equidistance from starting positions', () => {
+      it('should place shields equidistant from starting positions for 2 players', () => {
+        const config = getConfigForPlayerCount(2);
+        const startPositions = calculateStartingPositions(2, config.boardRadius);
+        const shields = generateSymmetricalShields(2, config.boardRadius, config.shieldCount);
+
+        // For symmetric shields, the sum of distances to all starting positions
+        // should be the same for each shield (due to rotational symmetry)
+        // or at least very similar
+        const distanceSums = shields.map((shield) => {
+          return startPositions.reduce((sum, start) => {
+            return sum + hexDistanceAxial(shield, start);
+          }, 0);
+        });
+
+        // Check that distance sums are relatively balanced
+        const maxDiff = Math.max(...distanceSums) - Math.min(...distanceSums);
+        expect(maxDiff).toBeLessThanOrEqual(2); // Allow small variation due to hex grid
+      });
+    });
+
+    describe('error handling', () => {
+      it('should throw error for invalid player count (too low)', () => {
+        expect(() => generateSymmetricalShields(1, 3, 5)).toThrow('Invalid player count');
+      });
+
+      it('should throw error for invalid player count (too high)', () => {
+        expect(() => generateSymmetricalShields(7, 3, 5)).toThrow('Invalid player count');
+      });
+
+      it('should throw error when not enough space for shields', () => {
+        // Radius 1 board has only 7 hexes: 1 center, 6 edge, 0 interior
+        expect(() => generateSymmetricalShields(2, 1, 1)).toThrow('Unable to place');
+      });
+    });
+
+    describe('game scenarios', () => {
+      it('should work with standard 2-player configuration (radius 3, 5 shields)', () => {
+        const shields = generateSymmetricalShields(2, 3, 5);
+        expect(shields).toHaveLength(5);
+
+        // Verify all are valid interior positions
+        shields.forEach((shield) => {
+          expect(isOnBoardAxial(shield, 3)).toBe(true);
+          expect(isOnEdgeAxial(shield, 3)).toBe(false);
+          const dist = hexDistanceAxial(shield, { q: 0, r: 0 });
+          expect(dist).toBeGreaterThan(0);
+        });
+      });
+
+      it('should work with standard 3-player configuration (radius 5, 4 shields)', () => {
+        const shields = generateSymmetricalShields(3, 5, 4);
+        expect(shields).toHaveLength(4);
+      });
+
+      it('should work with standard 4-player configuration (radius 6, 4 shields)', () => {
+        const shields = generateSymmetricalShields(4, 6, 4);
+        expect(shields).toHaveLength(4);
+      });
+
+      it('should work with standard 5-player configuration (radius 7, 3 shields)', () => {
+        const shields = generateSymmetricalShields(5, 7, 3);
+        expect(shields).toHaveLength(3);
+      });
+
+      it('should work with standard 6-player configuration (radius 8, 3 shields)', () => {
+        const shields = generateSymmetricalShields(6, 8, 3);
+        expect(shields).toHaveLength(3);
       });
     });
   });

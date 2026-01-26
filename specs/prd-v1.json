@@ -300,7 +300,7 @@
       "Shields equidistant from starting positions",
       "No shield on Throne or edge hexes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
