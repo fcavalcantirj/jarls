@@ -1389,3 +1389,210 @@ export function hasDraftFormation(
 
   return draftDirections;
 }
+
+/**
+ * Error type returned when a move is invalid.
+ */
+export type MoveValidationError =
+  | 'PIECE_NOT_FOUND'
+  | 'NOT_YOUR_PIECE'
+  | 'NOT_YOUR_TURN'
+  | 'GAME_NOT_PLAYING'
+  | 'DESTINATION_OFF_BOARD'
+  | 'DESTINATION_OCCUPIED_FRIENDLY'
+  | 'WARRIOR_CANNOT_ENTER_THRONE'
+  | 'INVALID_DISTANCE_WARRIOR'
+  | 'INVALID_DISTANCE_JARL'
+  | 'JARL_NEEDS_DRAFT_FOR_TWO_HEX'
+  | 'PATH_BLOCKED'
+  | 'MOVE_NOT_STRAIGHT_LINE'
+  | 'SHIELD_CANNOT_MOVE';
+
+/**
+ * Result of validating a move.
+ */
+export interface MoveValidation {
+  isValid: boolean;
+  error?: MoveValidationError;
+  hasMomentum?: boolean; // true if piece moved 2 hexes (grants +1 attack)
+}
+
+/**
+ * Get the direction from one hex to an adjacent hex.
+ * Returns the HexDirection if the hexes are adjacent, null if not adjacent.
+ *
+ * @param from - Starting hex position
+ * @param to - Target hex position (must be adjacent)
+ * @returns The HexDirection from 'from' to 'to', or null if not adjacent
+ */
+export function getDirectionBetweenAdjacent(from: AxialCoord, to: AxialCoord): HexDirection | null {
+  const dq = to.q - from.q;
+  const dr = to.r - from.r;
+
+  // Check each direction to find a match
+  for (let d = 0; d < 6; d++) {
+    const dir = DIRECTIONS[d];
+    if (dir.q === dq && dir.r === dr) {
+      return d as HexDirection;
+    }
+  }
+
+  return null; // Not adjacent
+}
+
+/**
+ * Check if two hexes are in a straight line on the hex grid.
+ * Returns the direction from 'from' to 'to' if they are in a line, null otherwise.
+ *
+ * Two hexes are in a straight line if and only if one of the following is true:
+ * - They are the same hex (distance 0)
+ * - The line between them follows one of the 6 hex directions
+ *
+ * In cube coordinates, a straight line means one of q, r, or s is constant
+ * while the other two change by equal and opposite amounts.
+ *
+ * @param from - Starting hex position
+ * @param to - Target hex position
+ * @returns The HexDirection from 'from' to 'to' if in a straight line, null otherwise
+ */
+export function getLineDirection(from: AxialCoord, to: AxialCoord): HexDirection | null {
+  const dq = to.q - from.q;
+  const dr = to.r - from.r;
+
+  // Same position
+  if (dq === 0 && dr === 0) {
+    return null; // No direction for same position
+  }
+
+  // In hex coordinates (axial), a straight line has one of these properties:
+  // 1. dq = 0 (moving along r-axis)
+  // 2. dr = 0 (moving along q-axis)
+  // 3. dq = -dr (moving along the s-axis, where s = -q - r)
+
+  if (dq === 0) {
+    // Moving along r-axis
+    // dr > 0: Southeast (direction 5) or dr < 0: Northwest (direction 2)
+    return dr > 0 ? 5 : 2;
+  }
+
+  if (dr === 0) {
+    // Moving along q-axis
+    // dq > 0: East (direction 0) or dq < 0: West (direction 3)
+    return dq > 0 ? 0 : 3;
+  }
+
+  if (dq === -dr) {
+    // Moving along s-axis (diagonal)
+    // dq > 0, dr < 0: Northeast (direction 1)
+    // dq < 0, dr > 0: Southwest (direction 4)
+    return dq > 0 ? 1 : 4;
+  }
+
+  // Not in a straight line
+  return null;
+}
+
+/**
+ * Validate a move command according to all game rules.
+ * This is the main move validation function that checks:
+ * 1. Piece exists and belongs to the player
+ * 2. It's the player's turn
+ * 3. Game is in 'playing' phase
+ * 4. Destination is valid for the piece type (distance and direction)
+ * 5. Path is clear (no pieces blocking)
+ * 6. Jarl draft requirement for 2-hex moves
+ * 7. Warriors cannot enter the Throne
+ * 8. Cannot land on friendly pieces
+ *
+ * @param state - The current game state
+ * @param playerId - The ID of the player making the move
+ * @param command - The move command (pieceId and destination)
+ * @returns MoveValidation object with isValid and optional error
+ */
+export function validateMove(
+  state: GameState,
+  playerId: string,
+  command: MoveCommand
+): MoveValidation {
+  const { pieceId, destination } = command;
+
+  // 1. Check game phase
+  if (state.phase !== 'playing') {
+    return { isValid: false, error: 'GAME_NOT_PLAYING' };
+  }
+
+  // 2. Check it's the player's turn
+  if (state.currentPlayerId !== playerId) {
+    return { isValid: false, error: 'NOT_YOUR_TURN' };
+  }
+
+  // 3. Check piece exists
+  const piece = getPieceById(state, pieceId);
+  if (!piece) {
+    return { isValid: false, error: 'PIECE_NOT_FOUND' };
+  }
+
+  // 4. Check piece belongs to player
+  if (piece.playerId !== playerId) {
+    return { isValid: false, error: 'NOT_YOUR_PIECE' };
+  }
+
+  // 5. Check piece type - shields cannot move
+  if (piece.type === 'shield') {
+    return { isValid: false, error: 'SHIELD_CANNOT_MOVE' };
+  }
+
+  // 6. Check destination is on the board
+  if (!isOnBoardAxial(destination, state.config.boardRadius)) {
+    return { isValid: false, error: 'DESTINATION_OFF_BOARD' };
+  }
+
+  // 7. Check destination is not occupied by a friendly piece
+  const pieceAtDestination = getPieceAt(state, destination);
+  if (pieceAtDestination && pieceAtDestination.playerId === playerId) {
+    return { isValid: false, error: 'DESTINATION_OCCUPIED_FRIENDLY' };
+  }
+
+  // 8. Warriors cannot enter the Throne (center hex at 0,0)
+  if (piece.type === 'warrior' && destination.q === 0 && destination.r === 0) {
+    return { isValid: false, error: 'WARRIOR_CANNOT_ENTER_THRONE' };
+  }
+
+  // 9. Check movement is in a straight line
+  const direction = getLineDirection(piece.position, destination);
+  if (direction === null) {
+    return { isValid: false, error: 'MOVE_NOT_STRAIGHT_LINE' };
+  }
+
+  // 10. Calculate distance
+  const distance = hexDistanceAxial(piece.position, destination);
+
+  // 11. Validate distance based on piece type
+  if (piece.type === 'warrior') {
+    // Warriors can move 1 or 2 hexes
+    if (distance < 1 || distance > 2) {
+      return { isValid: false, error: 'INVALID_DISTANCE_WARRIOR' };
+    }
+  } else if (piece.type === 'jarl') {
+    // Jarl can move 1 hex normally, or 2 hexes with draft formation
+    if (distance < 1 || distance > 2) {
+      return { isValid: false, error: 'INVALID_DISTANCE_JARL' };
+    }
+
+    // For 2-hex move, Jarl needs draft formation
+    if (distance === 2) {
+      if (!hasDraftFormationInDirection(state, piece.position, playerId, direction)) {
+        return { isValid: false, error: 'JARL_NEEDS_DRAFT_FOR_TWO_HEX' };
+      }
+    }
+  }
+
+  // 12. Check path is clear (no pieces blocking between start and destination)
+  if (!isPathClear(state, piece.position, destination)) {
+    return { isValid: false, error: 'PATH_BLOCKED' };
+  }
+
+  // Move is valid
+  const hasMomentum = distance === 2;
+  return { isValid: true, hasMomentum };
+}

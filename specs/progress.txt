@@ -924,3 +924,50 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added hasDraftFormationInDirection and hasDraftFormation functions)
 - packages/shared/src/index.test.ts (added unit tests for hasDraftFormation functions)
+
+---
+
+### 2026-01-26: Core Logic - validateMove Function
+
+**Feature Completed**: "validateMove checks all move rules"
+
+**Work Done**:
+- Implemented `MoveValidationError` type with all error cases:
+  - PIECE_NOT_FOUND, NOT_YOUR_PIECE, NOT_YOUR_TURN, GAME_NOT_PLAYING
+  - DESTINATION_OFF_BOARD, DESTINATION_OCCUPIED_FRIENDLY, WARRIOR_CANNOT_ENTER_THRONE
+  - INVALID_DISTANCE_WARRIOR, INVALID_DISTANCE_JARL, JARL_NEEDS_DRAFT_FOR_TWO_HEX
+  - PATH_BLOCKED, MOVE_NOT_STRAIGHT_LINE, SHIELD_CANNOT_MOVE
+- Implemented `MoveValidation` interface with isValid, error, and hasMomentum fields
+- Implemented `getDirectionBetweenAdjacent(from, to)` helper function:
+  - Returns the HexDirection between two adjacent hexes
+  - Returns null if hexes are not adjacent
+- Implemented `getLineDirection(from, to)` helper function:
+  - Returns the HexDirection if two hexes are in a straight line
+  - Returns null if hexes are not in a straight line
+  - Handles all 6 hex directions and same-position case
+- Implemented `validateMove(state, playerId, command)` main validation function:
+  - Validates piece exists and belongs to player
+  - Validates it's player's turn
+  - Validates game is in 'playing' phase
+  - Validates destination is on board
+  - Validates destination is not occupied by friendly piece
+  - Validates Warriors cannot enter Throne
+  - Validates move is in a straight line
+  - Validates distance is correct for piece type (Warriors: 1-2, Jarls: 1 or 2 with draft)
+  - Validates Jarl draft requirement for 2-hex moves
+  - Validates path is clear (no pieces blocking)
+  - Returns hasMomentum flag for 2-hex moves
+- Added comprehensive unit tests (41 new tests) covering:
+  - getDirectionBetweenAdjacent: all 6 directions, non-adjacent, same hex
+  - getLineDirection: all 6 axes, non-straight-line, same position
+  - validateMove: piece existence, ownership, turn order, game phase, distance validation,
+    path clear, draft formation, throne restriction, friendly piece blocking, off-board,
+    straight-line moves, shield restriction, momentum flag, realistic game scenarios
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (423 tests total, 41 new tests for validateMove and helpers)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added MoveValidationError, MoveValidation, getDirectionBetweenAdjacent, getLineDirection, validateMove)
+- packages/shared/src/index.test.ts (added unit tests for all new functions)

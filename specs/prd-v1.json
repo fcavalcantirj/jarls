@@ -377,7 +377,7 @@
       "Validates Warriors cannot enter Throne",
       "Validates cannot land on friendly piece"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
