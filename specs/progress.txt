@@ -562,3 +562,37 @@
 
 **Files Modified**:
 - packages/shared/src/index.ts (added MoveCommand, CombatBreakdown, CombatResult, ValidMove, MoveResult, GameEvent and all individual event types)
+
+---
+
+### 2026-01-25: Core Logic - getConfigForPlayerCount Function
+
+**Feature Completed**: "getConfigForPlayerCount returns correct scaling"
+
+**Work Done**:
+- Implemented `getConfigForPlayerCount(playerCount, turnTimerMs?)` function
+  - Returns GameConfig object with scaling values from the ruleset
+  - Supports 2-6 players with appropriate board radius, shield count, and warrior count
+- Added PLAYER_SCALING constant with scaling table from ruleset:
+  - 2 players: radius 3, 5 shields, 5 warriors (37 hexes, ~32% density)
+  - 3 players: radius 5, 4 shields, 5 warriors (91 hexes, ~20% density)
+  - 4 players: radius 6, 4 shields, 4 warriors (127 hexes, ~16% density)
+  - 5 players: radius 7, 3 shields, 4 warriors (169 hexes, ~15% density)
+  - 6 players: radius 8, 3 shields, 4 warriors (217 hexes, ~14% density)
+- Function validates player count and throws error for invalid values (< 2 or > 6)
+- Optional turnTimerMs parameter defaults to null (no timer)
+- Added comprehensive unit tests (22 new tests) covering:
+  - All player counts (2-6) with correct scaling values
+  - Total hex count verification using formula 3r² + 3r + 1
+  - Turn timer configurations (null, 30s, 60s, 120s)
+  - Invalid player count error handling
+  - Return type verification
+  - Density scaling verification (decreasing density as player count increases)
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (156 tests total, 22 new tests for getConfigForPlayerCount)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added PLAYER_SCALING constant and getConfigForPlayerCount function)
+- packages/shared/src/index.test.ts (added unit tests for getConfigForPlayerCount)

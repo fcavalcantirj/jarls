@@ -21,8 +21,10 @@ import {
   hexToKey,
   keyToHex,
   keyToHexCube,
+  getConfigForPlayerCount,
   AxialCoord,
   CubeCoord,
+  GameConfig,
 } from './index';
 
 describe('@jarls/shared', () => {
@@ -1280,6 +1282,198 @@ describe('@jarls/shared', () => {
 
       expect(boardState.has(hexToKey(oldPos))).toBe(false);
       expect(boardState.get(hexToKey(newPos))).toEqual({ type: 'warrior', player: 1 });
+    });
+  });
+
+  describe('getConfigForPlayerCount', () => {
+    describe('2 players', () => {
+      it('should return radius 3, 5 shields, 5 warriors', () => {
+        const config = getConfigForPlayerCount(2);
+
+        expect(config.playerCount).toBe(2);
+        expect(config.boardRadius).toBe(3);
+        expect(config.shieldCount).toBe(5);
+        expect(config.warriorCount).toBe(5);
+      });
+
+      it('should return 37 total hexes (3r² + 3r + 1)', () => {
+        const config = getConfigForPlayerCount(2);
+        const r = config.boardRadius;
+        const totalHexes = 3 * r * r + 3 * r + 1;
+        expect(totalHexes).toBe(37);
+      });
+    });
+
+    describe('3 players', () => {
+      it('should return radius 5, 4 shields, 5 warriors', () => {
+        const config = getConfigForPlayerCount(3);
+
+        expect(config.playerCount).toBe(3);
+        expect(config.boardRadius).toBe(5);
+        expect(config.shieldCount).toBe(4);
+        expect(config.warriorCount).toBe(5);
+      });
+
+      it('should return 91 total hexes (3r² + 3r + 1)', () => {
+        const config = getConfigForPlayerCount(3);
+        const r = config.boardRadius;
+        const totalHexes = 3 * r * r + 3 * r + 1;
+        expect(totalHexes).toBe(91);
+      });
+    });
+
+    describe('4 players', () => {
+      it('should return radius 6, 4 shields, 4 warriors', () => {
+        const config = getConfigForPlayerCount(4);
+
+        expect(config.playerCount).toBe(4);
+        expect(config.boardRadius).toBe(6);
+        expect(config.shieldCount).toBe(4);
+        expect(config.warriorCount).toBe(4);
+      });
+
+      it('should return 127 total hexes (3r² + 3r + 1)', () => {
+        const config = getConfigForPlayerCount(4);
+        const r = config.boardRadius;
+        const totalHexes = 3 * r * r + 3 * r + 1;
+        expect(totalHexes).toBe(127);
+      });
+    });
+
+    describe('5 players', () => {
+      it('should return radius 7, 3 shields, 4 warriors', () => {
+        const config = getConfigForPlayerCount(5);
+
+        expect(config.playerCount).toBe(5);
+        expect(config.boardRadius).toBe(7);
+        expect(config.shieldCount).toBe(3);
+        expect(config.warriorCount).toBe(4);
+      });
+
+      it('should return 169 total hexes (3r² + 3r + 1)', () => {
+        const config = getConfigForPlayerCount(5);
+        const r = config.boardRadius;
+        const totalHexes = 3 * r * r + 3 * r + 1;
+        expect(totalHexes).toBe(169);
+      });
+    });
+
+    describe('6 players', () => {
+      it('should return radius 8, 3 shields, 4 warriors', () => {
+        const config = getConfigForPlayerCount(6);
+
+        expect(config.playerCount).toBe(6);
+        expect(config.boardRadius).toBe(8);
+        expect(config.shieldCount).toBe(3);
+        expect(config.warriorCount).toBe(4);
+      });
+
+      it('should return 217 total hexes (3r² + 3r + 1)', () => {
+        const config = getConfigForPlayerCount(6);
+        const r = config.boardRadius;
+        const totalHexes = 3 * r * r + 3 * r + 1;
+        expect(totalHexes).toBe(217);
+      });
+    });
+
+    describe('turn timer', () => {
+      it('should default to null (no timer)', () => {
+        const config = getConfigForPlayerCount(2);
+        expect(config.turnTimerMs).toBeNull();
+      });
+
+      it('should accept custom turn timer', () => {
+        const config = getConfigForPlayerCount(2, 30000);
+        expect(config.turnTimerMs).toBe(30000);
+      });
+
+      it('should accept 60 second timer', () => {
+        const config = getConfigForPlayerCount(3, 60000);
+        expect(config.turnTimerMs).toBe(60000);
+      });
+
+      it('should accept 120 second timer', () => {
+        const config = getConfigForPlayerCount(4, 120000);
+        expect(config.turnTimerMs).toBe(120000);
+      });
+    });
+
+    describe('invalid player counts', () => {
+      it('should throw error for 0 players', () => {
+        expect(() => getConfigForPlayerCount(0)).toThrow('Invalid player count: 0');
+      });
+
+      it('should throw error for 1 player', () => {
+        expect(() => getConfigForPlayerCount(1)).toThrow('Invalid player count: 1');
+      });
+
+      it('should throw error for 7 players', () => {
+        expect(() => getConfigForPlayerCount(7)).toThrow('Invalid player count: 7');
+      });
+
+      it('should throw error for negative players', () => {
+        expect(() => getConfigForPlayerCount(-1)).toThrow('Invalid player count: -1');
+      });
+    });
+
+    describe('return type verification', () => {
+      it('should return a valid GameConfig object', () => {
+        const config: GameConfig = getConfigForPlayerCount(2);
+
+        expect(typeof config.playerCount).toBe('number');
+        expect(typeof config.boardRadius).toBe('number');
+        expect(typeof config.shieldCount).toBe('number');
+        expect(typeof config.warriorCount).toBe('number');
+        expect(config.turnTimerMs === null || typeof config.turnTimerMs === 'number').toBe(true);
+      });
+
+      it('should include all necessary parameters', () => {
+        const config = getConfigForPlayerCount(2);
+
+        expect(config).toHaveProperty('playerCount');
+        expect(config).toHaveProperty('boardRadius');
+        expect(config).toHaveProperty('shieldCount');
+        expect(config).toHaveProperty('warriorCount');
+        expect(config).toHaveProperty('turnTimerMs');
+      });
+    });
+
+    describe('scaling table verification', () => {
+      it('should have decreasing density as player count increases', () => {
+        // Density = totalPieces / totalHexes
+        // totalPieces = playerCount * (1 jarl + warriorCount) + shieldCount
+        const densities: number[] = [];
+
+        for (let players = 2; players <= 6; players++) {
+          const config = getConfigForPlayerCount(players);
+          const r = config.boardRadius;
+          const totalHexes = 3 * r * r + 3 * r + 1;
+          const totalPieces = config.playerCount * (1 + config.warriorCount) + config.shieldCount;
+          const density = totalPieces / totalHexes;
+          densities.push(density);
+        }
+
+        // 2-player should be the most dense, decreasing toward 6-player
+        expect(densities[0]).toBeGreaterThan(densities[1]); // 2p > 3p
+        expect(densities[1]).toBeGreaterThan(densities[2]); // 3p > 4p
+        expect(densities[2]).toBeGreaterThan(densities[3]); // 4p > 5p
+        expect(densities[3]).toBeGreaterThan(densities[4]); // 5p > 6p
+      });
+
+      it('should have 2-player density around 32% (player pieces only)', () => {
+        const config = getConfigForPlayerCount(2);
+        const r = config.boardRadius;
+        const totalHexes = 3 * r * r + 3 * r + 1;
+        // Ruleset counts only player pieces (jarls + warriors), not shields
+        const playerPieces = config.playerCount * (1 + config.warriorCount);
+        const density = playerPieces / totalHexes;
+
+        // Should be around 32% (12 player pieces / 37 hexes ≈ 32.4%)
+        // 2 players × (1 jarl + 5 warriors) = 12 pieces
+        expect(playerPieces).toBe(12);
+        expect(density).toBeGreaterThan(0.3);
+        expect(density).toBeLessThan(0.35);
+      });
     });
   });
 });

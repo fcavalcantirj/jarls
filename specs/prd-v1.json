@@ -270,7 +270,7 @@
       "Returns correct values from scaling table",
       "Config includes all necessary parameters"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

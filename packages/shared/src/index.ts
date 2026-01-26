@@ -461,3 +461,57 @@ export interface PlayerLeftEvent {
   type: 'PLAYER_LEFT';
   playerId: string;
 }
+
+// Board scaling configuration based on player count
+// From the ruleset scaling table:
+// | Players | Board Radius | Shields | Warriors/Player |
+// | 2       | 3            | 5       | 5               |
+// | 3       | 5            | 4       | 5               |
+// | 4       | 6            | 4       | 4               |
+// | 5       | 7            | 3       | 4               |
+// | 6       | 8            | 3       | 4               |
+
+interface PlayerScaling {
+  boardRadius: number;
+  shieldCount: number;
+  warriorCount: number;
+}
+
+const PLAYER_SCALING: Record<number, PlayerScaling> = {
+  2: { boardRadius: 3, shieldCount: 5, warriorCount: 5 },
+  3: { boardRadius: 5, shieldCount: 4, warriorCount: 5 },
+  4: { boardRadius: 6, shieldCount: 4, warriorCount: 4 },
+  5: { boardRadius: 7, shieldCount: 3, warriorCount: 4 },
+  6: { boardRadius: 8, shieldCount: 3, warriorCount: 4 },
+};
+
+/**
+ * Get the game configuration for a given player count.
+ * Returns scaling values from the ruleset:
+ * - Board radius (hex grid size)
+ * - Number of shields (neutral obstacles)
+ * - Number of warriors per player
+ *
+ * @param playerCount - Number of players (2-6)
+ * @param turnTimerMs - Optional turn timer in milliseconds (null for no timer)
+ * @returns GameConfig object with all configuration values
+ * @throws Error if playerCount is outside valid range (2-6)
+ */
+export function getConfigForPlayerCount(
+  playerCount: number,
+  turnTimerMs: number | null = null
+): GameConfig {
+  const scaling = PLAYER_SCALING[playerCount];
+
+  if (!scaling) {
+    throw new Error(`Invalid player count: ${playerCount}. Must be between 2 and 6.`);
+  }
+
+  return {
+    playerCount,
+    boardRadius: scaling.boardRadius,
+    shieldCount: scaling.shieldCount,
+    warriorCount: scaling.warriorCount,
+    turnTimerMs,
+  };
+}
