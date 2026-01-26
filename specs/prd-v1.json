@@ -449,7 +449,7 @@
       "Attacker takes defender's original position",
       "Generates MOVE and PUSH events"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
