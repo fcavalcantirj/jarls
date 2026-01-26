@@ -14,6 +14,10 @@ import {
   cubeRound,
   hexLine,
   hexLineAxial,
+  isOnBoard,
+  isOnBoardAxial,
+  isOnEdge,
+  isOnEdgeAxial,
   AxialCoord,
   CubeCoord,
 } from './index';
@@ -794,6 +798,258 @@ describe('@jarls/shared', () => {
       expect(line).toHaveLength(4); // distance 3 + 1
       expect(line[0]).toEqual(jarlPosition);
       expect(line[3]).toEqual(throne);
+    });
+  });
+
+  describe('isOnBoard', () => {
+    const radius3 = 3; // 2-player board radius
+
+    it('should return true for the center hex (Throne)', () => {
+      const center: CubeCoord = { q: 0, r: 0, s: 0 };
+      expect(isOnBoard(center, radius3)).toBe(true);
+    });
+
+    it('should return true for hexes within the board radius', () => {
+      // Distance 1 from center
+      expect(isOnBoard({ q: 1, r: 0, s: -1 }, radius3)).toBe(true);
+      // Distance 2 from center
+      expect(isOnBoard({ q: 2, r: 0, s: -2 }, radius3)).toBe(true);
+      // Distance 3 from center (edge)
+      expect(isOnBoard({ q: 3, r: 0, s: -3 }, radius3)).toBe(true);
+    });
+
+    it('should return false for hexes outside the board radius', () => {
+      // Distance 4 from center
+      expect(isOnBoard({ q: 4, r: 0, s: -4 }, radius3)).toBe(false);
+      // Distance 5 from center
+      expect(isOnBoard({ q: 5, r: 0, s: -5 }, radius3)).toBe(false);
+      // Various out-of-bounds positions
+      expect(isOnBoard({ q: 2, r: 2, s: -4 }, radius3)).toBe(false);
+      expect(isOnBoard({ q: -4, r: 1, s: 3 }, radius3)).toBe(false);
+    });
+
+    it('should return true for all hexes exactly at the edge', () => {
+      // Test all 6 cardinal edge positions at radius 3
+      const edgePositions: CubeCoord[] = [
+        { q: 3, r: 0, s: -3 }, // East
+        { q: 3, r: -3, s: 0 }, // Northeast
+        { q: 0, r: -3, s: 3 }, // Northwest
+        { q: -3, r: 0, s: 3 }, // West
+        { q: -3, r: 3, s: 0 }, // Southwest
+        { q: 0, r: 3, s: -3 }, // Southeast
+      ];
+
+      for (const hex of edgePositions) {
+        expect(isOnBoard(hex, radius3)).toBe(true);
+      }
+    });
+
+    it('should handle radius 0 (single hex board)', () => {
+      const center: CubeCoord = { q: 0, r: 0, s: 0 };
+      const adjacent: CubeCoord = { q: 1, r: 0, s: -1 };
+
+      expect(isOnBoard(center, 0)).toBe(true);
+      expect(isOnBoard(adjacent, 0)).toBe(false);
+    });
+
+    it('should handle different board sizes', () => {
+      // Radius 1
+      expect(isOnBoard({ q: 1, r: 0, s: -1 }, 1)).toBe(true);
+      expect(isOnBoard({ q: 2, r: 0, s: -2 }, 1)).toBe(false);
+
+      // Radius 5
+      expect(isOnBoard({ q: 5, r: 0, s: -5 }, 5)).toBe(true);
+      expect(isOnBoard({ q: 6, r: 0, s: -6 }, 5)).toBe(false);
+    });
+
+    it('should handle negative coordinate positions', () => {
+      expect(isOnBoard({ q: -2, r: -1, s: 3 }, radius3)).toBe(true);
+      expect(isOnBoard({ q: -3, r: 2, s: 1 }, radius3)).toBe(true);
+      expect(isOnBoard({ q: -4, r: 2, s: 2 }, radius3)).toBe(false);
+    });
+  });
+
+  describe('isOnBoardAxial', () => {
+    const radius3 = 3;
+
+    it('should return true for the center hex', () => {
+      const center: AxialCoord = { q: 0, r: 0 };
+      expect(isOnBoardAxial(center, radius3)).toBe(true);
+    });
+
+    it('should return true for hexes within the board', () => {
+      expect(isOnBoardAxial({ q: 2, r: -1 }, radius3)).toBe(true);
+      expect(isOnBoardAxial({ q: -1, r: 2 }, radius3)).toBe(true);
+    });
+
+    it('should return false for hexes outside the board', () => {
+      expect(isOnBoardAxial({ q: 4, r: 0 }, radius3)).toBe(false);
+      expect(isOnBoardAxial({ q: -4, r: 1 }, radius3)).toBe(false);
+    });
+
+    it('should be consistent with cube coordinate version', () => {
+      const testCases: AxialCoord[] = [
+        { q: 0, r: 0 },
+        { q: 3, r: 0 },
+        { q: 4, r: 0 },
+        { q: -2, r: 1 },
+        { q: 1, r: -3 },
+      ];
+
+      for (const axial of testCases) {
+        const cube = axialToCube(axial);
+        expect(isOnBoardAxial(axial, radius3)).toBe(isOnBoard(cube, radius3));
+      }
+    });
+  });
+
+  describe('isOnEdge', () => {
+    const radius3 = 3;
+
+    it('should return false for the center hex', () => {
+      const center: CubeCoord = { q: 0, r: 0, s: 0 };
+      expect(isOnEdge(center, radius3)).toBe(false);
+    });
+
+    it('should return false for hexes inside the board but not on edge', () => {
+      // Distance 1 from center
+      expect(isOnEdge({ q: 1, r: 0, s: -1 }, radius3)).toBe(false);
+      // Distance 2 from center
+      expect(isOnEdge({ q: 2, r: 0, s: -2 }, radius3)).toBe(false);
+      expect(isOnEdge({ q: 1, r: 1, s: -2 }, radius3)).toBe(false);
+    });
+
+    it('should return true for hexes exactly at the edge', () => {
+      // Distance 3 from center (edge of radius-3 board)
+      expect(isOnEdge({ q: 3, r: 0, s: -3 }, radius3)).toBe(true);
+      expect(isOnEdge({ q: -3, r: 0, s: 3 }, radius3)).toBe(true);
+      expect(isOnEdge({ q: 0, r: 3, s: -3 }, radius3)).toBe(true);
+      expect(isOnEdge({ q: 0, r: -3, s: 3 }, radius3)).toBe(true);
+      expect(isOnEdge({ q: 2, r: 1, s: -3 }, radius3)).toBe(true);
+      expect(isOnEdge({ q: -1, r: -2, s: 3 }, radius3)).toBe(true);
+    });
+
+    it('should return false for hexes outside the board', () => {
+      // Distance 4 from center
+      expect(isOnEdge({ q: 4, r: 0, s: -4 }, radius3)).toBe(false);
+      expect(isOnEdge({ q: -4, r: 2, s: 2 }, radius3)).toBe(false);
+    });
+
+    it('should count all edge hexes correctly for radius 3', () => {
+      // For radius r, there are 6r edge hexes (for r > 0)
+      // For radius 3, there should be 18 edge hexes
+      let edgeCount = 0;
+
+      // Iterate through all hexes that could potentially be on board
+      for (let q = -radius3; q <= radius3; q++) {
+        for (let r = -radius3; r <= radius3; r++) {
+          const s = -q - r;
+          const hex: CubeCoord = { q, r, s };
+          if (isOnEdge(hex, radius3)) {
+            edgeCount++;
+          }
+        }
+      }
+
+      expect(edgeCount).toBe(6 * radius3);
+    });
+
+    it('should handle radius 1 board', () => {
+      // Radius 1 has 6 edge hexes
+      const center: CubeCoord = { q: 0, r: 0, s: 0 };
+      expect(isOnEdge(center, 1)).toBe(false);
+
+      // All 6 neighbors of center are on edge
+      const neighbors = getAllNeighbors(center);
+      for (const neighbor of neighbors) {
+        expect(isOnEdge(neighbor, 1)).toBe(true);
+      }
+    });
+
+    it('should handle radius 0 (single hex board)', () => {
+      const center: CubeCoord = { q: 0, r: 0, s: 0 };
+      // In a radius-0 board, the only hex is both the center and the edge
+      expect(isOnEdge(center, 0)).toBe(true);
+    });
+  });
+
+  describe('isOnEdgeAxial', () => {
+    const radius3 = 3;
+
+    it('should return false for the center hex', () => {
+      const center: AxialCoord = { q: 0, r: 0 };
+      expect(isOnEdgeAxial(center, radius3)).toBe(false);
+    });
+
+    it('should return true for edge hexes', () => {
+      expect(isOnEdgeAxial({ q: 3, r: 0 }, radius3)).toBe(true);
+      expect(isOnEdgeAxial({ q: -3, r: 0 }, radius3)).toBe(true);
+      expect(isOnEdgeAxial({ q: 0, r: 3 }, radius3)).toBe(true);
+    });
+
+    it('should be consistent with cube coordinate version', () => {
+      const testCases: AxialCoord[] = [
+        { q: 0, r: 0 },
+        { q: 3, r: 0 },
+        { q: 2, r: 0 },
+        { q: 4, r: 0 },
+        { q: -2, r: -1 },
+        { q: 1, r: 2 },
+      ];
+
+      for (const axial of testCases) {
+        const cube = axialToCube(axial);
+        expect(isOnEdgeAxial(axial, radius3)).toBe(isOnEdge(cube, radius3));
+      }
+    });
+  });
+
+  describe('isOnBoard and isOnEdge boundary cases', () => {
+    it('should correctly identify Jarl starting positions as on edge', () => {
+      // In a 2-player game, Jarls start at opposite edges at radius 3
+      const jarl1: CubeCoord = { q: 3, r: 0, s: -3 };
+      const jarl2: CubeCoord = { q: -3, r: 0, s: 3 };
+
+      expect(isOnBoard(jarl1, 3)).toBe(true);
+      expect(isOnBoard(jarl2, 3)).toBe(true);
+      expect(isOnEdge(jarl1, 3)).toBe(true);
+      expect(isOnEdge(jarl2, 3)).toBe(true);
+    });
+
+    it('should correctly identify Throne as on board but not on edge', () => {
+      const throne: CubeCoord = { q: 0, r: 0, s: 0 };
+
+      expect(isOnBoard(throne, 3)).toBe(true);
+      expect(isOnEdge(throne, 3)).toBe(false);
+    });
+
+    it('should identify pushed-off pieces as outside board', () => {
+      // A piece pushed off the East edge
+      const pushedOff: CubeCoord = { q: 4, r: 0, s: -4 };
+
+      expect(isOnBoard(pushedOff, 3)).toBe(false);
+      expect(isOnEdge(pushedOff, 3)).toBe(false);
+    });
+
+    it('should work for all hexes adjacent to edge hexes', () => {
+      // For each edge hex, verify neighbors are either on edge, inside, or outside
+      const edgeHex: CubeCoord = { q: 3, r: 0, s: -3 };
+      const neighbors = getAllNeighbors(edgeHex);
+
+      for (const neighbor of neighbors) {
+        const onBoard = isOnBoard(neighbor, 3);
+        const onEdge = isOnEdge(neighbor, 3);
+
+        // If on edge, must be on board
+        if (onEdge) {
+          expect(onBoard).toBe(true);
+        }
+
+        // If not on board, cannot be on edge
+        if (!onBoard) {
+          expect(onEdge).toBe(false);
+        }
+      }
     });
   });
 });

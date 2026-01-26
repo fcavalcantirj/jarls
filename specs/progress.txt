@@ -452,3 +452,40 @@
 **Files Modified**:
 - packages/shared/src/index.ts (added cubeRound, hexLine, hexLineAxial functions)
 - packages/shared/src/index.test.ts (added unit tests for all new functions)
+
+---
+
+### 2026-01-25: Core Logic - isOnBoard and isOnEdge Functions
+
+**Feature Completed**: "isOnBoard and isOnEdge functions validate positions"
+
+**Work Done**:
+- Implemented `isOnBoard(hex: CubeCoord, radius: number): boolean` function
+  - Returns true if hex is within board bounds (distance from center <= radius)
+  - Uses hexDistance to calculate distance from center (0,0,0)
+- Implemented `isOnBoardAxial(hex: AxialCoord, radius: number): boolean` function
+  - Axial coordinate convenience wrapper
+- Implemented `isOnEdge(hex: CubeCoord, radius: number): boolean` function
+  - Returns true if hex is exactly at the board edge (distance from center === radius)
+- Implemented `isOnEdgeAxial(hex: AxialCoord, radius: number): boolean` function
+  - Axial coordinate convenience wrapper
+- Added comprehensive unit tests (25 new tests) covering:
+  - Center hex (Throne) validation
+  - Hexes within board radius
+  - Hexes outside board radius
+  - All 6 cardinal edge positions
+  - Radius 0 (single hex board)
+  - Different board sizes (radius 1, 3, 5)
+  - Negative coordinate positions
+  - Edge hex count verification (6r edge hexes for radius r)
+  - Consistency between cube and axial versions
+  - Game scenarios: Jarl starting positions, Throne position, pushed-off pieces
+  - Boundary cases for hexes adjacent to edge
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (111 tests total, 25 new tests for isOnBoard/isOnEdge)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added isOnBoard, isOnBoardAxial, isOnEdge, isOnEdgeAxial functions)
+- packages/shared/src/index.test.ts (added unit tests for all new functions)

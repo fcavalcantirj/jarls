@@ -237,7 +237,7 @@
       "isOnEdge(hex, radius) returns true for edge hexes",
       "Unit tests cover boundary cases"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

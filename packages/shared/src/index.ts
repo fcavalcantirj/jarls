@@ -207,6 +207,54 @@ export function hexLineAxial(a: AxialCoord, b: AxialCoord): AxialCoord[] {
   return hexLine(axialToCube(a), axialToCube(b)).map(cubeToAxial);
 }
 
+/**
+ * Check if a hex is within the bounds of the game board.
+ * A hex is on the board if its distance from the center (0,0,0) is <= radius.
+ *
+ * @param hex - The hex to check in cube coordinates
+ * @param radius - The board radius (e.g., 3 for a 2-player game)
+ * @returns true if the hex is within the board bounds
+ */
+export function isOnBoard(hex: CubeCoord, radius: number): boolean {
+  const center: CubeCoord = { q: 0, r: 0, s: 0 };
+  return hexDistance(hex, center) <= radius;
+}
+
+/**
+ * Check if a hex is within the bounds of the game board using axial coordinates.
+ *
+ * @param hex - The hex to check in axial coordinates
+ * @param radius - The board radius
+ * @returns true if the hex is within the board bounds
+ */
+export function isOnBoardAxial(hex: AxialCoord, radius: number): boolean {
+  return isOnBoard(axialToCube(hex), radius);
+}
+
+/**
+ * Check if a hex is on the edge of the game board.
+ * A hex is on the edge if its distance from the center equals exactly the radius.
+ *
+ * @param hex - The hex to check in cube coordinates
+ * @param radius - The board radius
+ * @returns true if the hex is on the board's edge
+ */
+export function isOnEdge(hex: CubeCoord, radius: number): boolean {
+  const center: CubeCoord = { q: 0, r: 0, s: 0 };
+  return hexDistance(hex, center) === radius;
+}
+
+/**
+ * Check if a hex is on the edge of the game board using axial coordinates.
+ *
+ * @param hex - The hex to check in axial coordinates
+ * @param radius - The board radius
+ * @returns true if the hex is on the board's edge
+ */
+export function isOnEdgeAxial(hex: AxialCoord, radius: number): boolean {
+  return isOnEdge(axialToCube(hex), radius);
+}
+
 // Piece types
 export type PieceType = 'jarl' | 'warrior' | 'shield';
 
