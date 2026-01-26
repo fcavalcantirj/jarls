@@ -971,3 +971,42 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added MoveValidationError, MoveValidation, getDirectionBetweenAdjacent, getLineDirection, validateMove)
 - packages/shared/src/index.test.ts (added unit tests for all new functions)
+
+---
+
+### 2026-01-26: Core Logic - findInlineSupport Function
+
+**Feature Completed**: "findInlineSupport finds pieces behind attacker"
+
+**Work Done**:
+- Implemented `InlineSupportResult` interface:
+  - `pieces`: Array of pieces directly behind the attacker in the support line
+  - `totalStrength`: Sum of individual piece strengths
+- Implemented `getPieceStrength(piece)` helper function:
+  - Returns 2 for Jarl, 1 for Warrior, 0 for Shield
+  - Used for calculating attack/defense power
+- Implemented `findInlineSupport(state, attackerPosition, attackerId, attackDirection)` function:
+  - Finds all friendly pieces directly behind the attacker in a continuous line
+  - Support comes from the opposite direction of the attack
+  - Collects pieces in order from closest to furthest behind attacker
+  - Stops collecting at first empty hex (support line must be continuous)
+  - Stops collecting at enemy piece or shield
+  - Stops collecting at board edge
+  - Sums strength of all supporting pieces (Warrior: 1, Jarl: 2)
+- Added comprehensive unit tests (23 new tests) covering:
+  - Basic functionality: no support, single Warrior, multiple Warriors, Jarl support (strength 2), mixed piece types
+  - Stops at empty hex: gap in support line, empty hex directly behind
+  - Stops at enemy piece: enemy blocks line, enemy directly behind
+  - Stops at shield: shield blocks line, shield directly behind
+  - Stops at board edge: support at edge, no room behind
+  - Different attack directions: Northeast, West, Southeast (all 6 directions work)
+  - Pieces not in support line ignored: adjacent but not in line, in front instead of behind
+  - Game scenarios: realistic attack with Jarl+Warrior support, actual initial game state
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (446 tests total, 23 new tests for getPieceStrength/findInlineSupport)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added InlineSupportResult, getPieceStrength, findInlineSupport)
+- packages/shared/src/index.test.ts (added unit tests for getPieceStrength and findInlineSupport)

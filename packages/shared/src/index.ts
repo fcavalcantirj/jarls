@@ -1596,3 +1596,97 @@ export function validateMove(
   const hasMomentum = distance === 2;
   return { isValid: true, hasMomentum };
 }
+
+/**
+ * Result of finding inline support for an attacker.
+ */
+export interface InlineSupportResult {
+  /** Array of pieces directly behind the attacker in the support line */
+  pieces: Piece[];
+  /** Total strength contributed by supporting pieces (sum of individual strengths) */
+  totalStrength: number;
+}
+
+/**
+ * Get the base strength of a piece based on its type.
+ * Warriors have strength 1, Jarls have strength 2.
+ *
+ * @param piece - The piece to get strength for
+ * @returns The piece's base strength (1 for Warrior, 2 for Jarl, 0 for Shield)
+ */
+export function getPieceStrength(piece: Piece): number {
+  switch (piece.type) {
+    case 'jarl':
+      return 2;
+    case 'warrior':
+      return 1;
+    case 'shield':
+      return 0;
+  }
+}
+
+/**
+ * Find all pieces providing inline support for an attacker.
+ * Inline support comes from friendly pieces directly behind the attacker
+ * in a straight line opposite to the attack direction.
+ *
+ * Rules:
+ * - Support pieces must be friendly (same playerId as attacker)
+ * - Support pieces must be in a continuous line behind the attacker
+ * - The line stops at the first empty hex or enemy piece
+ * - Each supporting piece adds its strength (Warrior: 1, Jarl: 2)
+ *
+ * @param state - The current game state
+ * @param attackerPosition - The position where the attacker will be when attacking
+ *                           (typically the hex adjacent to the defender)
+ * @param attackerId - The player ID of the attacker (for determining friendly pieces)
+ * @param attackDirection - The direction of the attack (toward the defender)
+ * @returns InlineSupportResult with supporting pieces and total strength
+ */
+export function findInlineSupport(
+  state: GameState,
+  attackerPosition: AxialCoord,
+  attackerId: string,
+  attackDirection: HexDirection
+): InlineSupportResult {
+  const supportPieces: Piece[] = [];
+  let totalStrength = 0;
+
+  // Support comes from behind, which is the opposite direction of the attack
+  const supportDirection = getOppositeDirection(attackDirection);
+  const radius = state.config.boardRadius;
+
+  // Start from the position directly behind the attacker
+  let currentHex = axialToCube(attackerPosition);
+
+  // Walk backwards from the attacker, collecting supporting pieces
+  while (true) {
+    // Move to the next hex in the support direction (behind the attacker)
+    currentHex = getNeighbor(currentHex, supportDirection);
+
+    // Stop if we've gone off the board
+    if (!isOnBoard(currentHex, radius)) {
+      break;
+    }
+
+    // Check what's at this hex
+    const piece = getPieceAt(state, cubeToAxial(currentHex));
+
+    if (piece === undefined) {
+      // Empty hex - stop collecting support
+      // Support line must be continuous (no gaps allowed for support)
+      break;
+    }
+
+    if (piece.playerId === attackerId) {
+      // Friendly piece - adds to support
+      supportPieces.push(piece);
+      totalStrength += getPieceStrength(piece);
+    } else {
+      // Enemy piece or shield - stops the support line
+      break;
+    }
+  }
+
+  return { pieces: supportPieces, totalStrength };
+}

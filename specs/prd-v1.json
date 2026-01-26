@@ -387,7 +387,7 @@
       "Sums strength of all supporting pieces",
       "Stops at empty hex or enemy piece"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
