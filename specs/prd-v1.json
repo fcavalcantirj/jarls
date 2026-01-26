@@ -133,7 +133,7 @@
       "npm run dev starts server with hot-reload",
       "Code changes trigger automatic restart"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

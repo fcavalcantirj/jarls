@@ -198,3 +198,35 @@
 - packages/shared/package.json (updated test script)
 - packages/server/package.json (updated test script)
 - packages/client/package.json (updated test script)
+
+---
+
+### 2026-01-25: Infrastructure - Server Hot-Reload Configuration
+
+**Feature Completed**: "Server hot-reload configured with nodemon"
+
+**Work Done**:
+- Installed nodemon 3.x in the server package
+- Created packages/server/nodemon.json with configuration:
+  - Watches src directory for TypeScript file changes
+  - Ignores test files (*.test.ts)
+  - Uses tsx to execute TypeScript directly
+- Updated packages/server/package.json:
+  - Changed dev script from `tsx watch` to `nodemon`
+- Added `"type": "module"` to packages/shared/package.json to fix ESM resolution for runtime imports
+- Tested hot-reload: server starts correctly and logs output from @jarls/shared
+
+**Verification**:
+- `pnpm dev` (in packages/server) starts nodemon which executes tsx
+- Server outputs "Jarls Server v0.1.0" and "Game state phase: lobby"
+- nodemon watches for file changes and restarts automatically
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (2 tests in shared package)
+- `pnpm lint` passes with no errors
+
+**Files Created**:
+- packages/server/nodemon.json
+
+**Files Modified**:
+- packages/server/package.json (added nodemon dependency, changed dev script)
+- packages/shared/package.json (added type:module for ESM runtime support)
