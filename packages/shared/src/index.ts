@@ -1905,3 +1905,102 @@ export function calculateCombat(
     pushDirection,
   };
 }
+
+// Chain terminator types
+export type ChainTerminator = 'edge' | 'shield' | 'throne' | 'empty';
+
+// Result of detecting a push chain
+export interface ChainResult {
+  /** Array of pieces in the chain, ordered from first pushed to last */
+  pieces: Piece[];
+  /** What terminates the chain */
+  terminator: ChainTerminator;
+  /** The position where the chain ends (empty hex, edge, shield, or throne) */
+  terminatorPosition: AxialCoord;
+}
+
+/**
+ * Detect all pieces in a push chain starting from a defender.
+ *
+ * When a push succeeds, the defender moves in the push direction. If there's
+ * another piece behind the defender, it also gets pushed, creating a chain.
+ * This continues until the chain hits:
+ * - An empty hex (pieces compress into it)
+ * - The board edge (piece at end is eliminated)
+ * - A shield (pieces compress against it)
+ * - The throne (pieces compress against it)
+ *
+ * The chain includes pieces of any allegiance - friendly and enemy pieces
+ * alike get pushed in the chain.
+ *
+ * @param state - The current game state
+ * @param startPosition - The position of the first piece being pushed (the defender)
+ * @param pushDirection - The direction pieces are being pushed
+ * @returns ChainResult with pieces in the chain and what terminates it
+ */
+export function detectChain(
+  state: GameState,
+  startPosition: AxialCoord,
+  pushDirection: HexDirection
+): ChainResult {
+  const pieces: Piece[] = [];
+  let currentPos = startPosition;
+
+  // Walk in the push direction, collecting pieces until we hit a terminator
+  while (true) {
+    const pieceAtCurrent = getPieceAt(state, currentPos);
+
+    // If there's a piece at the current position, check what type it is
+    if (pieceAtCurrent) {
+      // Shields don't move - they terminate the chain
+      if (pieceAtCurrent.type === 'shield') {
+        return {
+          pieces,
+          terminator: 'shield',
+          terminatorPosition: currentPos,
+        };
+      }
+
+      // This piece is part of the chain (jarl or warrior)
+      pieces.push(pieceAtCurrent);
+    } else {
+      // Empty hex - chain ends here
+      return {
+        pieces,
+        terminator: 'empty',
+        terminatorPosition: currentPos,
+      };
+    }
+
+    // Move to the next position in the push direction
+    const nextPos = getNeighborAxial(currentPos, pushDirection);
+
+    // Check if next position is off the board (edge)
+    if (!isOnBoardAxial(nextPos, state.config.boardRadius)) {
+      return {
+        pieces,
+        terminator: 'edge',
+        terminatorPosition: nextPos, // Position beyond the edge
+      };
+    }
+
+    // Check if next position is the throne (center)
+    if (nextPos.q === 0 && nextPos.r === 0) {
+      // Check if there's already a piece on the throne
+      const pieceOnThrone = getPieceAt(state, nextPos);
+      if (!pieceOnThrone) {
+        // Empty throne - chain ends here (throne acts as terminator for non-Jarl pieces,
+        // but we report it as 'throne' so resolution can handle it appropriately)
+        return {
+          pieces,
+          terminator: 'throne',
+          terminatorPosition: nextPos,
+        };
+      }
+      // If there's a piece on the throne, it becomes part of the chain
+      // and we continue checking what's beyond
+    }
+
+    currentPos = nextPos;
+  }
+}

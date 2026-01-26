@@ -439,7 +439,7 @@
       "Identifies chain terminator (edge, shield, throne, empty)",
       "Handles mixed allegiance chains"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

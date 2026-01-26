@@ -1138,3 +1138,42 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added calculateCombat function)
 - packages/shared/src/index.test.ts (added unit tests for calculateCombat)
+
+---
+
+### 2026-01-26: Core Logic - detectChain Function
+
+**Feature Completed**: "detectChain identifies all pieces in push chain"
+
+**Work Done**:
+- Implemented `ChainTerminator` type: 'edge' | 'shield' | 'throne' | 'empty'
+- Implemented `ChainResult` interface:
+  - `pieces`: Array of pieces in the chain, ordered from first pushed to last
+  - `terminator`: What terminates the chain (edge, shield, throne, or empty)
+  - `terminatorPosition`: The position where the chain ends
+- Implemented `detectChain(state, startPosition, pushDirection)` function:
+  - Walks along the push direction starting from the defender's position
+  - Collects all pieces (Jarls and Warriors) in the chain regardless of allegiance
+  - Stops when hitting a chain terminator:
+    - Empty hex: pieces can compress into this space
+    - Board edge: piece at end will be eliminated
+    - Shield: pieces compress against it (shields don't move)
+    - Throne: pieces compress against it (special handling for Jarls)
+  - Returns pieces in order from first pushed to last
+  - Handles mixed allegiance chains (friendly and enemy pieces together)
+- Added comprehensive unit tests (21 new tests) covering:
+  - Single piece chains and multi-piece chains
+  - Pieces ordered correctly from first to last
+  - All four terminator types (edge, shield, throne, empty)
+  - Mixed allegiance chains with alternating players
+  - Different push directions (all 6 directions)
+  - Edge cases: empty starting position, shield immediately behind, long chains
+  - Game scenarios: typical combat, Jarl toward throne, elimination chains
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (541 tests total, 21 new tests for detectChain)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added ChainTerminator, ChainResult, detectChain)
+- packages/shared/src/index.test.ts (added unit tests for detectChain)
