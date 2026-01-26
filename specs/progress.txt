@@ -1346,3 +1346,42 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added PushResult interface and resolvePush function)
 - packages/shared/src/index.test.ts (added import for resolvePush, added unit tests)
+
+---
+
+### 2026-01-26: Core Logic - checkThroneVictory Function
+
+**Feature Completed**: "checkThroneVictory detects voluntary throne entry"
+
+**Work Done**:
+- Implemented `ThroneVictoryResult` interface:
+  - `isVictory`: Boolean indicating if throne victory occurred
+  - `winnerId`: The player ID who won (or null if no victory)
+- Implemented `checkThroneVictory(state, movedPieceId, wasVoluntaryMove)` function:
+  - Checks if a throne victory occurred after a move
+  - Returns victory when a Jarl voluntarily moves onto the Throne (center hex at 0,0)
+  - Returns no victory if the move was not voluntary (e.g., pushed)
+  - Returns no victory if the moved piece is not a Jarl (Warriors cannot enter Throne)
+  - Returns no victory if the Jarl is not on the Throne position
+  - Returns no victory if the piece ID is not found
+- Follows the ruleset rules:
+  - Victory is immediate when Jarl voluntarily moves onto Throne
+  - Being pushed onto Throne does NOT count as victory
+  - Only Jarls can enter and win via Throne
+- Added comprehensive unit tests (16 new tests) covering:
+  - Returns victory when Jarl voluntarily moves onto Throne (both players tested)
+  - Returns no victory for pushed Jarl (involuntary move)
+  - Returns no victory when Jarl is not on Throne (various positions)
+  - Returns no victory for non-Jarl pieces (Warrior, Shield)
+  - Returns no victory when piece is not found
+  - Result structure verification
+  - Game scenarios: realistic game state, other Jarl moves, player ID verification
+  - Throne position verification: only (0,0) counts as throne
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (630 tests total, 16 new tests for checkThroneVictory)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added ThroneVictoryResult interface and checkThroneVictory function)
+- packages/shared/src/index.test.ts (added import for checkThroneVictory, added unit tests)

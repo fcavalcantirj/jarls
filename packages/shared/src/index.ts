@@ -2643,3 +2643,64 @@ export function resolvePush(
     }
   }
 }
+
+/**
+ * Result of checking for throne victory.
+ */
+export interface ThroneVictoryResult {
+  /** Whether a throne victory occurred */
+  isVictory: boolean;
+  /** The player ID who won (if victory) */
+  winnerId: string | null;
+}
+
+/**
+ * Check if a throne victory occurred.
+ * Throne victory happens when a Jarl voluntarily moves onto the Throne (center hex).
+ *
+ * Rules:
+ * - Only Jarls can enter the Throne hex
+ * - Victory is immediate when a Jarl voluntarily moves onto the Throne
+ * - Being pushed onto the Throne does NOT count as a victory (compression prevents this anyway)
+ * - Victory requires the move to be on the player's own turn
+ *
+ * @param state - The current game state (after the move was applied)
+ * @param movedPieceId - The ID of the piece that was just moved
+ * @param wasVoluntaryMove - Whether the move was voluntary (player's action) vs forced (push)
+ * @returns ThroneVictoryResult indicating if victory occurred and who won
+ */
+export function checkThroneVictory(
+  state: GameState,
+  movedPieceId: string,
+  wasVoluntaryMove: boolean
+): ThroneVictoryResult {
+  const noVictory: ThroneVictoryResult = { isVictory: false, winnerId: null };
+
+  // If the move wasn't voluntary (e.g., a push), no victory
+  if (!wasVoluntaryMove) {
+    return noVictory;
+  }
+
+  // Find the moved piece
+  const movedPiece = getPieceById(state, movedPieceId);
+  if (!movedPiece) {
+    return noVictory;
+  }
+
+  // Only Jarls can win by entering the Throne
+  if (movedPiece.type !== 'jarl') {
+    return noVictory;
+  }
+
+  // Check if the Jarl is on the Throne (center hex at 0,0)
+  const thronePosition: AxialCoord = { q: 0, r: 0 };
+  if (movedPiece.position.q !== thronePosition.q || movedPiece.position.r !== thronePosition.r) {
+    return noVictory;
+  }
+
+  // Victory! The Jarl voluntarily moved onto the Throne
+  return {
+    isVictory: true,
+    winnerId: movedPiece.playerId,
+  };
+}

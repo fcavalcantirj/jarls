@@ -491,7 +491,7 @@
       "Returns false for pushed Jarl (compression blocks)",
       "Only player's own turn counts"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
