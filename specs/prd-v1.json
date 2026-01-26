@@ -48,7 +48,7 @@
       "npm run format runs Prettier on all packages",
       "Consistent code style across codebase"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
