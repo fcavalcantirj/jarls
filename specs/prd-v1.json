@@ -260,7 +260,7 @@
       "GameEvent union type defined",
       "All types exported from @jarls/shared"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

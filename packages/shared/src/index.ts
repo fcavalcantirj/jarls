@@ -348,3 +348,116 @@ export interface GameState {
   winnerId: string | null;
   winCondition: 'throne' | 'lastStanding' | null;
 }
+
+// Move command - what a player sends to make a move
+export interface MoveCommand {
+  pieceId: string;
+  destination: AxialCoord;
+}
+
+// Combat result breakdown for attack/defense calculations
+export interface CombatBreakdown {
+  baseStrength: number;
+  momentum: number;
+  support: number;
+  total: number;
+}
+
+// Combat result - preview of what will happen in an attack
+export interface CombatResult {
+  attackerId: string;
+  defenderId: string;
+  attack: CombatBreakdown;
+  defense: CombatBreakdown;
+  outcome: 'push' | 'blocked';
+  pushDirection: HexDirection | null;
+}
+
+// Valid move - a possible destination with combat preview if applicable
+export interface ValidMove {
+  destination: AxialCoord;
+  moveType: 'move' | 'attack';
+  hasMomentum: boolean;
+  combatPreview: CombatResult | null;
+}
+
+// Move result - the outcome of applying a move
+export interface MoveResult {
+  success: boolean;
+  error?: string;
+  newState: GameState;
+  events: GameEvent[];
+}
+
+// Game events - things that happen during the game for animation/logging
+export type GameEvent =
+  | MoveEvent
+  | PushEvent
+  | EliminatedEvent
+  | TurnEndedEvent
+  | GameEndedEvent
+  | StarvationTriggeredEvent
+  | StarvationResolvedEvent
+  | PlayerJoinedEvent
+  | PlayerLeftEvent;
+
+// Individual event types
+export interface MoveEvent {
+  type: 'MOVE';
+  pieceId: string;
+  from: AxialCoord;
+  to: AxialCoord;
+  hasMomentum: boolean;
+}
+
+export interface PushEvent {
+  type: 'PUSH';
+  pieceId: string;
+  from: AxialCoord;
+  to: AxialCoord;
+  pushDirection: HexDirection;
+  depth: number; // For staggered animation timing
+}
+
+export interface EliminatedEvent {
+  type: 'ELIMINATED';
+  pieceId: string;
+  playerId: string | null;
+  position: AxialCoord;
+  cause: 'edge' | 'starvation';
+}
+
+export interface TurnEndedEvent {
+  type: 'TURN_ENDED';
+  playerId: string;
+  nextPlayerId: string;
+  turnNumber: number;
+}
+
+export interface GameEndedEvent {
+  type: 'GAME_ENDED';
+  winnerId: string;
+  winCondition: 'throne' | 'lastStanding';
+}
+
+export interface StarvationTriggeredEvent {
+  type: 'STARVATION_TRIGGERED';
+  round: number;
+  candidates: Map<string, string[]>; // playerId -> pieceIds that can be sacrificed
+}
+
+export interface StarvationResolvedEvent {
+  type: 'STARVATION_RESOLVED';
+  sacrifices: Map<string, string>; // playerId -> sacrificed pieceId
+}
+
+export interface PlayerJoinedEvent {
+  type: 'PLAYER_JOINED';
+  playerId: string;
+  playerName: string;
+}
+
+export interface PlayerLeftEvent {
+  type: 'PLAYER_LEFT';
+  playerId: string;
+}

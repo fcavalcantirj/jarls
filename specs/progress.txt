@@ -524,3 +524,41 @@
 **Files Modified**:
 - packages/shared/src/index.ts (added hexToKey, keyToHex, keyToHexCube functions)
 - packages/shared/src/index.test.ts (added unit tests for all new functions)
+
+---
+
+### 2026-01-25: Core Logic - Game State Types Fully Defined
+
+**Feature Completed**: "Game state types fully defined"
+
+**Work Done**:
+- Added MoveCommand interface for player move inputs:
+  - pieceId: string to identify the piece being moved
+  - destination: AxialCoord for the target position
+- Added CombatBreakdown interface for attack/defense calculation details:
+  - baseStrength, momentum, support, total breakdown
+- Added CombatResult interface for combat preview:
+  - attackerId, defenderId, attack/defense breakdowns
+  - outcome ('push' | 'blocked'), pushDirection
+- Added ValidMove interface for move validation:
+  - destination, moveType ('move' | 'attack'), hasMomentum
+  - combatPreview for attack moves
+- Added MoveResult interface for move execution results:
+  - success, error (optional), newState, events array
+- Added GameEvent union type with all event types:
+  - MoveEvent: piece movement tracking
+  - PushEvent: push chain tracking with depth for animations
+  - EliminatedEvent: piece elimination (edge or starvation)
+  - TurnEndedEvent: turn transitions
+  - GameEndedEvent: game conclusion with winner/condition
+  - StarvationTriggeredEvent: starvation mechanic activation
+  - StarvationResolvedEvent: starvation resolution
+  - PlayerJoinedEvent, PlayerLeftEvent: lobby events
+- All types properly exported from @jarls/shared
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (134 tests)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added MoveCommand, CombatBreakdown, CombatResult, ValidMove, MoveResult, GameEvent and all individual event types)
