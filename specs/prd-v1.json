@@ -7,7 +7,7 @@
       "packages/shared, packages/server, packages/client directories exist",
       "npm install from root installs all package dependencies"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

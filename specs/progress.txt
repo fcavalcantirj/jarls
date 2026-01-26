@@ -1,0 +1,37 @@
+## Progress Log
+
+### 2026-01-25: Infrastructure - Monorepo Initialization
+
+**Feature Completed**: "Monorepo initialized with npm workspaces"
+
+**Work Done**:
+- Created root package.json with pnpm workspaces configuration
+- Created pnpm-workspace.yaml for workspace configuration
+- Created packages/shared, packages/server, packages/client directories
+- Set up package.json for each package with appropriate dependencies:
+  - @jarls/shared: Core shared types package
+  - @jarls/server: Node.js game server with tsx for development
+  - @jarls/client: React + Vite frontend
+- Created tsconfig.base.json with strict TypeScript settings
+- Created tsconfig.json for each package with project references
+- Added basic source files demonstrating cross-package imports
+- Verified pnpm install works correctly from root
+- Verified pnpm typecheck passes
+- Verified pnpm test passes
+
+**Files Created**:
+- package.json (root)
+- pnpm-workspace.yaml
+- tsconfig.base.json
+- packages/shared/package.json
+- packages/shared/tsconfig.json
+- packages/shared/src/index.ts
+- packages/server/package.json
+- packages/server/tsconfig.json
+- packages/server/src/index.ts
+- packages/client/package.json
+- packages/client/tsconfig.json
+- packages/client/vite.config.ts
+- packages/client/index.html
+- packages/client/src/main.tsx
+- packages/client/src/App.tsx
