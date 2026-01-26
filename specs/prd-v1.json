@@ -133,7 +133,7 @@
       "Import types and helpers as needed",
       "Update index.ts to re-export from combat.ts"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

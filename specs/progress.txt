@@ -1824,3 +1824,51 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Modified**:
 - packages/shared/src/index.ts (added re-exports from board.ts, removed board function definitions, cleaned up unused imports)
+
+---
+
+### 2026-01-26: Infrastructure - Split shared/src/index.ts - extract combat.ts
+
+**Feature Completed**: "Split shared/src/index.ts - extract combat.ts"
+
+**Work Done**:
+- Created `packages/shared/src/combat.ts` containing all combat-related functions
+- Moved 13 functions from index.ts to combat.ts:
+  - getPieceAt: finds piece at a specific position
+  - getPieceById: finds piece by unique ID
+  - getPieceStrength: returns strength value (Jarl=2, Warrior=1, Shield=0)
+  - findInlineSupport: finds friendly pieces behind attacker in support line
+  - findBracing: finds friendly pieces behind defender in bracing line
+  - calculateAttack: computes total attack power (base + momentum + support)
+  - calculateDefense: computes total defense power (base + bracing)
+  - calculateCombat: returns full CombatResult with outcome prediction
+  - resolveSimplePush: handles push to empty hex
+  - detectChain: identifies all pieces in push chain
+  - resolveEdgePush: handles elimination at board edge
+  - resolveCompression: handles compression against shield/throne
+  - resolvePush: main resolver that routes to correct resolution
+- Updated `packages/shared/src/index.ts`:
+  - Added `export { ... } from './combat.js'` to re-export all combat functions
+  - Added `import { ... } from './combat.js'` for internal use
+  - Removed all combat function definitions (~960 lines of code removed)
+  - Cleaned up unused type imports (Piece, CombatBreakdown, PushEvent, EliminatedEvent, InlineSupportResult, BracingResult, SimplePushResult, ChainResult, EdgePushResult, CompressionResult, PushResult)
+  - Cleaned up unused hex function import (hexToKey)
+  - Cleaned up unused combat function import (getPieceStrength)
+- All functions remain accessible to consumers via `import { ... } from '@jarls/shared'`
+
+**Why This Matters**:
+- Reduces index.ts file size significantly (~960 lines removed)
+- combat.ts is now ~540 lines - well within the 800-line guideline
+- Continues the critical file-splitting infrastructure work
+- Improves code organization and maintainability
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (756 tests total)
+- Server and client can still import combat functions from @jarls/shared
+
+**Files Created**:
+- packages/shared/src/combat.ts
+
+**Files Modified**:
+- packages/shared/src/index.ts (added re-exports from combat.ts, removed combat function definitions, cleaned up unused imports)
