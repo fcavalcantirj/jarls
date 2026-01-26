@@ -429,7 +429,7 @@
       "Returns outcome (push or blocked)",
       "Used for combat preview"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

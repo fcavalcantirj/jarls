@@ -1853,3 +1853,55 @@ export function calculateDefense(
     total,
   };
 }
+
+/**
+ * Calculate the full combat result between an attacker and defender.
+ * This function provides a complete combat preview including:
+ * - Attack and defense power breakdowns
+ * - Combat outcome (push or blocked)
+ * - Push direction if the attack succeeds
+ *
+ * Combat outcome rules:
+ * - Attack > Defense: Push succeeds, defender is pushed in the attack direction
+ * - Attack <= Defense: Attack is blocked, no pieces move
+ *
+ * @param state - The current game state
+ * @param attacker - The attacking piece
+ * @param attackerPosition - The position where the attacker will be when attacking
+ *                           (the hex adjacent to the defender)
+ * @param defender - The defending piece
+ * @param defenderPosition - The position of the defender
+ * @param attackDirection - The direction of the attack (toward the defender)
+ * @param hasMomentum - Whether the attacker moved 2 hexes (grants +1 attack)
+ * @returns CombatResult with full attack/defense breakdowns, outcome, and push direction
+ */
+export function calculateCombat(
+  state: GameState,
+  attacker: Piece,
+  attackerPosition: AxialCoord,
+  defender: Piece,
+  defenderPosition: AxialCoord,
+  attackDirection: HexDirection,
+  hasMomentum: boolean
+): CombatResult {
+  // Calculate attack power
+  const attack = calculateAttack(state, attacker, attackerPosition, attackDirection, hasMomentum);
+
+  // Calculate defense power (push direction is same as attack direction)
+  const defense = calculateDefense(state, defender, defenderPosition, attackDirection);
+
+  // Determine outcome: Attack must be GREATER than defense to succeed
+  const outcome: 'push' | 'blocked' = attack.total > defense.total ? 'push' : 'blocked';
+
+  // Push direction is the attack direction if push succeeds, null if blocked
+  const pushDirection: HexDirection | null = outcome === 'push' ? attackDirection : null;
+
+  return {
+    attackerId: attacker.id,
+    defenderId: defender.id,
+    attack,
+    defense,
+    outcome,
+    pushDirection,
+  };
+}

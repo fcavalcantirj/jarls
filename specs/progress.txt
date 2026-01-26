@@ -1107,3 +1107,34 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added calculateDefense function)
 - packages/shared/src/index.test.ts (added unit tests for calculateDefense)
+
+---
+
+### 2026-01-26: Core Logic - calculateCombat Function
+
+**Feature Completed**: "calculateCombat returns full CombatResult"
+
+**Work Done**:
+- Implemented `calculateCombat(state, attacker, attackerPosition, defender, defenderPosition, attackDirection, hasMomentum)` function:
+  - Returns full CombatResult object used for combat preview
+  - Calculates attack power using existing `calculateAttack` function
+  - Calculates defense power using existing `calculateDefense` function
+  - Determines combat outcome: 'push' if attack > defense, 'blocked' if attack <= defense
+  - Returns pushDirection when push succeeds, null when blocked
+  - Includes attackerId and defenderId for UI reference
+- Added comprehensive unit tests (21 new tests) covering:
+  - Returns attack and defense values with all breakdown components
+  - Attack/defense breakdowns include support, momentum, and base strength
+  - Combat outcome: push when attack > defense, blocked when attack <= defense
+  - Push direction: returned when push succeeds, null when blocked
+  - Includes attacker and defender IDs
+  - Complex combat scenarios: Jarl vs Jarl, momentum effects, multiple support/bracing pieces
+  - Used for combat preview: provides all information needed for UI
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (520 tests total, 21 new tests for calculateCombat)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added calculateCombat function)
+- packages/shared/src/index.test.ts (added unit tests for calculateCombat)
