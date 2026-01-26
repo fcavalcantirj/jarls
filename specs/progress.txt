@@ -1594,3 +1594,65 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added getValidMoves function)
 - packages/shared/src/index.test.ts (added import for getValidMoves, added unit tests)
+
+---
+
+### 2026-01-26: Core Logic - applyMove Function Verified
+
+**Feature Completed**: "applyMove executes move and returns result"
+
+**Work Done**:
+- Reviewed existing `applyMove` implementation in shared/src/index.ts
+- Verified it handles simple move (no combat) correctly with proper MOVE event generation
+- Verified it handles attack with successful push using `resolvePush` function
+- Verified it handles blocked attack (attacker stops adjacent to defender when attack <= defense)
+- Verified all animation events are generated with correct depth for staggered animations
+- Verified win conditions are checked after every move (throne victory and last standing)
+- Verified `roundsSinceElimination` is incremented on new rounds and reset to 0 when pieces are eliminated
+- Verified turn advances to next active player, skipping eliminated players
+- Returns complete MoveResult with success status, newState, and events array
+- Fixed a test case that had incorrect expectations for Jarl push toward throne
+  - Jarls CAN be pushed onto the throne (terminator is 'empty', not 'throne')
+  - Only Warriors compress against the throne
+- Fixed unused variable warning in test file (removed duplicate test state)
+- Comprehensive unit tests exist covering:
+  - Validation (wrong turn, wrong phase, piece not found)
+  - Simple move (empty hex destination, MOVE event, momentum flag)
+  - Attack with push (push succeeds, MOVE and PUSH events, edge elimination)
+  - Blocked attack (stops adjacent, only MOVE event)
+  - Win conditions (throne victory, last standing, game ends)
+  - Turn management (skip eliminated, round increment, roundsSinceElimination)
+  - State immutability (original state not modified)
+  - Game scenarios (realistic game states)
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (744 tests total, 21 existing tests for applyMove)
+
+**Files Modified**:
+- packages/shared/src/index.test.ts (fixed test case for Jarl pushed toward throne, fixed unused variable)
+
+---
+
+### 2026-01-26: Core Logic - Validate Blocked Attack Positioning Verified
+
+**Feature Completed**: "Validate blocked attack positioning"
+
+**Work Done**:
+- Verified existing implementation in applyMove handles blocked attacks correctly
+- When attack is BLOCKED (Attack <= Defense):
+  - Attacker moves to hex adjacent to defender (last clear hex before target)
+  - Attacker does NOT take defender's position
+  - MOVE event generated with blocked destination (the adjacent position)
+  - Turn still advances (attacker uses their turn even when blocked)
+- Existing tests in applyMove describe block verify:
+  - `should stop attacker adjacent to defender when attack is blocked` (line 12251)
+  - `should generate only MOVE event when attack is blocked` (line 12275)
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (744 tests total)
+
+**Files Verified** (no changes needed):
+- packages/shared/src/index.ts (blocked attack handling already implemented at lines 3213-3234)
+- packages/shared/src/index.test.ts (tests already exist at lines 12250-12295)

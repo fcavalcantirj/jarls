@@ -73,60 +73,6 @@
   },
   {
     "category": "infrastructure",
-    "description": "Docker Compose sets up PostgreSQL and Redis",
-    "steps": [
-      "docker-compose.yml exists with postgres and redis services",
-      "docker-compose up -d starts both services",
-      "Services accessible on standard ports (5432, 6379)"
-    ],
-    "passes": false
-  },
-  {
-    "category": "infrastructure",
-    "description": "PostgreSQL database schema created via migrations",
-    "steps": [
-      "node-pg-migrate installed and configured",
-      "Migration creates game_snapshots table",
-      "Migration creates game_events table",
-      "Migration creates player_sessions table",
-      "Indexes created for all foreign keys"
-    ],
-    "passes": false
-  },
-  {
-    "category": "infrastructure",
-    "description": "Database connection pool configured",
-    "steps": [
-      "pg package installed in server",
-      "Connection pool module created",
-      "Pool settings tuned for development/production",
-      "Connection errors handled gracefully"
-    ],
-    "passes": false
-  },
-  {
-    "category": "infrastructure",
-    "description": "Redis connection configured",
-    "steps": [
-      "ioredis installed in server package",
-      "Redis client module created",
-      "Connection handles reconnection automatically"
-    ],
-    "passes": false
-  },
-  {
-    "category": "infrastructure",
-    "description": "Environment variables documented in .env.example",
-    "steps": [
-      ".env.example exists with all required variables",
-      "DATABASE_URL configured",
-      "REDIS_URL configured",
-      "PORT and NODE_ENV documented"
-    ],
-    "passes": false
-  },
-  {
-    "category": "infrastructure",
     "description": "Server hot-reload configured with nodemon",
     "steps": [
       "nodemon installed in server package",
@@ -147,11 +93,86 @@
   },
   {
     "category": "infrastructure",
-    "description": "Vite proxy configured for API and WebSocket",
+    "description": "Docker Compose with PostgreSQL 16 and Redis 7",
     "steps": [
-      "vite.config.ts has proxy configuration",
-      "/api requests proxied to server",
-      "WebSocket upgrade handled correctly"
+      "Create docker-compose.yml at project root",
+      "Add PostgreSQL 16 service with volume persistence",
+      "Add Redis 7 service with volume persistence",
+      "Configure network for inter-container communication",
+      "Add healthchecks for both services",
+      "Add docker:up and docker:down npm scripts",
+      "Verify both services start and are accessible"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Database migrations with node-pg-migrate",
+    "steps": [
+      "Install node-pg-migrate in server package",
+      "Configure migrations directory and connection",
+      "Create migration: game_snapshots table (game_id PK, state_snapshot JSONB, version INT, status VARCHAR, created_at, updated_at)",
+      "Create migration: game_events table (event_id PK, game_id FK, event_type VARCHAR, event_data JSONB, created_at)",
+      "Create migration: player_sessions table (token PK, game_id, player_id, player_name, expires_at)",
+      "Add indexes for foreign keys and common queries",
+      "Add db:migrate and db:rollback npm scripts",
+      "Run migrations and verify tables exist"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "PostgreSQL connection pool with pg package",
+    "steps": [
+      "Install pg and @types/pg in server package",
+      "Create packages/server/src/db/pool.ts",
+      "Configure pool settings (max 10 connections, 30s idle timeout)",
+      "Create query() helper function with error handling",
+      "Create getClient() for transactions",
+      "Add graceful shutdown handling",
+      "Export pool and helpers from db/index.ts",
+      "Write unit test verifying connection works"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Redis client with ioredis",
+    "steps": [
+      "Install ioredis in server package",
+      "Create packages/server/src/redis/client.ts",
+      "Configure connection with REDIS_URL from env",
+      "Add auto-reconnection handling",
+      "Add error event listeners with logging",
+      "Add graceful disconnect on shutdown",
+      "Export client from redis/index.ts",
+      "Write unit test verifying connection works"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Environment variable management with Zod validation",
+    "steps": [
+      "Install dotenv in server package (zod already installed)",
+      "Create packages/server/src/config/env.ts",
+      "Define Zod schema: DATABASE_URL (string), REDIS_URL (string), PORT (number, default 3000), NODE_ENV (enum)",
+      "Parse and validate env vars on import",
+      "Throw clear error if validation fails",
+      "Export typed config object",
+      "Update .env.example with all variables documented"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Vite dev server proxy for API and WebSocket",
+    "steps": [
+      "Open packages/client/vite.config.ts",
+      "Add proxy for /api to http://localhost:3000",
+      "Add proxy for /socket.io with WebSocket upgrade support",
+      "Configure changeOrigin: true",
+      "Test proxy works with mock endpoint"
     ],
     "passes": false
   },
@@ -381,6 +402,44 @@
   },
   {
     "category": "core-logic",
+    "description": "Validate Jarl 2-hex moves cannot pass through Throne",
+    "steps": [
+      "In validateMove, when Jarl moves 2 hexes, call hexLine(from, to)",
+      "If any hex in path is Throne (0,0), block at Throne instead",
+      "Set destination to Throne hex, trigger immediate victory",
+      "Unit tests: Jarl 2-hex move crossing Throne stops there and wins",
+      "Unit tests: Jarl 2-hex move not crossing Throne works normally"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Enforce no-pass rule with turn skip only when boxed in",
+    "steps": [
+      "Add hasLegalMoves(state, playerId) function",
+      "Check all player's pieces for reachable hexes",
+      "If hasLegalMoves returns true, player MUST move",
+      "If hasLegalMoves returns false (extremely rare), allow turn skip",
+      "Unit tests: cannot skip when legal moves exist",
+      "Unit tests: can skip when completely boxed in by shields/edges/pieces"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Validate friendly piece blocking in paths",
+    "steps": [
+      "In validateMove, ensure path is clear of ALL pieces (friend or foe)",
+      "Cannot move through friendly pieces",
+      "Cannot land on friendly pieces (already covered)",
+      "Cannot push friendly pieces (chain only includes enemies)",
+      "Unit tests: cannot move through own Warrior",
+      "Unit tests: push chain stops if would push ally"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
     "description": "findInlineSupport finds pieces behind attacker",
     "steps": [
       "Returns array of pieces directly behind in line",
@@ -474,6 +533,19 @@
   },
   {
     "category": "core-logic",
+    "description": "Warriors stop adjacent to Throne in push chains (compression)",
+    "steps": [
+      "In detectChain, check if next hex is Throne",
+      "If next piece is Warrior and next hex is Throne, mark as compression terminator",
+      "Warriors compress against Throne like they do against Shields",
+      "Unit tests: Warrior pushed toward Throne stops adjacent",
+      "Unit tests: Chain with multiple Warriors compresses at Throne edge",
+      "Unit tests: Jarl CAN enter Throne voluntarily (no compression for Jarl)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
     "description": "resolvePush main resolver handles all scenarios",
     "steps": [
       "Detects chain and terminator",
@@ -525,36 +597,6 @@
   },
   {
     "category": "core-logic",
-    "description": "checkStarvationTrigger detects 10 rounds without elimination",
-    "steps": [
-      "Tracks rounds since last elimination",
-      "Returns true at 10 rounds",
-      "Repeats every 5 rounds after initial"
-    ],
-    "passes": false
-  },
-  {
-    "category": "core-logic",
-    "description": "calculateStarvationCandidates finds furthest Warriors",
-    "steps": [
-      "Calculates hex distance from Throne for each Warrior",
-      "Returns furthest Warrior per player",
-      "Returns multiple candidates when tied"
-    ],
-    "passes": false
-  },
-  {
-    "category": "core-logic",
-    "description": "resolveStarvation applies player choices",
-    "steps": [
-      "Removes selected Warriors",
-      "Handles Jarl elimination when no Warriors",
-      "Resets starvation counter"
-    ],
-    "passes": false
-  },
-  {
-    "category": "core-logic",
     "description": "getReachableHexes returns all valid destinations",
     "steps": [
       "Warriors: 1-2 hexes in straight lines",
@@ -576,2100 +618,1012 @@
   },
   {
     "category": "core-logic",
+    "description": "checkStarvationTrigger function with unit tests",
+    "steps": [
+      "Add checkStarvationTrigger(state: GameState) function in shared/src/index.ts",
+      "Return { triggered: false } if roundsSinceElimination < 10",
+      "Return { triggered: true, isInitial: true } at exactly 10 rounds",
+      "Return { triggered: true, isInitial: false } at 15, 20, 25... rounds",
+      "Export function",
+      "Add unit tests: no trigger at 0-9 rounds",
+      "Add unit tests: trigger at 10, 15, 20 rounds",
+      "Add unit tests: no trigger at 11, 12, 13, 14 rounds"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "calculateStarvationCandidates function with unit tests",
+    "steps": [
+      "Add StarvationCandidates type: { playerId: string, candidates: Piece[], maxDistance: number }[]",
+      "Add calculateStarvationCandidates(state: GameState) function",
+      "Group Warriors by playerId",
+      "For each player, calculate hexDistance from Throne (0,0) for each Warrior",
+      "Find max distance for that player",
+      "Return all Warriors at max distance (ties possible)",
+      "Export function and type",
+      "Add unit tests: single warrior per player",
+      "Add unit tests: multiple warriors, clear furthest",
+      "Add unit tests: tie scenario with 2 warriors equidistant",
+      "Add unit tests: player with no warriors returns empty candidates"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "resolveStarvation function with unit tests",
+    "steps": [
+      "Add StarvationChoice type: { playerId: string, pieceId: string }",
+      "Add resolveStarvation(state: GameState, choices: StarvationChoice[]) function",
+      "Validate each choice is a valid candidate",
+      "Remove selected Warriors from state.pieces",
+      "Generate STARVATION_ELIMINATED event for each removed Warrior",
+      "If player had last Warrior and grace period passed, eliminate their Jarl",
+      "Reset roundsSinceElimination to 0",
+      "Check for last standing victory after eliminations",
+      "Return { newState, events, gameEnded, winnerId }",
+      "Export function and type",
+      "Add unit tests: normal starvation removes warriors",
+      "Add unit tests: counter resets to 0",
+      "Add unit tests: Jarl elimination when no warriors and grace period passed",
+      "Add unit tests: last standing victory triggered by starvation"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Implement Jarl starvation grace period",
+    "steps": [
+      "Track roundsSinceLastWarrior per player in game state",
+      "When player loses last Warrior, start 5-round grace period",
+      "During starvation trigger, if player has no Warriors AND grace period passed (5+ rounds)",
+      "Eliminate that player's Jarl immediately",
+      "Generate JARL_STARVED event",
+      "Check for last standing victory after Jarl elimination",
+      "Unit tests: Jarl survives during 5-round grace period",
+      "Unit tests: Jarl eliminated after grace period expires"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
     "description": "applyMove executes move and returns result",
     "steps": [
-      "Handles simple move (no combat)",
-      "Handles attack with push",
-      "Handles blocked attack",
-      "Generates all animation events",
-      "Checks win conditions after move",
-      "Returns MoveResult with new state"
+      "Review existing applyMove implementation in shared/src/index.ts",
+      "Ensure it handles simple move (no combat) correctly",
+      "Ensure it handles attack with successful push",
+      "Ensure it handles blocked attack (attacker stops adjacent)",
+      "Ensure it generates all animation events with correct depth",
+      "Ensure it checks win conditions after move",
+      "Ensure it increments roundsSinceElimination (or resets on elimination)",
+      "Ensure it advances currentTurn to next player",
+      "Return MoveResult with newState and events",
+      "Add comprehensive unit tests for all scenarios"
+    ],
+    "passes": true
+  },
+  {
+    "category": "core-logic",
+    "description": "Validate blocked attack positioning",
+    "steps": [
+      "In applyMove, when attack is BLOCKED (Attack <= Defense)",
+      "Move attacker to hex adjacent to defender (last clear hex before target)",
+      "Attacker does NOT take defender's position",
+      "Generate MOVE event with blocked destination",
+      "Unit tests: blocked attack stops attacker adjacent",
+      "Unit tests: attacker uses their turn even when blocked"
+    ],
+    "passes": true
+  },
+  {
+    "category": "state-machine",
+    "description": "Install XState v5 and define machine types",
+    "steps": [
+      "Install xstate@5 in server package",
+      "Create packages/server/src/game/types.ts",
+      "Define GameMachineContext extending GameState with: turnTimerMs, disconnectedPlayers, starvationChoices",
+      "Define GameMachineEvent union: PLAYER_JOINED, PLAYER_LEFT, START_GAME, MAKE_MOVE, STARVATION_CHOICE, TIMEOUT, PLAYER_DISCONNECTED, PLAYER_RECONNECTED",
+      "Define each event's payload type",
+      "Define GameMachineInput for actor creation",
+      "Export all types"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "XState v5 game machine defined",
+    "description": "Implement lobby state for player management",
     "steps": [
-      "XState v5 installed in server package",
-      "Machine input and event types defined",
-      "Machine exported from state module"
+      "Create packages/server/src/game/machine.ts",
+      "Import createMachine from xstate",
+      "Define gameMachine with initial 'lobby' state",
+      "On PLAYER_JOINED: add player to context.players array (max 2 for MVP)",
+      "On PLAYER_LEFT: remove player from context.players",
+      "Add guard canStartGame: context.players.length >= 2",
+      "On START_GAME with guard: transition to 'setup'",
+      "Add unit tests: player joins successfully",
+      "Add unit tests: player leaves successfully",
+      "Add unit tests: cannot start with < 2 players",
+      "Add unit tests: can start with 2 players"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "Lobby state handles player joining and leaving",
+    "description": "Implement setup state that initializes board",
     "steps": [
-      "PLAYER_JOINED event adds player to game",
-      "PLAYER_LEFT event removes player from game",
-      "START_GAME transition requires 2+ players",
-      "Guard prevents start with insufficient players"
+      "Add 'setup' state to machine",
+      "In entry action: call createInitialState(context.players) from shared",
+      "Merge generated state into context",
+      "Set context.phase = 'playing'",
+      "Use 'always' transition to immediately go to 'playing' state",
+      "Add unit tests: board is generated on entering setup",
+      "Add unit tests: correct number of pieces placed",
+      "Add unit tests: transitions to playing automatically"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "Setup state initializes game board",
+    "description": "Implement playing state with move execution",
     "steps": [
-      "Automatically transitions from lobby on START_GAME",
-      "Board generation runs in entry action",
-      "Transitions to playing when complete"
+      "Add 'playing' compound state with 'awaitingMove' initial substate",
+      "On MAKE_MOVE: validate move.playerId === currentTurnPlayerId",
+      "Call validateMove from shared to check legality",
+      "If invalid: return error, stay in awaitingMove",
+      "If valid: call applyMove, update context with newState and events",
+      "Transition to 'checkingGameEnd' substate",
+      "In checkingGameEnd: check if gameEnded flag is set",
+      "If ended: transition to 'ended' state",
+      "If not ended: transition back to 'awaitingMove'",
+      "Add unit tests: valid move updates state",
+      "Add unit tests: invalid move rejected",
+      "Add unit tests: game ends on victory"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "Playing state handles moves with substates",
+    "description": "Implement rotating first player each round",
     "steps": [
-      "awaitingMove substate waits for player action",
-      "MAKE_MOVE event validates and applies move",
-      "turnEnding substate advances turn",
-      "Transitions to starvation or ended as needed"
+      "Add roundNumber and firstPlayerIndex to game state",
+      "After all players move once, increment firstPlayerIndex = (firstPlayerIndex + 1) % playerCount",
+      "Turn sequence each round starts from firstPlayerIndex",
+      "Unit tests: 2-player rotation P0,P1 -> P1,P0 -> P0,P1",
+      "Unit tests: 3-player rotation P0,P1,P2 -> P1,P2,P0 -> P2,P0,P1"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "Turn timer implemented with XState after transition",
+    "description": "Implement turn timer with auto-skip",
     "steps": [
-      "Timer starts when awaitingMove entered",
-      "after(turnTimerMs) triggers timeout",
-      "Timeout auto-skips turn",
-      "Turn advances to next player"
+      "Add turnTimerMs to context (null = disabled, or 30000/60000/120000)",
+      "In 'awaitingMove' state: add after() delayed transition",
+      "Delay uses context.turnTimerMs if not null",
+      "On timeout: execute autoSkipTurn action (advance turn without move)",
+      "Generate TURN_SKIPPED event",
+      "Transition to checkingGameEnd",
+      "If turnTimerMs is null: no timeout (wait indefinitely)",
+      "Add unit tests with fake timers: turn skipped after timeout",
+      "Add unit tests: no skip when timer disabled"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "Starvation state handles warrior selection",
+    "description": "Implement starvation state for warrior selection",
     "steps": [
-      "STARVATION_CHOICE event records player selection",
-      "Waits for all players to choose",
-      "Resolves starvation when all chosen",
-      "Returns to playing or ends game"
+      "In 'checkingGameEnd': also check checkStarvationTrigger()",
+      "If starvation triggered: transition to 'starvation' state",
+      "In 'starvation' entry: call calculateStarvationCandidates(), store in context",
+      "On STARVATION_CHOICE: record choice in context.starvationChoices",
+      "Add guard allChoicesMade: all players with candidates have chosen",
+      "If auto-timeout needed (use turn timer or 30s default): auto-select random candidate",
+      "When all choices made: call resolveStarvation()",
+      "Update context with result",
+      "Transition to 'checkingGameEnd' or 'ended'",
+      "Add unit tests: starvation flow with manual choices",
+      "Add unit tests: auto-select on timeout"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "Ended state is final with winner recorded",
+    "description": "Implement disconnection with game pause",
     "steps": [
-      "Final state cannot be exited",
-      "Winner ID and condition stored in context",
-      "Triggers gameEnded broadcast"
+      "Add 'paused' state to machine",
+      "On PLAYER_DISCONNECTED: start 2-minute timer, mark player as disconnected",
+      "If in 'awaitingMove' and disconnected player's turn: transition to 'paused'",
+      "In 'paused': wait for PLAYER_RECONNECTED or timeout",
+      "On PLAYER_RECONNECTED: mark player connected, return to previous state",
+      "On 2-minute timeout: stay paused (game waits - future: configurable)",
+      "Add unit tests: game pauses on disconnect",
+      "Add unit tests: game resumes on reconnect"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "GamePersistence saves state to PostgreSQL",
+    "description": "Implement database persistence for game state",
     "steps": [
-      "save(gameId, actor) writes snapshot to database",
-      "Version number incremented atomically",
-      "Optimistic locking prevents conflicts"
+      "Create packages/server/src/game/persistence.ts",
+      "Implement saveSnapshot(gameId, state, version): INSERT or UPDATE game_snapshots with optimistic locking",
+      "Implement loadSnapshot(gameId): SELECT from game_snapshots, return null if not found",
+      "Implement saveEvent(gameId, event): INSERT into game_events",
+      "Implement loadEvents(gameId): SELECT all events ordered by created_at",
+      "Add version check in saveSnapshot to prevent concurrent conflicts",
+      "Export all functions",
+      "Add integration tests with test database"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "GamePersistence restores state from database",
+    "description": "Integrate persistence with GameManager",
     "steps": [
-      "restore(gameId) retrieves snapshot",
-      "Recreates XState actor with state",
-      "Actor continues from saved state"
+      "Update GameManager.create() to save initial snapshot to database",
+      "Subscribe to actor state changes: save snapshot on each change",
+      "Save events to game_events table for each transition",
+      "Implement recover(): load active games from database on server start",
+      "Recreate actors from snapshots",
+      "Add games to in-memory Map",
+      "Add integration tests: create game persists to DB",
+      "Add integration tests: recover loads games from DB"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "GamePersistence can replay from events",
+    "description": "Create GameManager class with CRUD operations",
     "steps": [
-      "replayFromEvents(gameId) reconstructs state",
-      "Replays all events in order",
-      "Final state matches snapshot (debugging)"
+      "Create packages/server/src/game/manager.ts",
+      "Create GameManager class with Map<gameId, Actor>",
+      "Implement create(config): create actor, generate gameId, return gameId",
+      "Implement getState(gameId): return current snapshot",
+      "Implement listGames(filter?): return array of game summaries",
+      "Add unit tests for create, getState, listGames"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "GameManager creates and manages games",
+    "description": "Implement GameManager player management",
     "steps": [
-      "create(config) creates new game actor",
-      "join(gameId, name) adds player",
-      "start(gameId) transitions to playing",
-      "makeMove(gameId, playerId, command) executes move",
-      "getState(gameId) returns current state",
-      "listGames(filter) returns joinable games"
+      "Implement join(gameId, playerName): send PLAYER_JOINED, return playerId",
+      "Implement leave(gameId, playerId): send PLAYER_LEFT",
+      "Implement start(gameId, playerId): validate is host, send START_GAME",
+      "Add unit tests for join, leave, start"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "GameManager recovers active games on startup",
+    "description": "Implement GameManager move execution",
     "steps": [
-      "recover() called on server start",
-      "Active games loaded from database",
-      "Actors recreated for each game",
-      "Players can reconnect to ongoing games"
+      "Implement makeMove(gameId, playerId, command): send MAKE_MOVE, return result",
+      "Implement submitStarvationChoice(gameId, playerId, pieceId): send STARVATION_CHOICE",
+      "Subscribe to actor state changes for event emission",
+      "Add unit tests for makeMove, submitStarvationChoice"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "User can create a new game with default settings",
+    "category": "state-machine",
+    "description": "Implement GameManager disconnection and recovery",
     "steps": [
-      "User navigates to lobby",
-      "User clicks 'Create Game' button",
-      "Game is created with default 2-player settings",
-      "User is redirected to game lobby as host"
+      "Implement onDisconnect(gameId, playerId): send PLAYER_DISCONNECTED",
+      "Implement onReconnect(gameId, playerId): send PLAYER_RECONNECTED",
+      "Implement recover(): load active games from database on server start",
+      "Recreate actors from snapshots, add to in-memory Map",
+      "Add integration tests for disconnect, reconnect, recovery"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "User can select vs Human or vs AI when creating a game",
+    "category": "network",
+    "description": "Set up Express server with middleware",
     "steps": [
-      "User opens create game form",
-      "User selects 'vs Human' or 'vs AI' option",
-      "Selection is reflected in game configuration"
+      "Install express, cors, helmet in server package",
+      "Create packages/server/src/server.ts",
+      "Create Express app with JSON body parser",
+      "Add CORS configuration (allow localhost:5173 for dev)",
+      "Add helmet for security headers",
+      "Add request logging middleware",
+      "Create GET /health endpoint returning { status: 'ok', timestamp }",
+      "Export app and createServer() function",
+      "Add basic test: health endpoint returns 200"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "User can select AI difficulty level (Easy, Medium, Hard)",
+    "category": "network",
+    "description": "Create error classes and error middleware",
     "steps": [
-      "User selects 'vs AI' mode",
-      "Difficulty dropdown becomes visible",
-      "User selects Easy, Medium, or Hard",
-      "AI difficulty is saved to game configuration"
+      "Create packages/server/src/errors/index.ts",
+      "Create GameError base class with code, message, statusCode",
+      "Create GameNotFoundError (404)",
+      "Create InvalidMoveError (400)",
+      "Create NotYourTurnError (400)",
+      "Create UnauthorizedError (401)",
+      "Create ValidationError (400)",
+      "Create packages/server/src/middleware/error.ts",
+      "Implement error middleware: catch all errors, return { error, message, details? }",
+      "Hide stack traces in production",
+      "Log errors with context"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "User can configure turn timer (None, 30s, 60s, 120s)",
+    "category": "network",
+    "description": "Implement session management with Redis",
     "steps": [
-      "User opens create game form",
-      "User selects turn timer option",
-      "Timer setting is saved to game configuration"
+      "Create packages/server/src/services/session.ts",
+      "Implement createSession(gameId, playerId, playerName): generate 64-char token, store in Redis with 24h TTL",
+      "Implement validateSession(token): get from Redis, return { gameId, playerId, playerName } or null",
+      "Implement invalidateSession(token): delete from Redis",
+      "Implement extendSession(token): refresh TTL to 24h",
+      "Create packages/server/src/middleware/auth.ts",
+      "Implement authenticateSession middleware: extract Bearer token, validate, attach to req",
+      "Add unit tests for session service",
+      "Add unit tests for auth middleware"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "User can view list of joinable games",
+    "category": "network",
+    "description": "Implement REST API for game management",
     "steps": [
-      "User navigates to lobby",
-      "API fetches list of games with 'lobby' status",
-      "Games are displayed with player count and creation time"
+      "Create packages/server/src/routes/games.ts",
+      "POST /api/games: validate body with Zod, call GameManager.create(), return { gameId }",
+      "GET /api/games: call GameManager.listGames(), return array",
+      "GET /api/games/:id: require auth, call GameManager.getState(), return state",
+      "POST /api/games/:id/join: validate body (playerName), call GameManager.join(), create session, return { sessionToken, playerId }",
+      "POST /api/games/:id/start: require auth, validate is host, call GameManager.start()",
+      "GET /api/games/:id/valid-moves/:pieceId: require auth, call getValidMoves from shared, return array",
+      "Mount routes in server.ts",
+      "Add integration tests for each endpoint"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "User can join a game in lobby status",
+    "category": "network",
+    "description": "Set up Socket.IO with typed events",
     "steps": [
-      "User views game list",
-      "User clicks 'Join' on a game with available slot",
-      "User receives session token",
-      "User is added to game and redirected to game lobby"
+      "Install socket.io in server package",
+      "Create packages/server/src/socket/types.ts",
+      "Define ClientToServerEvents: joinGame, playTurn, startGame, starvationChoice, disconnect",
+      "Define ServerToClientEvents: gameState, turnPlayed, gameEnded, playerJoined, playerLeft, starvationRequired, error",
+      "Create packages/server/src/socket/server.ts",
+      "Create and configure Socket.IO server",
+      "Attach to HTTP server from Express",
+      "Configure Connection State Recovery (2-min window)",
+      "Configure CORS to match Express"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Game lobby shows connected players",
+    "category": "network",
+    "description": "Implement Socket.IO game lifecycle handlers",
     "steps": [
-      "User enters game lobby",
-      "All connected players are displayed",
-      "Player names and ready status are visible"
+      "Create packages/server/src/socket/handlers.ts",
+      "On 'joinGame': validate session token, join socket to game room, emit current gameState",
+      "On 'startGame': validate session is host, call GameManager.start(), broadcast gameState",
+      "Add integration tests for joinGame, startGame handlers"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Host can start game when 2 players are present",
+    "category": "network",
+    "description": "Implement Socket.IO move execution handler",
     "steps": [
-      "Host is in game lobby",
-      "Second player joins",
-      "Start button becomes enabled for host",
-      "Host clicks Start",
-      "Game transitions to playing state"
+      "On 'playTurn': validate session, call GameManager.makeMove()",
+      "Broadcast turnPlayed to room with events and newState",
+      "Handle validation errors, emit error to client",
+      "Add integration tests for playTurn handler"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Players can leave the game lobby",
+    "category": "network",
+    "description": "Implement Socket.IO starvation handler",
     "steps": [
-      "Player is in game lobby",
-      "Player clicks 'Leave' button",
-      "Player is removed from game",
-      "Player is redirected to main lobby"
+      "On 'starvationChoice': call GameManager.submitStarvationChoice()",
+      "Subscribe to GameManager events: broadcast starvationRequired when triggered",
+      "Broadcast resolution results to room",
+      "Add integration tests for starvationChoice handler"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Turn order rotates between players",
+    "category": "network",
+    "description": "Implement Socket.IO connection management",
     "steps": [
-      "Game starts with Player 1's turn",
-      "Player 1 makes a move",
-      "Turn passes to Player 2",
-      "Player 2 makes a move",
-      "Turn passes back to Player 1"
+      "On 'disconnect': call GameManager.onDisconnect(), broadcast playerLeft",
+      "Handle connection recovery: rejoin room, emit current state",
+      "Subscribe to GameManager: broadcast gameEnded when game ends",
+      "Add integration tests for disconnect, reconnect, recovery"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Only one piece can be moved per turn",
+    "category": "network",
+    "description": "Create main server entry point",
     "steps": [
-      "Player selects a piece",
-      "Player moves the piece to valid destination",
-      "Turn ends immediately after move",
-      "Player cannot move another piece"
+      "Create packages/server/src/index.ts",
+      "Load environment config",
+      "Initialize database pool",
+      "Initialize Redis client",
+      "Create Express app and HTTP server",
+      "Attach Socket.IO",
+      "Initialize GameManager",
+      "Call GameManager.recover() to load active games",
+      "Start listening on PORT",
+      "Add graceful shutdown handling (close connections)",
+      "Update package.json start script"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Turn timer counts down and auto-skips on expiration",
+    "category": "ai",
+    "description": "Implement easy AI that makes random valid moves",
     "steps": [
-      "Turn begins with timer at configured value",
-      "Timer counts down each second",
-      "Timer reaches zero",
-      "Turn is auto-skipped",
-      "Next player's turn begins"
+      "Create packages/server/src/ai/types.ts",
+      "Define AIPlayer interface: generateMove(state, playerId), makeStarvationChoice(candidates)",
+      "Create packages/server/src/ai/random.ts",
+      "Implement RandomAI class implementing AIPlayer",
+      "generateMove: get all pieces for playerId, get valid moves for each, pick random move",
+      "makeStarvationChoice: pick random candidate",
+      "Add configurable thinking delay (500-1500ms random)",
+      "Export RandomAI",
+      "Add unit tests: returned move is always valid"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Players cannot voluntarily pass if legal moves exist",
+    "category": "ai",
+    "description": "Implement medium AI with position evaluation",
     "steps": [
-      "Player has at least one legal move",
-      "No pass button is available",
-      "Player must select and execute a move"
+      "Create packages/server/src/ai/heuristic.ts",
+      "Implement scoreMove(state, move, playerId) function",
+      "Score: +100 throne victory, +50 enemy Jarl elimination, +20 enemy piece elimination",
+      "Score: +10 successful push, +5 momentum attack",
+      "Score: -30 own Jarl on edge, -10 own piece on edge after move",
+      "Score: +3 per hex closer to throne for Jarl",
+      "Implement HeuristicAI.generateMove: score all moves, pick from top 3 with weighted random",
+      "Add small random factor to avoid predictability",
+      "Add unit tests: prefers winning moves",
+      "Add unit tests: avoids putting Jarl on edge"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Warrior can move 1 hex in a straight line",
+    "category": "ai",
+    "description": "Integrate AI players into game flow",
     "steps": [
-      "Player selects a Warrior",
-      "Adjacent hexes in 6 directions are highlighted",
-      "Player clicks adjacent hex",
-      "Warrior moves to that hex"
+      "Create packages/server/src/ai/names.ts with Norse name arrays",
+      "Implement generateNorseName() function",
+      "Update GameManager: track AI players per game",
+      "Implement addAIPlayer(gameId, difficulty): create AI instance, add to game as player",
+      "Subscribe to game state changes",
+      "When currentTurn is AI player: wait thinking delay, generate move, execute",
+      "Handle AI starvation choices automatically",
+      "Add 2-second timeout protection (fallback to random move)",
+      "Add integration tests: AI makes moves on its turn"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Warrior can move 2 hexes in a straight line",
+    "category": "frontend",
+    "description": "Create client directory structure and configuration",
     "steps": [
-      "Player selects a Warrior",
-      "Hexes 2 away in straight lines are highlighted",
-      "Path to destination is clear",
-      "Player clicks 2-hex destination",
-      "Warrior moves to that hex"
+      "Create directory structure: src/components, src/hooks, src/store, src/utils, src/socket",
+      "Configure path aliases in tsconfig.json (@/ for src/)",
+      "Install required packages: socket.io-client, zustand",
+      "Verify Vite dev server starts correctly"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Jarl can move 1 hex in any direction",
+    "category": "frontend",
+    "description": "Create client routing and page placeholders",
     "steps": [
-      "Player selects their Jarl",
-      "Adjacent hexes in 6 directions are highlighted",
-      "Player clicks adjacent hex",
-      "Jarl moves to that hex"
+      "Create src/App.tsx with router setup",
+      "Create src/pages/Home.tsx placeholder",
+      "Create src/pages/Game.tsx placeholder",
+      "Create src/pages/Lobby.tsx placeholder",
+      "Test navigation between pages works"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Jarl can move 2 hexes with draft formation (2+ Warriors behind)",
+    "category": "frontend",
+    "description": "Create client component directory structure",
     "steps": [
-      "Jarl has 2 or more Warriors directly behind in movement direction",
-      "Player selects Jarl",
-      "2-hex destinations in draft direction are highlighted",
-      "Player clicks 2-hex destination",
-      "Jarl moves with momentum"
+      "Create src/components/Board/ directory",
+      "Create src/components/Game/ directory",
+      "Create src/components/Lobby/ directory",
+      "Create src/components/Modals/ directory",
+      "Create index.ts barrel exports for each directory"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Draft formation works with non-consecutive Warriors",
+    "category": "frontend",
+    "description": "Set up client-side state management with Zustand",
     "steps": [
-      "Jarl has 2 Warriors behind with gap between them",
-      "Warriors are in same straight line",
-      "Draft movement is enabled",
-      "Jarl can move 2 hexes"
+      "Install zustand",
+      "Create src/store/gameStore.ts",
+      "Define state: gameState, playerId, sessionToken, connectionStatus, selectedPieceId, validMoves",
+      "Define actions: setGameState, setPlayer, setSession, clearGame, selectPiece, clearSelection",
+      "Add computed selectors: isMyTurn, myPieces, currentPlayer",
+      "Export useGameStore hook",
+      "Add unit tests for store actions"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Pieces cannot move through other pieces",
+    "category": "frontend",
+    "description": "Set up Socket.IO client with store integration",
     "steps": [
-      "Player selects a piece",
-      "Another piece blocks the path to a destination",
-      "Blocked destination is not highlighted as valid",
-      "Player cannot move through the blocking piece"
+      "Create src/socket/client.ts",
+      "Create socket instance with autoConnect: false",
+      "Create connect(sessionToken) function: set auth, connect",
+      "Create disconnect() function",
+      "Add event listeners: gameState -> update store, turnPlayed -> update store, etc.",
+      "Create src/hooks/useSocket.ts hook",
+      "Handle connection states: update store.connectionStatus",
+      "Handle reconnection automatically",
+      "Export socket instance and hook"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Pieces cannot land on friendly pieces",
+    "category": "frontend",
+    "description": "Client-side hex coordinate utilities",
     "steps": [
-      "Player selects a piece",
-      "Hex occupied by friendly piece is not highlighted",
-      "Player cannot select occupied hex as destination"
+      "Create src/utils/hexMath.ts",
+      "Import hex functions from @jarls/shared",
+      "Implement hexToPixel(hex, hexSize, centerX, centerY): convert to canvas coordinates",
+      "Implement pixelToHex(x, y, hexSize, centerX, centerY): convert click to hex",
+      "Implement getHexCorners(centerX, centerY, size): return 6 corner points for drawing",
+      "Add unit tests for conversions"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Warriors cannot enter the Throne hex",
+    "category": "frontend",
+    "description": "Implement hex grid rendering on Canvas",
     "steps": [
-      "Player selects a Warrior",
-      "Throne hex is not highlighted as valid move",
-      "Warrior cannot move onto Throne"
+      "Create src/components/Board/BoardRenderer.ts",
+      "Create BoardRenderer class with canvas context",
+      "Implement calculateDimensions(boardRadius, canvasWidth, canvasHeight): compute hexSize and center",
+      "Implement drawHex(hex, fillColor, strokeColor): draw single hex",
+      "Implement drawGrid(boardRadius): draw all hexes in board",
+      "Highlight throne hex at (0,0) with gold color",
+      "Draw hex borders with subtle gray",
+      "Add resize handling to recalculate dimensions"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Attack power equals Base Strength plus Momentum plus Inline Support",
+    "category": "frontend",
+    "description": "Implement piece rendering",
     "steps": [
-      "Attacker has base strength (1 for Warrior, 2 for Jarl)",
-      "Add +1 if attacker moved 2 hexes",
-      "Add strength of each friendly piece directly behind attacker",
-      "Total equals Attack power"
+      "Add player colors constant: { p1: '#e63946', p2: '#457b9d' }",
+      "Implement drawShield(hex): gray hex with shield icon",
+      "Implement drawWarrior(piece): colored circle at piece position",
+      "Implement drawJarl(piece): larger circle with crown indicator",
+      "Implement drawPieces(pieces): iterate and draw all pieces",
+      "Implement render(state): clear canvas, draw grid, draw pieces",
+      "Add piece shadows for visual depth"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Defense power equals Base Strength plus Bracing",
+    "category": "frontend",
+    "description": "Implement move highlights and selection",
     "steps": [
-      "Defender has base strength (1 for Warrior, 2 for Jarl)",
-      "Add strength of each friendly piece directly behind defender",
-      "Total equals Defense power"
+      "Implement drawSelection(hex): draw highlight ring around selected piece",
+      "Implement drawValidMoves(moves): draw green overlay on move destinations",
+      "Implement drawAttackMoves(moves): draw red overlay on attack destinations",
+      "Implement drawMomentumIndicator(hex): small icon showing +1 attack",
+      "Update render() to include highlights based on store state",
+      "Add highlight for current player's pieces (subtle glow)"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Push succeeds when Attack is greater than Defense",
+    "category": "frontend",
+    "description": "Create React Board component",
     "steps": [
-      "Attacker moves into enemy hex",
-      "Attack power is calculated",
-      "Defense power is calculated",
-      "Attack > Defense",
-      "Defender is pushed one hex in attack direction"
+      "Create src/components/Board/Board.tsx",
+      "Create canvas ref and renderer instance",
+      "Connect to gameStore for state",
+      "Initialize renderer on mount",
+      "Re-render on state changes (useEffect)",
+      "Handle window resize: recalculate dimensions, re-render",
+      "Export Board component"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Attack is blocked when Attack is less than or equal to Defense",
+    "category": "frontend",
+    "description": "Implement piece selection on click",
     "steps": [
-      "Attacker moves into enemy hex",
-      "Attack power is calculated",
-      "Defense power is calculated",
-      "Attack <= Defense",
-      "Attacker stops adjacent to defender",
-      "Defender does not move"
+      "Add onClick handler to Board canvas",
+      "Convert click coordinates to hex using pixelToHex",
+      "Check if hex contains a piece owned by current player",
+      "If own piece and is player's turn: select piece, fetch valid moves",
+      "Fetch valid moves via socket or compute locally",
+      "Store validMoves in gameStore",
+      "If clicking elsewhere: clear selection",
+      "Disable selection when not player's turn"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Momentum grants +1 attack when moving 2 hexes before attacking",
+    "category": "frontend",
+    "description": "Implement move execution on destination click",
     "steps": [
-      "Warrior moves 2 hexes into enemy",
-      "Base attack is 1",
-      "Momentum adds +1",
-      "Total attack is 2"
+      "In Board onClick: check if clicked hex is a valid move destination",
+      "If valid destination: emit playTurn via socket",
+      "Clear selection while waiting for response",
+      "On turnPlayed event: update state (already handled by socket listener)",
+      "On error: show error toast, restore selection",
+      "Add touch event support (onTouchEnd) for mobile"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Inline support adds friendly piece strengths to attack",
+    "category": "frontend",
+    "description": "Show combat preview tooltip on hover",
     "steps": [
-      "Attacker has friendly piece directly behind",
-      "Friendly piece strength is added to attack",
-      "Multiple pieces in line all contribute"
+      "Create src/components/Board/CombatPreview.tsx",
+      "Display attack value with breakdown (base + momentum + support)",
+      "Display defense value with breakdown (base + bracing)",
+      "Display outcome: 'PUSH' or 'BLOCKED'",
+      "Add onMouseMove handler to Board",
+      "On hover over attack destination: show tooltip near cursor",
+      "On mouse leave or hover elsewhere: hide tooltip",
+      "Position tooltip to stay within viewport"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Bracing adds friendly piece strengths to defense",
+    "category": "frontend",
+    "description": "Implement move and push animations",
     "steps": [
-      "Defender has friendly piece directly behind",
-      "Friendly piece strength is added to defense",
-      "Multiple pieces in line all contribute"
+      "Create src/components/Board/AnimationSystem.ts",
+      "Define Animation type: { pieceId, fromHex, toHex, duration, delay, type }",
+      "Implement parseEvents(events): convert GameEvents to Animation array",
+      "Implement animate(animations): return Promise, use requestAnimationFrame",
+      "Animate moves: 200ms ease-out",
+      "Stagger push chain: 80ms delay per depth level",
+      "Animate eliminations: piece flies off canvas edge (400ms)",
+      "Integrate with Board: wait for animation before updating rendered state"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Jarl provides +2 support when behind attacking piece",
+    "category": "frontend",
+    "description": "Implement turn indicator and player list",
     "steps": [
-      "Warrior attacks with Jarl directly behind",
-      "Jarl adds +2 to attack (Jarl strength is 2)",
-      "Total attack includes Jarl support"
+      "Create src/components/Game/TurnIndicator.tsx",
+      "Display current player name and color",
+      "Show 'Your Turn' badge when applicable",
+      "Create src/components/Game/Timer.tsx",
+      "Display countdown from turnTimerMs",
+      "Style urgently when < 10 seconds",
+      "Create src/components/Game/PlayerList.tsx",
+      "List all players with piece counts (Warriors, Jarl status)",
+      "Highlight current player",
+      "Mark eliminated players with strikethrough"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Push chains move all pieces in the push direction",
+    "category": "frontend",
+    "description": "Implement game end and starvation modals",
     "steps": [
-      "Push succeeds against defender",
-      "Defender has piece behind them",
-      "All pieces in chain move one hex",
-      "Pieces move in same direction as push"
+      "Create src/components/Modals/GameEndModal.tsx",
+      "Show on game.phase === 'ended'",
+      "Display 'Victory!' or 'Defeat' based on winner",
+      "Show win condition (Throne or Last Standing)",
+      "Add 'Play Again' button (returns to lobby)",
+      "Add 'Leave' button (returns to home)",
+      "Create src/components/Modals/StarvationModal.tsx",
+      "Show when starvation selection required",
+      "List candidate warriors with their positions",
+      "On select: emit starvationChoice via socket",
+      "Show countdown timer for auto-select"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Chains can contain both friendly and enemy pieces",
+    "category": "frontend",
+    "description": "Create CreateGameForm component",
     "steps": [
-      "Push chain includes mixed allegiance pieces",
-      "All pieces in chain move regardless of owner",
-      "Chain continues until empty hex or blocker"
+      "Create src/components/Lobby/CreateGameForm.tsx",
+      "Form fields: player name input",
+      "Opponent type selector (Human/AI)",
+      "AI difficulty dropdown (when AI selected)",
+      "Turn timer dropdown (None, 30s, 60s, 120s)",
+      "Submit: POST /api/games, then POST /join",
+      "Navigate to waiting room on success"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Pieces pushed off board edge are eliminated",
+    "category": "frontend",
+    "description": "Create GameList component",
     "steps": [
-      "Push chain reaches board edge",
-      "Piece at edge is pushed off",
-      "Piece is permanently removed from game",
-      "Elimination event is triggered"
+      "Create src/components/Lobby/GameList.tsx",
+      "Fetch GET /api/games on mount",
+      "Display list of joinable games with player counts",
+      "Join button for each game",
+      "On join: POST /api/games/:id/join, navigate to waiting room"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Multiple pieces can be eliminated in one chain push",
+    "category": "frontend",
+    "description": "Create WaitingRoom component",
     "steps": [
-      "Push chain has multiple pieces against edge",
-      "First piece is pushed off",
-      "Second piece is pushed to edge",
-      "Third piece takes second's position",
-      "All eliminated pieces are removed"
+      "Create src/components/Lobby/WaitingRoom.tsx",
+      "Connect to socket, join game room",
+      "Display player slots (filled/empty)",
+      "Host sees Start Game button (enabled when 2 players)",
+      "Non-host sees waiting message",
+      "On startGame event: navigate to Game page"
     ],
     "passes": false
   },
   {
-    "category": "functional",
-    "description": "Shields stop push chains with compression",
+    "category": "frontend",
+    "description": "Implement lobby routing and navigation",
     "steps": [
-      "Push chain reaches Shield",
-      "Pieces compress against Shield",
-      "No pieces are eliminated",
-      "Attacker takes first defender's position"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Warriors compress at Throne and cannot enter",
-    "steps": [
-      "Push chain pushes Warrior toward Throne",
-      "Warrior stops adjacent to Throne",
-      "Warrior does not enter Throne hex",
-      "Chain compresses"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Jarls cannot be pushed onto the Throne",
-    "steps": [
-      "Push chain pushes Jarl toward Throne",
-      "Jarl stops adjacent to Throne",
-      "Jarl does not enter Throne hex",
-      "Victory is not triggered"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Throne Victory occurs when Jarl voluntarily moves onto Throne",
-    "steps": [
-      "Player's Jarl is adjacent to Throne",
-      "Player selects Jarl",
-      "Throne is highlighted as valid destination",
-      "Player moves Jarl onto Throne",
-      "Game ends immediately with player winning"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Jarl pushed onto Throne does not win (blocked by compression)",
-    "steps": [
-      "Enemy Jarl is pushed toward Throne",
-      "Jarl compresses at Throne edge",
-      "Jarl does not enter Throne",
-      "No victory is triggered"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Last Standing Victory when only one Jarl remains",
-    "steps": [
-      "One player's Jarl is eliminated",
-      "Only one Jarl remains on board",
-      "Game ends immediately",
-      "Remaining Jarl's player wins"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Throne Victory takes precedence over Last Standing",
-    "steps": [
-      "Simultaneous conditions could trigger both wins",
-      "Throne victory is checked first",
-      "Throne victory wins over elimination"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Losing Jarl eliminates player from game",
-    "steps": [
-      "Player's Jarl is pushed off board",
-      "Player is marked as eliminated",
-      "All player's remaining Warriors are removed",
-      "Player cannot take further turns"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Starvation triggers after 10 rounds with no elimination",
-    "steps": [
-      "10 complete rounds pass",
-      "No piece has been eliminated",
-      "Starvation mechanic activates",
-      "Players must sacrifice Warriors"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Starvation removes furthest Warrior from Throne for each player",
-    "steps": [
-      "Starvation triggers",
-      "Hex distance from Throne calculated for each Warrior",
-      "Furthest Warrior identified",
-      "Warrior is removed from game"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Player chooses which Warrior to sacrifice when tied for furthest",
-    "steps": [
-      "Starvation triggers",
-      "Multiple Warriors are equidistant from Throne",
-      "Selection UI appears for player",
-      "Player selects which Warrior to sacrifice"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Starvation repeats every 5 rounds until resolution",
-    "steps": [
-      "Initial starvation occurs at round 10",
-      "No elimination for 5 more rounds",
-      "Starvation triggers again at round 15",
-      "Pattern continues every 5 rounds"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Jarl is eliminated if player has no Warriors during starvation",
-    "steps": [
-      "Starvation triggers",
-      "Player has no Warriors remaining",
-      "Grace period of 5 rounds passes",
-      "Jarl is eliminated",
-      "Player loses game"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Starvation counter resets when any piece is eliminated",
-    "steps": [
-      "Starvation counter is at 8 rounds",
-      "A piece is eliminated in combat",
-      "Counter resets to 0",
-      "New 10-round countdown begins"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Disconnected player has 2-minute reconnection window",
-    "steps": [
-      "Player disconnects during game",
-      "2-minute timer starts",
-      "Game waits during window",
-      "Turn timer is paused"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "AI takes over after reconnection window expires",
-    "steps": [
-      "Player disconnects",
-      "2-minute window expires",
-      "AI begins controlling player's pieces",
-      "Game continues normally"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Player can reconnect and resume control after AI takeover",
-    "steps": [
-      "Player reconnects to game",
-      "Player is authenticated with session token",
-      "Control returns to player from AI",
-      "Player continues playing"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Unlimited spectators can join a game",
-    "steps": [
-      "Game is in progress",
-      "Spectator clicks Watch button",
-      "Spectator joins game room",
-      "Spectator receives game state"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Spectators receive real-time state updates",
-    "steps": [
-      "Spectator is watching game",
-      "Player makes a move",
-      "Spectator receives turnPlayed event",
-      "Spectator's view updates"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Spectators cannot affect gameplay",
-    "steps": [
-      "Spectator is watching game",
-      "Spectator cannot select pieces",
-      "Spectator cannot send move commands",
-      "Game state is read-only for spectator"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Easy AI makes random valid moves",
-    "steps": [
-      "AI turn begins",
-      "AI calculates all valid moves",
-      "AI randomly selects one move",
-      "Move is executed"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Medium AI prioritizes winning moves",
-    "steps": [
-      "AI turn begins",
-      "AI evaluates all valid moves",
-      "Throne-capturing moves scored highest",
-      "Elimination moves scored high",
-      "Best scoring move selected"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Medium AI avoids moving Jarl to edge",
-    "steps": [
-      "AI evaluates moves",
-      "Moves placing Jarl on edge hex penalized",
-      "AI prefers safer positions for Jarl"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "AI has thinking delay of 500-1500ms for UX",
-    "steps": [
-      "AI turn begins",
-      "Random delay between 500-1500ms applied",
-      "Move is executed after delay",
-      "Feels natural to human player"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "AI move generation times out after 2 seconds",
-    "steps": [
-      "AI begins calculating move",
-      "2-second timeout is set",
-      "If timeout reached, best current move used",
-      "Move is always made within time limit"
-    ],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "AI generates Norse-themed names",
-    "steps": [
-      "AI player joins game",
-      "Name generator produces Norse name",
-      "Name displayed in player list"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Hexagonal grid is rendered on canvas",
-    "steps": [
-      "Game board component mounts",
-      "Canvas element is initialized",
-      "Hex grid is drawn with correct radius",
-      "All hexes are visible"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Jarls are visually distinct from Warriors",
-    "steps": [
-      "Pieces are rendered on board",
-      "Jarls are larger than Warriors",
-      "Jarls have crown indicator",
-      "Player can easily distinguish piece types"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Each player has distinct color",
-    "steps": [
-      "Game starts with 2 players",
-      "Player 1 pieces are one color",
-      "Player 2 pieces are different color",
-      "Colors are clearly distinguishable"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Throne is highlighted at center of board",
-    "steps": [
-      "Board is rendered",
-      "Center hex has special throne styling",
-      "Crown icon is displayed",
-      "Throne is visually prominent"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Shields are visually distinct from player pieces",
-    "steps": [
-      "Shields are rendered on board",
-      "Shields have neutral gray color",
-      "Shield icon is displayed",
-      "Shields are clearly obstacles"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Click or tap selects own piece",
-    "steps": [
-      "Player clicks on own piece",
-      "Piece is highlighted as selected",
-      "Valid moves are calculated",
-      "Selection state is updated"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Valid move destinations are highlighted in green",
-    "steps": [
-      "Player selects a piece",
-      "Empty destination hexes turn green",
-      "Green indicates safe move",
-      "Highlights are clearly visible"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Attack destinations are highlighted in red",
-    "steps": [
-      "Player selects a piece",
-      "Hexes with enemy pieces turn red",
-      "Red indicates attack move",
-      "Player understands attack vs move"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Momentum indicator shown on 2-hex moves",
-    "steps": [
-      "Player selects piece that can move 2 hexes",
-      "2-hex destinations show momentum icon",
-      "Icon indicates +1 attack bonus",
-      "Player understands momentum benefit"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Combat preview tooltip shown on hover over attack destination",
-    "steps": [
-      "Player selects a piece",
-      "Player hovers over enemy piece hex",
-      "Tooltip appears with Attack and Defense values",
-      "Outcome (PUSH or BLOCKED) is shown"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Combat preview shows attack breakdown",
-    "steps": [
-      "Combat preview tooltip is shown",
-      "Base strength is displayed",
-      "Momentum bonus is displayed if applicable",
-      "Support bonus is displayed if applicable"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Combat preview shows defense breakdown",
-    "steps": [
-      "Combat preview tooltip is shown",
-      "Defender base strength is displayed",
-      "Bracing bonus is displayed if applicable"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Click on valid destination executes move",
-    "steps": [
-      "Player has piece selected",
-      "Player clicks highlighted destination",
-      "Move command sent to server",
-      "Piece moves to destination"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Current player indicator shows whose turn",
-    "steps": [
-      "Turn indicator component is visible",
-      "Current player name is displayed",
-      "Player color is shown",
-      "Indicator updates on turn change"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Your-turn badge displayed when it is player's turn",
-    "steps": [
-      "Player's turn begins",
-      "Your Turn badge becomes visible",
-      "Badge is prominent and clear",
-      "Badge hides when turn ends"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Turn timer displays remaining time",
-    "steps": [
-      "Game has turn timer enabled",
-      "Timer shows seconds remaining",
-      "Timer counts down in real-time",
-      "Timer styling indicates urgency when low"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Player list shows all players with piece counts",
-    "steps": [
-      "Player list component is visible",
-      "Each player name is displayed",
-      "Warrior count shown for each player",
-      "Jarl status indicated (has Jarl or eliminated)"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Eliminated players marked in player list",
-    "steps": [
-      "Player's Jarl is eliminated",
-      "Player row shows eliminated badge",
-      "Visual styling indicates player is out",
-      "Remaining players clearly active"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Piece movement animates smoothly over 200ms",
-    "steps": [
-      "Move is executed",
-      "Piece begins animation",
-      "Piece travels to destination over 200ms",
-      "Animation uses easing function"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Chain push animations stagger with 80ms delay per link",
-    "steps": [
-      "Push chain involves multiple pieces",
-      "First piece begins moving",
-      "Second piece starts 80ms later",
-      "Chain creates domino effect"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Eliminated pieces fly off board dramatically",
-    "steps": [
-      "Piece is pushed off edge",
-      "Piece animates flying off screen",
-      "Animation takes ~400ms",
-      "Piece is then removed from render"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Animations maintain 60fps",
-    "steps": [
-      "Animation begins",
-      "Frame rate is measured",
-      "Consistent 60fps maintained",
-      "No visible stuttering or lag"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Victory modal appears when player wins",
-    "steps": [
-      "Player achieves victory condition",
-      "Modal overlay appears",
-      "Victory message displayed",
-      "Win condition explained"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Defeat modal appears when player loses",
-    "steps": [
-      "Player's Jarl is eliminated",
-      "Modal overlay appears",
-      "Defeat message displayed",
-      "Winner is shown"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Game end modal shows Play Again and Leave options",
-    "steps": [
-      "Game end modal is displayed",
-      "Play Again button is visible",
-      "Leave button is visible",
-      "Buttons are functional"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Starvation selection modal appears when choice needed",
-    "steps": [
-      "Starvation triggers with tied Warriors",
-      "Modal overlay appears",
-      "Candidate Warriors listed",
-      "Player can select one to sacrifice"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Board scales responsively to viewport",
-    "steps": [
-      "Window is resized",
-      "Board recalculates dimensions",
-      "Hexes scale proportionally",
-      "Board remains centered"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Touch input works on mobile devices",
-    "steps": [
-      "User touches piece on mobile",
-      "Piece is selected",
-      "User touches destination",
-      "Move is executed"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "UI adapts to mobile viewport size",
-    "steps": [
-      "Game viewed on mobile device",
-      "Layout adjusts to narrow viewport",
-      "All UI elements remain accessible",
-      "No horizontal scrolling required"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Cannot interact with board when not your turn",
-    "steps": [
-      "It is opponent's turn",
-      "Player clicks on own piece",
-      "No selection occurs",
-      "No valid moves shown"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "Connection status indicator shows connection state",
-    "steps": [
-      "Player is connected",
-      "Indicator shows green/connected",
-      "Connection drops",
-      "Indicator shows red/disconnected"
-    ],
-    "passes": false
-  },
-  {
-    "category": "ui",
-    "description": "In-app help screen explains game rules",
-    "steps": [
-      "Help button visible in UI",
-      "Clicking opens help screen",
-      "Rules and controls explained",
-      "User can close and return to game"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "POST /api/games creates new game",
-    "steps": [
-      "Client sends POST request with game config",
-      "Server creates game record",
-      "Server returns game ID",
-      "Game is in lobby status"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "GET /api/games returns list of joinable games",
-    "steps": [
-      "Client sends GET request",
-      "Server queries games in lobby status",
-      "Server returns array of game summaries",
-      "Response includes player counts"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "GET /api/games/:id returns game state",
-    "steps": [
-      "Client sends GET request with game ID",
-      "Server retrieves game snapshot",
-      "Server returns full game state",
-      "State includes pieces, players, phase"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "POST /api/games/:id/join adds player to game",
-    "steps": [
-      "Client sends POST with player name",
-      "Server validates game has open slot",
-      "Server adds player to game",
-      "Server returns session token"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "POST /api/games/:id/start initiates game (host only)",
-    "steps": [
-      "Host sends POST request",
-      "Server validates sender is host",
-      "Server validates 2 players present",
-      "Game transitions to playing phase"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "GET /api/games/:id/valid-moves/:pieceId returns valid moves",
-    "steps": [
-      "Client sends GET with piece ID",
-      "Server calculates all valid moves",
-      "Server returns array of ValidMove objects",
-      "Each move includes combat preview if attack"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "GET /health returns server health status",
-    "steps": [
-      "Client sends GET to /health",
-      "Server checks database connection",
-      "Server checks Redis connection",
-      "Server returns status JSON"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "API error handling middleware works",
-    "steps": [
-      "Invalid request sent to API",
-      "Error middleware catches error",
-      "User-friendly error response returned",
-      "Stack trace hidden in production"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "Zod validation rejects invalid input",
-    "steps": [
-      "Request with invalid body sent",
-      "Zod schema validation fails",
-      "400 Bad Request returned",
-      "Error message explains validation failure"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "WebSocket joinGame connects client to game room",
-    "steps": [
-      "Client emits joinGame with token",
-      "Server validates token",
-      "Client joins Socket.IO room",
-      "Client receives current gameState"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "WebSocket playTurn executes move and broadcasts result",
-    "steps": [
-      "Client emits playTurn with MoveCommand",
-      "Server validates move",
-      "Server applies move to state",
-      "Server broadcasts turnPlayed to room"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "WebSocket startGame begins game for room",
-    "steps": [
-      "Host emits startGame",
-      "Server validates host and player count",
-      "Server initializes board",
-      "Server broadcasts gameState to room"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "WebSocket getValidMoves returns moves for piece",
-    "steps": [
-      "Client emits getValidMoves with pieceId",
-      "Server calculates valid moves",
-      "Server returns moves in acknowledgement",
-      "Client receives ValidMove array"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "WebSocket starvationChoice submits player selection",
-    "steps": [
-      "Client emits starvationChoice with pieceId",
-      "Server records player's choice",
-      "When all choices received, starvation resolves",
-      "Server broadcasts updated state"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "WebSocket spectate joins client as spectator",
-    "steps": [
-      "Client emits spectate with gameId",
-      "Server adds client to spectator list",
-      "Client joins game room",
-      "Client receives gameState (read-only)"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "Server broadcasts gameEnded when game concludes",
-    "steps": [
-      "Win condition is met",
-      "Server creates gameEnded event",
-      "Event includes winner and condition",
-      "All room members receive event"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "Server broadcasts playerJoined when player joins",
-    "steps": [
-      "New player joins game lobby",
-      "Server creates playerJoined event",
-      "Event includes player info",
-      "All room members receive event"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "Server broadcasts playerLeft when player disconnects",
-    "steps": [
-      "Player disconnects",
-      "Server creates playerLeft event",
-      "Event includes player ID",
-      "All room members receive event"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "Socket.IO Connection State Recovery handles reconnection",
-    "steps": [
-      "Client temporarily disconnects",
-      "Client reconnects within 2 minutes",
-      "Session restored automatically",
-      "No re-authentication required"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "Session service creates secure tokens",
-    "steps": [
-      "create() generates 64-character secure token",
-      "Token stored in player_sessions table",
-      "Expiration time set to 24 hours"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "Session service validates tokens",
-    "steps": [
-      "validate(token) checks token exists",
-      "Returns player/game info if valid",
-      "Rejects expired or invalid tokens"
-    ],
-    "passes": false
-  },
-  {
-    "category": "api",
-    "description": "authenticateSession middleware protects endpoints",
-    "steps": [
-      "Request without token returns 401",
-      "Request with invalid token returns 401",
-      "Request with valid token proceeds",
-      "Player info attached to request"
+      "Update src/App.tsx with lobby routes",
+      "Route /: Home with create/join options",
+      "Route /lobby/create: CreateGameForm",
+      "Route /lobby/games: GameList",
+      "Route /lobby/:gameId: WaitingRoom",
+      "Route /game/:gameId: Game page"
     ],
     "passes": false
   },
   {
     "category": "testing",
-    "description": "Unit tests cover hex coordinate functions",
+    "description": "Integration tests for REST API endpoints",
     "steps": [
-      "axialToCube and cubeToAxial tests pass",
-      "hexDistance tests cover all cases",
-      "getNeighbor tests verify all 6 directions",
-      "hexLine tests cover edge cases"
+      "Install supertest as dev dependency",
+      "Create packages/server/src/__tests__/api.test.ts",
+      "Set up test database and Redis (docker-compose.test.yml or in-memory)",
+      "Test POST /api/games: creates game, returns gameId",
+      "Test GET /api/games: lists games in lobby status",
+      "Test POST /api/games/:id/join: returns session token",
+      "Test GET /api/games/:id: requires auth, returns state",
+      "Test POST /api/games/:id/start: requires host, starts game",
+      "Test error cases: 404 for missing game, 401 for bad token",
+      "Clean up test data after each test"
     ],
     "passes": false
   },
   {
     "category": "testing",
-    "description": "Unit tests cover combat resolution",
+    "description": "Integration tests for Socket.IO events",
     "steps": [
-      "calculateAttack tests with all modifiers",
-      "calculateDefense tests with bracing",
-      "Push vs blocked scenarios tested",
-      "All combat examples from ruleset verified"
+      "Create packages/server/src/__tests__/socket.test.ts",
+      "Set up socket.io-client for testing",
+      "Test joinGame: receives gameState",
+      "Test playTurn: move executes, all clients receive turnPlayed",
+      "Test startGame: game starts, all clients receive gameState",
+      "Test invalid move: error returned, state unchanged",
+      "Test disconnect/reconnect: game pauses, resumes",
+      "Clean up socket connections after tests"
     ],
     "passes": false
   },
   {
     "category": "testing",
-    "description": "Unit tests cover push chain resolution",
+    "description": "Set up Playwright with project configuration",
     "steps": [
-      "Simple push into empty hex tested",
-      "Edge elimination tested",
-      "Multi-piece elimination tested",
-      "Shield compression tested",
-      "Throne compression for Warriors tested",
-      "Throne compression for Jarls tested"
+      "Install playwright as dev dependency",
+      "Create playwright.config.ts with project settings",
+      "Create e2e/setup.ts: start server and client before tests",
+      "Create e2e/teardown.ts: cleanup after tests",
+      "Verify playwright runs with sample test"
     ],
     "passes": false
   },
   {
     "category": "testing",
-    "description": "Unit tests cover win condition detection",
+    "description": "E2E tests for game creation and joining",
     "steps": [
-      "Throne victory on voluntary entry",
-      "No victory on pushed Jarl (compression)",
-      "Last standing detection",
-      "Win precedence (throne > elimination)"
+      "Create e2e/lobby.spec.ts",
+      "Test: create game from home page",
+      "Test: second player joins game from game list",
+      "Test: waiting room shows both players",
+      "Test: host can start game when 2 players present"
     ],
     "passes": false
   },
   {
     "category": "testing",
-    "description": "Unit tests cover starvation mechanic",
+    "description": "E2E tests for gameplay",
     "steps": [
-      "Trigger timing verified",
-      "Furthest warrior selection verified",
-      "Tie-breaker scenarios covered",
-      "Counter reset on elimination verified"
+      "Create e2e/gameplay.spec.ts",
+      "Test: board renders correctly after game start",
+      "Test: click piece shows valid moves highlighted",
+      "Test: make a move, verify board updates",
+      "Test: opponent's turn indicator shown"
     ],
     "passes": false
   },
   {
     "category": "testing",
-    "description": "Unit tests cover move validation",
+    "description": "E2E tests for game completion and mobile",
     "steps": [
-      "Piece ownership validated",
-      "Turn order validated",
-      "Movement range validated",
-      "Path blocking validated",
-      "Draft formation validated"
-    ],
-    "passes": false
-  },
-  {
-    "category": "testing",
-    "description": "Unit tests for valid moves calculator",
-    "steps": [
-      "Warrior movement range tested",
-      "Jarl movement range tested",
-      "Draft movement tested",
-      "Performance under 10ms verified"
-    ],
-    "passes": false
-  },
-  {
-    "category": "testing",
-    "description": "Unit tests cover XState machine transitions",
-    "steps": [
-      "Lobby state transitions tested",
-      "Playing state move handling tested",
-      "Turn timeout tested",
-      "Starvation flow tested",
-      "End state transitions tested"
-    ],
-    "passes": false
-  },
-  {
-    "category": "testing",
-    "description": "Integration tests cover API endpoints",
-    "steps": [
-      "POST /api/games creates game",
-      "GET /api/games lists games",
-      "POST /api/games/:id/join adds player",
-      "POST /api/games/:id/start works",
-      "Error cases handled correctly"
-    ],
-    "passes": false
-  },
-  {
-    "category": "testing",
-    "description": "Integration tests cover Socket.IO events",
-    "steps": [
-      "joinGame connects client to room",
-      "playTurn executes and broadcasts",
-      "Disconnection/reconnection works",
-      "Spectate mode works"
-    ],
-    "passes": false
-  },
-  {
-    "category": "testing",
-    "description": "Integration tests cover database operations",
-    "steps": [
-      "Game persistence save works",
-      "Game persistence restore works",
-      "Version conflict detected",
-      "Event replay matches snapshot"
-    ],
-    "passes": false
-  },
-  {
-    "category": "testing",
-    "description": "E2E test: Complete 2-player game with throne victory",
-    "steps": [
-      "Playwright launches browser",
-      "Player 1 creates game",
-      "Player 2 joins game",
-      "Players take turns moving pieces",
-      "Player moves Jarl onto Throne",
-      "Victory modal appears for winner",
-      "Defeat modal appears for loser"
-    ],
-    "passes": false
-  },
-  {
-    "category": "testing",
-    "description": "E2E test: Complete 2-player game with elimination victory",
-    "steps": [
-      "Playwright launches browser",
-      "Game set up with 2 players",
-      "Players take turns moving pieces",
-      "One player's Jarl pushed off edge",
-      "Last standing victory declared",
-      "Game end modals appear correctly"
-    ],
-    "passes": false
-  },
-  {
-    "category": "testing",
-    "description": "E2E test: Push chain with multi-elimination",
-    "steps": [
-      "Game state arranged with pieces near edge",
-      "Player executes push that chains",
-      "Multiple pieces eliminated",
-      "Animations play correctly",
-      "State updates reflect eliminations"
-    ],
-    "passes": false
-  },
-  {
-    "category": "testing",
-    "description": "E2E test: Starvation trigger and resolution",
-    "steps": [
-      "Game fast-forwarded to round 10 with no eliminations",
-      "Starvation UI appears",
-      "Players select warriors to sacrifice",
-      "Warriors removed from board",
-      "Game continues"
-    ],
-    "passes": false
-  },
-  {
-    "category": "testing",
-    "description": "E2E test: Human vs AI game",
-    "steps": [
-      "Player creates game vs AI",
-      "Game starts immediately",
-      "AI makes moves on its turn",
-      "AI responds within 2 seconds",
-      "Game plays to completion"
-    ],
-    "passes": false
-  },
-  {
-    "category": "testing",
-    "description": "E2E test: Disconnection and AI takeover",
-    "steps": [
-      "Two-player game in progress",
-      "One player disconnects",
-      "2-minute window passes",
-      "AI takes over disconnected player",
-      "Game continues",
-      "Original player reconnects and resumes"
-    ],
-    "passes": false
-  },
-  {
-    "category": "testing",
-    "description": "E2E test: Turn timeout auto-skip",
-    "steps": [
-      "Game with 30-second timer",
-      "Player does not move",
-      "Timer reaches zero",
-      "Turn is skipped",
-      "Next player's turn begins"
-    ],
-    "passes": false
-  },
-  {
-    "category": "testing",
-    "description": "E2E test: Mobile touch interactions",
-    "steps": [
-      "Playwright emulates mobile device",
-      "Touch to select piece works",
-      "Touch to move works",
-      "UI responsive to mobile viewport"
-    ],
-    "passes": false
-  },
-  {
-    "category": "testing",
-    "description": "Visual regression tests for board rendering",
-    "steps": [
-      "2-player board screenshot matches baseline",
-      "Pieces render correctly",
-      "Highlights render correctly",
-      "No visual regressions detected"
+      "Create e2e/endgame.spec.ts",
+      "Test: play to victory, verify end modal appears",
+      "Test: victory condition displayed correctly",
+      "Create e2e/mobile.spec.ts",
+      "Test: mobile viewport touch interactions work",
+      "Test: responsive layout adapts correctly"
     ],
     "passes": false
   },
   {
     "category": "non-functional",
-    "description": "Valid moves calculation completes in under 10ms",
+    "description": "Verify performance requirements",
     "steps": [
-      "getValidMoves is called",
-      "Calculation begins",
-      "All valid moves computed",
-      "Result returned within 10ms"
+      "Add performance test for getValidMoves: must complete < 10ms",
+      "Add performance test for API endpoints: must respond < 100ms",
+      "Measure WebSocket latency: must be < 50ms",
+      "Verify AI move generation: must complete < 2 seconds",
+      "Run tests with production build",
+      "Document results in test output"
     ],
     "passes": false
   },
   {
     "category": "non-functional",
-    "description": "API response time is under 100ms",
+    "description": "Verify security requirements",
     "steps": [
-      "Client sends API request",
-      "Server processes request",
-      "Response sent back",
-      "Total time under 100ms"
+      "Verify session tokens are 64 chars (sufficient entropy)",
+      "Verify all game mutations require valid session",
+      "Verify players can only move their own pieces",
+      "Verify all API input validated with Zod",
+      "Verify error messages don't leak sensitive info",
+      "Verify sessions expire after 24 hours"
     ],
     "passes": false
   },
   {
     "category": "non-functional",
-    "description": "WebSocket latency is under 50ms",
+    "description": "Verify server reliability requirements",
     "steps": [
-      "Client emits event",
-      "Server receives and processes",
-      "Server emits response",
-      "Client receives within 50ms"
+      "Verify game state persists to database",
+      "Verify server recovers active games on restart",
+      "Verify optimistic locking prevents concurrent conflicts",
+      "Verify connection pool handles reconnection",
+      "Verify no memory leaks (run extended test)"
     ],
     "passes": false
   },
   {
     "category": "non-functional",
-    "description": "AI move generation completes in under 2 seconds",
+    "description": "Verify browser compatibility",
     "steps": [
-      "AI turn begins",
-      "AI calculates best move",
-      "Decision made within 2 seconds",
-      "Move executed"
+      "Test in Chrome (latest 2 versions)",
+      "Test in Firefox (latest 2 versions)",
+      "Test in Safari (latest 2 versions)",
+      "Test in Edge (latest 2 versions)",
+      "Test on iOS Safari mobile",
+      "Test on Chrome Android mobile",
+      "Verify all features work, no console errors"
     ],
     "passes": false
   },
   {
     "category": "non-functional",
-    "description": "Server design is stateless for horizontal scaling",
+    "description": "Verify client reliability",
     "steps": [
-      "Game state stored in PostgreSQL",
-      "Sessions stored in Redis",
-      "Any server instance can handle requests",
-      "Multiple instances can run simultaneously"
-    ],
-    "passes": false
-  },
-  {
-    "category": "non-functional",
-    "description": "Session tokens are cryptographically secure",
-    "steps": [
-      "Session is created",
-      "Token generated using secure random",
-      "Token has sufficient entropy",
-      "Token cannot be guessed"
-    ],
-    "passes": false
-  },
-  {
-    "category": "non-functional",
-    "description": "All moves are validated on server",
-    "steps": [
-      "Client sends move command",
-      "Server validates piece ownership",
-      "Server validates move legality",
-      "Invalid moves are rejected"
-    ],
-    "passes": false
-  },
-  {
-    "category": "non-functional",
-    "description": "Input is sanitized using Zod schemas",
-    "steps": [
-      "Request received by API",
-      "Request body parsed through Zod schema",
-      "Invalid data rejected with error",
-      "Valid data passed to handler"
-    ],
-    "passes": false
-  },
-  {
-    "category": "non-functional",
-    "description": "Client does not trust game state (server authoritative)",
-    "steps": [
-      "Client receives game state from server",
-      "Client cannot modify authoritative state",
-      "All state changes come from server",
-      "Client only sends commands"
-    ],
-    "passes": false
-  },
-  {
-    "category": "non-functional",
-    "description": "Sessions expire after 24 hours",
-    "steps": [
-      "Session is created with expiry time",
-      "24 hours pass",
-      "Session becomes invalid",
-      "User must re-authenticate"
-    ],
-    "passes": false
-  },
-  {
-    "category": "non-functional",
-    "description": "Game state persists across server restarts",
-    "steps": [
-      "Game is in progress",
-      "Server restarts",
-      "Server recovers active games from database",
-      "Players can continue playing"
-    ],
-    "passes": false
-  },
-  {
-    "category": "non-functional",
-    "description": "Optimistic locking prevents concurrent update conflicts",
-    "steps": [
-      "Game state has version number",
-      "Update includes expected version",
-      "Conflicting update detected",
-      "Retry with fresh state"
-    ],
-    "passes": false
-  },
-  {
-    "category": "non-functional",
-    "description": "Application works in Chrome latest 2 versions",
-    "steps": [
-      "Application loaded in Chrome",
-      "All features functional",
-      "No console errors",
-      "Rendering correct"
-    ],
-    "passes": false
-  },
-  {
-    "category": "non-functional",
-    "description": "Application works in Firefox latest 2 versions",
-    "steps": [
-      "Application loaded in Firefox",
-      "All features functional",
-      "No console errors",
-      "Rendering correct"
-    ],
-    "passes": false
-  },
-  {
-    "category": "non-functional",
-    "description": "Application works in Safari latest 2 versions",
-    "steps": [
-      "Application loaded in Safari",
-      "All features functional",
-      "No console errors",
-      "Rendering correct"
-    ],
-    "passes": false
-  },
-  {
-    "category": "non-functional",
-    "description": "Application works in Edge latest 2 versions",
-    "steps": [
-      "Application loaded in Edge",
-      "All features functional",
-      "No console errors",
-      "Rendering correct"
-    ],
-    "passes": false
-  },
-  {
-    "category": "non-functional",
-    "description": "Application works on iOS Safari mobile",
-    "steps": [
-      "Application loaded on iPhone",
-      "Touch interactions work",
-      "Layout is responsive",
-      "All features accessible"
-    ],
-    "passes": false
-  },
-  {
-    "category": "non-functional",
-    "description": "Application works on Chrome Android mobile",
-    "steps": [
-      "Application loaded on Android phone",
-      "Touch interactions work",
-      "Layout is responsive",
-      "All features accessible"
-    ],
-    "passes": false
-  },
-  {
-    "category": "board-setup",
-    "description": "2-player board has radius 3 with 37 hexes",
-    "steps": [
-      "2-player game created",
-      "Board generated with radius 3",
-      "Total hex count is 37",
-      "Formula: 3(3)² + 3(3) + 1 = 37"
-    ],
-    "passes": false
-  },
-  {
-    "category": "board-setup",
-    "description": "5 shields placed symmetrically for 2-player game",
-    "steps": [
-      "Board setup begins",
-      "5 shield positions calculated",
-      "Shields placed with rotational symmetry",
-      "Both players have equal defensive advantage"
-    ],
-    "passes": false
-  },
-  {
-    "category": "board-setup",
-    "description": "Each player starts with 5 Warriors",
-    "steps": [
-      "Board setup completes",
-      "Player 1 has 5 Warriors",
-      "Player 2 has 5 Warriors",
-      "Warriors placed in starting zone"
-    ],
-    "passes": false
-  },
-  {
-    "category": "board-setup",
-    "description": "Jarls start at opposite edges equidistant from Throne",
-    "steps": [
-      "Starting positions calculated",
-      "Jarl 1 placed at edge",
-      "Jarl 2 placed at opposite edge",
-      "Both Jarls same hex distance from center"
-    ],
-    "passes": false
-  },
-  {
-    "category": "board-setup",
-    "description": "Warriors placed in front of Jarl toward center",
-    "steps": [
-      "Jarl position determined",
-      "Warriors placed between Jarl and Throne",
-      "Warriors form initial formation",
-      "Warriors protect Jarl's advance"
-    ],
-    "passes": false
-  },
-  {
-    "category": "board-setup",
-    "description": "Shields never block all straight paths to Throne",
-    "steps": [
-      "Shield positions validated",
-      "At least one unobstructed path exists for each player",
-      "Invalid placements regenerated",
-      "Fair game guaranteed"
-    ],
-    "passes": false
-  },
-  {
-    "category": "board-setup",
-    "description": "Shields never placed on Throne or edge hexes",
-    "steps": [
-      "Shield placement algorithm runs",
-      "Center hex excluded",
-      "Edge hexes excluded",
-      "Shields only in interior"
-    ],
-    "passes": false
-  },
-  {
-    "category": "board-setup",
-    "description": "Throne marker placed at center hex (0,0)",
-    "steps": [
-      "Board initialized",
-      "Center hex identified at coordinates (0,0)",
-      "Throne marker assigned to center",
-      "Throne rendered distinctly"
-    ],
-    "passes": false
-  },
-  {
-    "category": "error-handling",
-    "description": "Custom error classes defined for common errors",
-    "steps": [
-      "GameNotFoundError for missing games",
-      "InvalidMoveError for illegal moves",
-      "SessionExpiredError for expired tokens",
-      "Errors have descriptive messages"
-    ],
-    "passes": false
-  },
-  {
-    "category": "error-handling",
-    "description": "Express error middleware handles all errors",
-    "steps": [
-      "Catches synchronous errors",
-      "Catches async errors",
-      "Formats error response consistently",
-      "Logs errors for debugging"
-    ],
-    "passes": false
-  },
-  {
-    "category": "error-handling",
-    "description": "Client-side error boundary catches React errors",
-    "steps": [
-      "Component error caught by boundary",
-      "Fallback UI displayed",
-      "Error logged to console",
-      "User can retry or navigate away"
-    ],
-    "passes": false
-  },
-  {
-    "category": "error-handling",
-    "description": "Reconnection retry logic with exponential backoff",
-    "steps": [
-      "Connection lost",
-      "First retry after 1 second",
-      "Subsequent retries with increasing delay",
-      "Max retries limit enforced"
-    ],
-    "passes": false
-  },
-  {
-    "category": "error-handling",
-    "description": "User-friendly error messages displayed",
-    "steps": [
-      "Error occurs during gameplay",
-      "Technical error message not shown to user",
-      "Friendly message explains what went wrong",
-      "Suggested action provided if applicable"
+      "Verify client only sends commands (server authoritative)",
+      "Verify reconnection works with Connection State Recovery",
+      "Verify animations maintain 60fps",
+      "Verify responsive design works at all viewports",
+      "Verify touch input works on mobile"
     ],
     "passes": false
   },
   {
     "category": "deployment",
-    "description": "Dockerfile builds production image",
+    "description": "Create production Dockerfile",
     "steps": [
-      "Dockerfile exists in project root",
-      "Multi-stage build for optimization",
-      "docker build completes successfully",
-      "Image runs correctly"
+      "Create Dockerfile at project root",
+      "Stage 1 (build): use node:20-alpine, install deps, build TypeScript",
+      "Stage 2 (production): use node:20-alpine, copy dist and prod deps only",
+      "Set NODE_ENV=production",
+      "Add HEALTHCHECK instruction",
+      "Expose port 3000",
+      "Set CMD to start server",
+      "Build and test locally"
     ],
     "passes": false
   },
   {
     "category": "deployment",
-    "description": "docker-compose.prod.yml for production deployment",
+    "description": "Create production docker-compose",
     "steps": [
-      "Production compose file exists",
-      "PostgreSQL, Redis, and app services defined",
-      "Environment variables configured",
-      "Volumes configured for persistence"
+      "Create docker-compose.prod.yml",
+      "Add app service built from Dockerfile",
+      "Add postgres service with volume",
+      "Add redis service with volume",
+      "Configure environment variables via .env",
+      "Add restart: unless-stopped policies",
+      "Add healthchecks for all services",
+      "Test full stack starts correctly"
     ],
     "passes": false
   },
   {
     "category": "deployment",
-    "description": "GitHub Actions CI workflow runs tests",
+    "description": "Set up CI pipeline",
     "steps": [
-      "Workflow triggered on push/PR",
-      "npm install runs",
-      "npm test runs all tests",
-      "npm run lint passes",
-      "Build succeeds"
+      "Create .github/workflows/ci.yml",
+      "Trigger on push to main and pull requests",
+      "Set up Node.js 20 with pnpm",
+      "Cache pnpm dependencies",
+      "Start postgres and redis services",
+      "Run pnpm install",
+      "Run pnpm lint",
+      "Run pnpm test",
+      "Run pnpm build",
+      "Fail workflow on any error"
     ],
     "passes": false
   },
   {
     "category": "deployment",
-    "description": "GitHub Actions CD workflow deploys to production",
+    "description": "Create README with project setup",
     "steps": [
-      "Triggered on main branch push",
-      "Docker image built and pushed",
-      "Deployment to production environment",
-      "Health check verifies deployment"
+      "Update README.md with project overview",
+      "Add quick start guide (docker-compose up, npm install, npm run dev)",
+      "Document development setup step by step",
+      "Document all environment variables in README"
     ],
     "passes": false
   },
   {
     "category": "deployment",
-    "description": "Health checks configured for all services",
+    "description": "Create API documentation",
     "steps": [
-      "/health endpoint responds correctly",
-      "Docker health check configured",
-      "Orchestrator uses health checks",
-      "Unhealthy containers restarted"
+      "Create docs/API.md",
+      "Document all REST endpoints with request/response examples",
+      "Include authentication header requirements",
+      "Include error response formats"
     ],
     "passes": false
   },
   {
     "category": "deployment",
-    "description": "Load tests verify performance under load",
+    "description": "Create WebSocket documentation",
     "steps": [
-      "Load test scripts created",
-      "Simulate concurrent users",
-      "Performance metrics collected",
-      "Bottlenecks identified and addressed"
+      "Create docs/WEBSOCKET.md",
+      "Document all client-to-server events with payloads",
+      "Document all server-to-client events with payloads",
+      "Include connection and authentication flow"
     ],
     "passes": false
   },
   {
     "category": "deployment",
-    "description": "No memory leaks detected",
+    "description": "Create architecture and help documentation",
     "steps": [
-      "Server runs for extended period",
-      "Memory usage monitored",
-      "No continuous memory growth",
-      "Garbage collection working correctly"
-    ],
-    "passes": false
-  },
-  {
-    "category": "deployment",
-    "description": "Database indexes optimized for queries",
-    "steps": [
-      "Indexes exist for foreign keys",
-      "Query performance analyzed",
-      "Slow queries identified and optimized",
-      "EXPLAIN plans reviewed"
-    ],
-    "passes": false
-  },
-  {
-    "category": "deployment",
-    "description": "Client bundle optimized for production",
-    "steps": [
-      "Tree shaking removes unused code",
-      "Code splitting for lazy loading",
-      "Assets minified",
-      "Bundle size within acceptable limits"
-    ],
-    "passes": false
-  },
-  {
-    "category": "deployment",
-    "description": "Rollback procedure documented and tested",
-    "steps": [
-      "Rollback steps documented",
-      "Previous version can be restored",
-      "Database migrations reversible",
-      "Rollback tested in staging"
-    ],
-    "passes": false
-  },
-  {
-    "category": "documentation",
-    "description": "README with quick start instructions",
-    "steps": [
-      "README.md exists in project root",
-      "Prerequisites listed",
-      "Installation steps provided",
-      "npm run dev starts application"
-    ],
-    "passes": false
-  },
-  {
-    "category": "documentation",
-    "description": "API documentation generated",
-    "steps": [
-      "All endpoints documented",
-      "Request/response schemas included",
-      "WebSocket events documented",
-      "Examples provided"
-    ],
-    "passes": false
-  },
-  {
-    "category": "documentation",
-    "description": "Architecture documentation explains system design",
-    "steps": [
-      "System overview diagram",
-      "Component responsibilities explained",
-      "Data flow documented",
-      "Technology choices justified"
+      "Add text-based architecture overview diagram to README",
+      "Document monorepo structure and package relationships",
+      "Add in-app help content (game rules summary)",
+      "Create brief turn/combat quick reference"
     ],
     "passes": false
   }
