@@ -9,6 +9,8 @@
   ],
   "scripts": {
     "dev": "pnpm run --parallel dev",
+    "dev:client": "pnpm --filter @jarls/client dev",
+    "dev:server": "pnpm --filter @jarls/server dev",
     "build": "pnpm run -r build",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
     "typecheck": "pnpm run -r typecheck",

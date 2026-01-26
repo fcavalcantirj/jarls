@@ -230,3 +230,30 @@
 **Files Modified**:
 - packages/server/package.json (added nodemon dependency, changed dev script)
 - packages/shared/package.json (added type:module for ESM runtime support)
+
+---
+
+### 2026-01-25: Infrastructure - Client Hot-Reload Configuration
+
+**Feature Completed**: "Client hot-reload configured with Vite"
+
+**Work Done**:
+- Verified Vite is already configured in client package with @vitejs/plugin-react
+- Vite configuration includes React plugin which enables Fast Refresh (HMR) by default
+- Added `dev:client` script to root package.json: `pnpm --filter @jarls/client dev`
+- Also added `dev:server` script for consistency: `pnpm --filter @jarls/server dev`
+- Tested Vite dev server starts correctly on http://localhost:5173/
+- Verified HMR is working:
+  - `/@react-refresh` is injected for React Fast Refresh
+  - `/@vite/client` is loaded for Vite's HMR client
+  - HMRContext class is properly initialized
+
+**Verification**:
+- `pnpm dev:client` starts Vite dev server successfully
+- Server responds with HTML containing HMR scripts
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (2 tests in shared package)
+- `pnpm lint` passes with no errors
+
+**Files Modified**:
+- package.json (added dev:client and dev:server scripts)
