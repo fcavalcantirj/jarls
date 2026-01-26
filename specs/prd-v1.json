@@ -176,7 +176,7 @@
       "Update index.ts re-exports if needed",
       "Verify tests pass"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

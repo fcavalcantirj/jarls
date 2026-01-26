@@ -2023,3 +2023,43 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Modified**:
 - packages/shared/src/combat.ts (added re-exports, removed function definitions)
+
+---
+
+### 2026-01-26: Infrastructure - Split move.ts - extract move-validation.ts
+
+**Feature Completed**: "Split move.ts - extract move-validation.ts"
+
+**Work Done**:
+- Created `packages/shared/src/move-validation.ts` containing move validation functions
+- Moved 7 functions from move.ts to move-validation.ts:
+  - isPathClear: checks if path between two hexes is clear of pieces
+  - hasDraftFormationInDirection: checks if Jarl has draft formation in specific direction
+  - hasDraftFormation: checks all 6 directions for draft formation
+  - getDirectionBetweenAdjacent: gets direction between adjacent hexes
+  - getLineDirection: checks if two hexes are in a straight line
+  - pathCrossesThrone: checks if 2-hex move path crosses through Throne
+  - validateMove: main move validation function checking all game rules
+- Updated `packages/shared/src/move.ts`:
+  - Added re-exports from move-validation.ts for all moved functions
+  - Added internal imports from move-validation.ts for functions used internally
+  - Removed all validation function definitions (~330 lines of code removed)
+  - move.ts now focuses on move execution, win conditions, and reachable hexes
+
+**Why This Matters**:
+- move.ts reduced from 1,012 lines to 683 lines (under 800-line guideline)
+- move-validation.ts is 362 lines (well under limit)
+- Continues the critical file-splitting infrastructure work
+- Improves code organization: validation logic vs execution logic
+- All functions remain accessible via `import { ... } from '@jarls/shared'`
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (756 tests total)
+- Server and client can still import move functions from @jarls/shared
+
+**Files Created**:
+- packages/shared/src/move-validation.ts
+
+**Files Modified**:
+- packages/shared/src/move.ts (added re-exports, removed function definitions)
