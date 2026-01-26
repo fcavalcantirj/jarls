@@ -184,7 +184,7 @@
       "Round-trip conversion preserves values",
       "Unit tests pass for conversion functions"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

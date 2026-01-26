@@ -289,3 +289,32 @@
 **Files Modified**:
 - packages/shared/src/index.ts (added HexDirection type and DIRECTIONS constant)
 - packages/shared/src/index.test.ts (added unit tests for HexDirection and DIRECTIONS)
+
+---
+
+### 2026-01-25: Core Logic - Coordinate Conversion Functions
+
+**Feature Completed**: "axialToCube and cubeToAxial conversion functions work"
+
+**Work Done**:
+- Implemented `axialToCube(axial: AxialCoord): CubeCoord` function
+  - Takes axial coordinates (q, r) and derives cube coordinates (q, r, s)
+  - s component calculated from constraint q + r + s = 0
+  - Handles -0 edge case by normalizing to 0
+- Implemented `cubeToAxial(cube: CubeCoord): AxialCoord` function
+  - Takes cube coordinates (q, r, s) and returns axial coordinates (q, r)
+  - s component is discarded as it's redundant
+- Added comprehensive unit tests:
+  - Origin conversion tests
+  - Positive and negative coordinate tests
+  - Constraint verification (q + r + s = 0)
+  - Round-trip conversion tests (axial -> cube -> axial)
+  - Round-trip conversion tests (cube -> axial -> cube)
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (19 tests total, 11 new tests for conversion functions)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added axialToCube and cubeToAxial functions)
+- packages/shared/src/index.test.ts (added unit tests for conversion functions)

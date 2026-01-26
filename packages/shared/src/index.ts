@@ -29,6 +29,33 @@ export const DIRECTIONS: readonly CubeCoord[] = [
   { q: 0, r: 1, s: -1 }, // 5: Southeast
 ] as const;
 
+// Coordinate conversion functions
+
+/**
+ * Convert axial coordinates (q, r) to cube coordinates (q, r, s).
+ * The s component is derived from the constraint q + r + s = 0.
+ */
+export function axialToCube(axial: AxialCoord): CubeCoord {
+  // Use (0 - q - r) to avoid -0 when q and r are both 0
+  const s = 0 - axial.q - axial.r;
+  return {
+    q: axial.q,
+    r: axial.r,
+    s: s === 0 ? 0 : s, // Normalize -0 to 0
+  };
+}
+
+/**
+ * Convert cube coordinates (q, r, s) to axial coordinates (q, r).
+ * The s component is discarded as it's redundant.
+ */
+export function cubeToAxial(cube: CubeCoord): AxialCoord {
+  return {
+    q: cube.q,
+    r: cube.r,
+  };
+}
+
 // Piece types
 export type PieceType = 'jarl' | 'warrior' | 'shield';
 
