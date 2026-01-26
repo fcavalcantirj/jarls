@@ -43,6 +43,7 @@ import {
   hasDraftFormationInDirection,
   getDirectionBetweenAdjacent,
   getLineDirection,
+  pathCrossesThrone,
   validateMove,
   getPieceStrength,
   findInlineSupport,
@@ -4322,6 +4323,191 @@ describe('@jarls/shared', () => {
         // In most initial states, warriors should have at least one valid move
         expect(foundValidMove).toBe(true);
       });
+    });
+  });
+
+  describe('pathCrossesThrone', () => {
+    it('should return null when path does not cross Throne', () => {
+      // Path from (1,0) to (3,0) - East direction, doesn't cross origin
+      const result = pathCrossesThrone({ q: 1, r: 0 }, { q: 3, r: 0 });
+      expect(result).toBeNull();
+    });
+
+    it('should return null for 1-hex move', () => {
+      // 1-hex move has no intermediate hexes to cross
+      const result = pathCrossesThrone({ q: -1, r: 0 }, { q: 0, r: 0 });
+      expect(result).toBeNull();
+    });
+
+    it('should return Throne position when path crosses through Throne', () => {
+      // Path from (-2,0) to (2,0) - crosses origin (but this is 4 hexes, let's use 2-hex)
+      // For 2-hex move crossing throne: (-1,0) to (1,0)
+      const result = pathCrossesThrone({ q: -1, r: 0 }, { q: 1, r: 0 });
+      expect(result).toEqual({ q: 0, r: 0 });
+    });
+
+    it('should detect crossing in Northeast-Southwest direction', () => {
+      // Path from (-1,1) to (1,-1) crosses (0,0)
+      const result = pathCrossesThrone({ q: -1, r: 1 }, { q: 1, r: -1 });
+      expect(result).toEqual({ q: 0, r: 0 });
+    });
+
+    it('should detect crossing in Northwest-Southeast direction', () => {
+      // Path from (1,1) to (-1,-1) crosses (0,0)
+      const result = pathCrossesThrone({ q: 1, r: -1 }, { q: -1, r: 1 });
+      expect(result).toEqual({ q: 0, r: 0 });
+    });
+
+    it('should return null when Throne is the destination (not intermediate)', () => {
+      // Moving TO the Throne is not "crossing" it
+      const result = pathCrossesThrone({ q: -2, r: 0 }, { q: 0, r: 0 });
+      expect(result).toBeNull();
+    });
+
+    it('should return null when Throne is the start (not intermediate)', () => {
+      // Moving FROM the Throne is not "crossing" it
+      const result = pathCrossesThrone({ q: 0, r: 0 }, { q: 2, r: 0 });
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('Jarl 2-hex Throne crossing', () => {
+    // Helper to create a test game state for Jarl throne crossing tests
+    function createJarlThroneCrossingTestState(
+      pieces: Piece[],
+      currentPlayerId: string
+    ): GameState {
+      return {
+        id: 'test-game',
+        phase: 'playing',
+        config: {
+          playerCount: 2,
+          boardRadius: 3,
+          shieldCount: 5,
+          warriorCount: 5,
+          turnTimerMs: null,
+        },
+        players: [
+          { id: 'p1', name: 'Player 1', color: '#ff0000', isEliminated: false },
+          { id: 'p2', name: 'Player 2', color: '#0000ff', isEliminated: false },
+        ],
+        pieces,
+        currentPlayerId,
+        turnNumber: 1,
+        roundNumber: 1,
+        roundsSinceElimination: 0,
+        winnerId: null,
+        winCondition: null,
+      };
+    }
+
+    it('should set adjustedDestination when Jarl 2-hex move crosses Throne', () => {
+      // Jarl at (-1,0) with 2 warriors behind at (-2,0) and (-3,0) for draft
+      // Attempting to move to (1,0) which crosses the Throne
+      const state = createJarlThroneCrossingTestState(
+        [
+          { id: 'j1', type: 'jarl', playerId: 'p1', position: { q: -1, r: 0 } },
+          { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: -2, r: 0 } },
+          { id: 'w2', type: 'warrior', playerId: 'p1', position: { q: -3, r: 0 } },
+          { id: 'j2', type: 'jarl', playerId: 'p2', position: { q: 3, r: 0 } },
+        ],
+        'p1'
+      );
+
+      const command: MoveCommand = { pieceId: 'j1', destination: { q: 1, r: 0 } };
+      const result = validateMove(state, 'p1', command);
+
+      expect(result.isValid).toBe(true);
+      expect(result.hasMomentum).toBe(true);
+      expect(result.adjustedDestination).toEqual({ q: 0, r: 0 });
+    });
+
+    it('should not set adjustedDestination when Jarl 2-hex move does not cross Throne', () => {
+      // Jarl at (1,0) with 2 warriors behind in West direction, moving to (3,0) - doesn't cross Throne
+      const stateWithDraft = createJarlThroneCrossingTestState(
+        [
+          { id: 'j1', type: 'jarl', playerId: 'p1', position: { q: 1, r: 0 } },
+          { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } }, // Behind (West)
+          { id: 'w2', type: 'warrior', playerId: 'p1', position: { q: -1, r: 0 } }, // Further behind
+          { id: 'j2', type: 'jarl', playerId: 'p2', position: { q: -3, r: 0 } },
+        ],
+        'p1'
+      );
+
+      const command: MoveCommand = { pieceId: 'j1', destination: { q: 3, r: 0 } };
+      const result = validateMove(stateWithDraft, 'p1', command);
+
+      expect(result.isValid).toBe(true);
+      expect(result.hasMomentum).toBe(true);
+      expect(result.adjustedDestination).toBeUndefined();
+    });
+
+    it('should not set adjustedDestination for 1-hex Jarl moves', () => {
+      // 1-hex move cannot cross through Throne (only TO or FROM it)
+      const state = createJarlThroneCrossingTestState(
+        [
+          { id: 'j1', type: 'jarl', playerId: 'p1', position: { q: -1, r: 0 } },
+          { id: 'j2', type: 'jarl', playerId: 'p2', position: { q: 3, r: 0 } },
+        ],
+        'p1'
+      );
+
+      // Move to Throne (1-hex move TO throne, not crossing)
+      const command: MoveCommand = { pieceId: 'j1', destination: { q: 0, r: 0 } };
+      const result = validateMove(state, 'p1', command);
+
+      expect(result.isValid).toBe(true);
+      expect(result.hasMomentum).toBe(false);
+      expect(result.adjustedDestination).toBeUndefined();
+    });
+
+    it('should trigger throne victory when Jarl 2-hex move crosses Throne via applyMove', () => {
+      // Full integration test: Jarl's 2-hex move crossing Throne should result in victory
+      const state = createJarlThroneCrossingTestState(
+        [
+          { id: 'j1', type: 'jarl', playerId: 'p1', position: { q: -1, r: 0 } },
+          { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: -2, r: 0 } },
+          { id: 'w2', type: 'warrior', playerId: 'p1', position: { q: -3, r: 0 } },
+          { id: 'j2', type: 'jarl', playerId: 'p2', position: { q: 3, r: 0 } },
+        ],
+        'p1'
+      );
+
+      // Attempt to move to (1,0) - should stop at Throne and win
+      const command: MoveCommand = { pieceId: 'j1', destination: { q: 1, r: 0 } };
+      const result = applyMove(state, 'p1', command);
+
+      expect(result.success).toBe(true);
+      expect(result.newState.phase).toBe('ended');
+      expect(result.newState.winnerId).toBe('p1');
+      expect(result.newState.winCondition).toBe('throne');
+
+      // Jarl should be at the Throne, not at the original destination
+      const jarl = getPieceById(result.newState, 'j1');
+      expect(jarl?.position).toEqual({ q: 0, r: 0 });
+    });
+
+    it('should work correctly with diagonal 2-hex Throne crossing', () => {
+      // Jarl at (1,-1) moving to (-1,1) with draft, crosses Throne
+      const state = createJarlThroneCrossingTestState(
+        [
+          { id: 'j1', type: 'jarl', playerId: 'p1', position: { q: 1, r: -1 } },
+          { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 2, r: -2 } }, // Behind in SW direction
+          { id: 'w2', type: 'warrior', playerId: 'p1', position: { q: 3, r: -3 } },
+          { id: 'j2', type: 'jarl', playerId: 'p2', position: { q: -3, r: 0 } },
+        ],
+        'p1'
+      );
+
+      const command: MoveCommand = { pieceId: 'j1', destination: { q: -1, r: 1 } };
+      const result = applyMove(state, 'p1', command);
+
+      expect(result.success).toBe(true);
+      expect(result.newState.winnerId).toBe('p1');
+      expect(result.newState.winCondition).toBe('throne');
+
+      const jarl = getPieceById(result.newState, 'j1');
+      expect(jarl?.position).toEqual({ q: 0, r: 0 });
     });
   });
 

@@ -1656,3 +1656,42 @@ when needed.
 **Files Verified** (no changes needed):
 - packages/shared/src/index.ts (blocked attack handling already implemented at lines 3213-3234)
 - packages/shared/src/index.test.ts (tests already exist at lines 12250-12295)
+
+---
+
+### 2026-01-26: Core Logic - Jarl 2-hex Throne Crossing Validation
+
+**Feature Completed**: "Validate Jarl 2-hex moves cannot pass through Throne" and "Unit tests for Jarl 2-hex Throne crossing"
+
+**Work Done**:
+- Implemented `pathCrossesThrone(start, end)` helper function:
+  - Uses `hexLineAxial` to get all hexes on the path between start and end
+  - Checks if any intermediate hex (not start or end) is the Throne at (0,0)
+  - Returns the Throne position if crossed, null otherwise
+- Extended `MoveValidation` interface with `adjustedDestination` field:
+  - When a Jarl's 2-hex move crosses the Throne, this field contains the Throne position
+  - Allows `applyMove` to redirect the Jarl to the Throne instead of the original destination
+- Modified `validateMove` function:
+  - Added check after path validation for Jarl 2-hex moves
+  - If move crosses Throne, sets `adjustedDestination` to Throne position
+- Modified `applyMove` function:
+  - Uses `adjustedDestination` when present instead of the original destination
+  - Jarl stops at Throne and wins immediately via existing throne victory check
+- Added comprehensive unit tests (12 new tests) covering:
+  - `pathCrossesThrone`: null for non-crossing paths, null for 1-hex moves, returns Throne for crossing paths
+  - All cardinal and diagonal directions tested
+  - Edge cases: Throne as destination (not crossing), Throne as start (not crossing)
+  - `validateMove`: sets adjustedDestination correctly, doesn't set for non-crossing moves
+  - `applyMove` integration: Jarl crossing Throne results in throne victory, Jarl ends up at Throne position
+  - Diagonal 2-hex Throne crossing works correctly
+
+**Game Rule Implemented**:
+When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), the Jarl stops at the Throne instead of continuing to the original destination. This triggers an immediate throne victory for that player.
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (756 tests total, 12 new tests for pathCrossesThrone and Jarl 2-hex Throne crossing)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added pathCrossesThrone function, extended MoveValidation interface, modified validateMove and applyMove)
+- packages/shared/src/index.test.ts (added unit tests for pathCrossesThrone and Jarl 2-hex Throne crossing)

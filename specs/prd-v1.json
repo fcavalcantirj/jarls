@@ -93,13 +93,21 @@
   },
   {
     "category": "infrastructure",
-    "description": "Docker Compose with PostgreSQL 16 and Redis 7",
+    "description": "Docker Compose file with PostgreSQL 16 service",
     "steps": [
       "Create docker-compose.yml at project root",
       "Add PostgreSQL 16 service with volume persistence",
-      "Add Redis 7 service with volume persistence",
       "Configure network for inter-container communication",
-      "Add healthchecks for both services",
+      "Add healthcheck for PostgreSQL"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Docker Compose Redis 7 service and npm scripts",
+    "steps": [
+      "Add Redis 7 service with volume persistence",
+      "Add healthcheck for Redis",
       "Add docker:up and docker:down npm scripts",
       "Verify both services start and are accessible"
     ],
@@ -107,57 +115,112 @@
   },
   {
     "category": "infrastructure",
-    "description": "Database migrations with node-pg-migrate",
+    "description": "Database migrations setup with node-pg-migrate",
     "steps": [
       "Install node-pg-migrate in server package",
       "Configure migrations directory and connection",
+      "Add db:migrate and db:rollback npm scripts"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Database migration for game tables",
+    "steps": [
       "Create migration: game_snapshots table (game_id PK, state_snapshot JSONB, version INT, status VARCHAR, created_at, updated_at)",
       "Create migration: game_events table (event_id PK, game_id FK, event_type VARCHAR, event_data JSONB, created_at)",
-      "Create migration: player_sessions table (token PK, game_id, player_id, player_name, expires_at)",
       "Add indexes for foreign keys and common queries",
-      "Add db:migrate and db:rollback npm scripts",
       "Run migrations and verify tables exist"
     ],
     "passes": false
   },
   {
     "category": "infrastructure",
-    "description": "PostgreSQL connection pool with pg package",
+    "description": "Database migration for player sessions table",
+    "steps": [
+      "Create migration: player_sessions table (token PK, game_id, player_id, player_name, expires_at)",
+      "Add index on game_id for session lookups",
+      "Run migration and verify table exists"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "PostgreSQL connection pool setup",
     "steps": [
       "Install pg and @types/pg in server package",
       "Create packages/server/src/db/pool.ts",
       "Configure pool settings (max 10 connections, 30s idle timeout)",
-      "Create query() helper function with error handling",
-      "Create getClient() for transactions",
-      "Add graceful shutdown handling",
-      "Export pool and helpers from db/index.ts",
-      "Write unit test verifying connection works"
+      "Create query() helper function with error handling"
     ],
     "passes": false
   },
   {
     "category": "infrastructure",
-    "description": "Redis client with ioredis",
+    "description": "PostgreSQL connection pool transactions and export",
+    "steps": [
+      "Create getClient() for transactions",
+      "Add graceful shutdown handling",
+      "Export pool and helpers from db/index.ts"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "PostgreSQL connection pool unit test",
+    "steps": [
+      "Write unit test verifying connection works",
+      "Test query helper returns results",
+      "Test error handling on bad query"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Redis client setup with ioredis",
     "steps": [
       "Install ioredis in server package",
       "Create packages/server/src/redis/client.ts",
       "Configure connection with REDIS_URL from env",
-      "Add auto-reconnection handling",
-      "Add error event listeners with logging",
-      "Add graceful disconnect on shutdown",
-      "Export client from redis/index.ts",
-      "Write unit test verifying connection works"
+      "Add auto-reconnection handling"
     ],
     "passes": false
   },
   {
     "category": "infrastructure",
-    "description": "Environment variable management with Zod validation",
+    "description": "Redis client error handling and export",
+    "steps": [
+      "Add error event listeners with logging",
+      "Add graceful disconnect on shutdown",
+      "Export client from redis/index.ts"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Redis client unit test",
+    "steps": [
+      "Write unit test verifying connection works",
+      "Test set/get operations",
+      "Test TTL expiration"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Environment variable management with Zod",
     "steps": [
       "Install dotenv in server package (zod already installed)",
       "Create packages/server/src/config/env.ts",
       "Define Zod schema: DATABASE_URL (string), REDIS_URL (string), PORT (number, default 3000), NODE_ENV (enum)",
-      "Parse and validate env vars on import",
+      "Parse and validate env vars on import"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Environment config export and documentation",
+    "steps": [
       "Throw clear error if validation fails",
       "Export typed config object",
       "Update .env.example with all variables documented"
@@ -278,8 +341,7 @@
       "GameConfig interface with scaling values",
       "GamePhase, GameState interfaces defined",
       "MoveCommand, MoveResult interfaces defined",
-      "GameEvent union type defined",
-      "All types exported from @jarls/shared"
+      "GameEvent union type defined"
     ],
     "passes": true
   },
@@ -393,10 +455,7 @@
       "Validates it's player's turn",
       "Validates game is in playing phase",
       "Validates destination distance for piece type",
-      "Validates path is clear",
-      "Validates Jarl draft for 2-hex move",
-      "Validates Warriors cannot enter Throne",
-      "Validates cannot land on friendly piece"
+      "Validates path is clear"
     ],
     "passes": true
   },
@@ -406,20 +465,42 @@
     "steps": [
       "In validateMove, when Jarl moves 2 hexes, call hexLine(from, to)",
       "If any hex in path is Throne (0,0), block at Throne instead",
-      "Set destination to Throne hex, trigger immediate victory",
+      "Set destination to Throne hex, trigger immediate victory"
+    ],
+    "passes": true
+  },
+  {
+    "category": "core-logic",
+    "description": "Unit tests for Jarl 2-hex Throne crossing",
+    "steps": [
       "Unit tests: Jarl 2-hex move crossing Throne stops there and wins",
       "Unit tests: Jarl 2-hex move not crossing Throne works normally"
+    ],
+    "passes": true
+  },
+  {
+    "category": "core-logic",
+    "description": "Implement hasLegalMoves function",
+    "steps": [
+      "Add hasLegalMoves(state, playerId) function",
+      "Check all player's pieces for reachable hexes",
+      "Return true if any piece has valid moves"
     ],
     "passes": false
   },
   {
     "category": "core-logic",
-    "description": "Enforce no-pass rule with turn skip only when boxed in",
+    "description": "Enforce no-pass rule with turn skip",
     "steps": [
-      "Add hasLegalMoves(state, playerId) function",
-      "Check all player's pieces for reachable hexes",
       "If hasLegalMoves returns true, player MUST move",
-      "If hasLegalMoves returns false (extremely rare), allow turn skip",
+      "If hasLegalMoves returns false (extremely rare), allow turn skip"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Unit tests for no-pass rule",
+    "steps": [
       "Unit tests: cannot skip when legal moves exist",
       "Unit tests: can skip when completely boxed in by shields/edges/pieces"
     ],
@@ -431,8 +512,14 @@
     "steps": [
       "In validateMove, ensure path is clear of ALL pieces (friend or foe)",
       "Cannot move through friendly pieces",
-      "Cannot land on friendly pieces (already covered)",
-      "Cannot push friendly pieces (chain only includes enemies)",
+      "Cannot land on friendly pieces (already covered)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Unit tests for friendly piece blocking",
+    "steps": [
       "Unit tests: cannot move through own Warrior",
       "Unit tests: push chain stops if would push ally"
     ],
@@ -533,11 +620,18 @@
   },
   {
     "category": "core-logic",
-    "description": "Warriors stop adjacent to Throne in push chains (compression)",
+    "description": "Warriors stop adjacent to Throne in push chains",
     "steps": [
       "In detectChain, check if next hex is Throne",
       "If next piece is Warrior and next hex is Throne, mark as compression terminator",
-      "Warriors compress against Throne like they do against Shields",
+      "Warriors compress against Throne like they do against Shields"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Unit tests for Warrior Throne compression",
+    "steps": [
       "Unit tests: Warrior pushed toward Throne stops adjacent",
       "Unit tests: Chain with multiple Warriors compresses at Throne edge",
       "Unit tests: Jarl CAN enter Throne voluntarily (no compression for Jarl)"
@@ -618,13 +712,20 @@
   },
   {
     "category": "core-logic",
-    "description": "checkStarvationTrigger function with unit tests",
+    "description": "Implement checkStarvationTrigger function",
     "steps": [
       "Add checkStarvationTrigger(state: GameState) function in shared/src/index.ts",
       "Return { triggered: false } if roundsSinceElimination < 10",
       "Return { triggered: true, isInitial: true } at exactly 10 rounds",
       "Return { triggered: true, isInitial: false } at 15, 20, 25... rounds",
-      "Export function",
+      "Export function"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Unit tests for checkStarvationTrigger",
+    "steps": [
       "Add unit tests: no trigger at 0-9 rounds",
       "Add unit tests: trigger at 10, 15, 20 rounds",
       "Add unit tests: no trigger at 11, 12, 13, 14 rounds"
@@ -633,15 +734,29 @@
   },
   {
     "category": "core-logic",
-    "description": "calculateStarvationCandidates function with unit tests",
+    "description": "Define StarvationCandidates type",
     "steps": [
       "Add StarvationCandidates type: { playerId: string, candidates: Piece[], maxDistance: number }[]",
+      "Export type from @jarls/shared"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Implement calculateStarvationCandidates function",
+    "steps": [
       "Add calculateStarvationCandidates(state: GameState) function",
       "Group Warriors by playerId",
       "For each player, calculate hexDistance from Throne (0,0) for each Warrior",
       "Find max distance for that player",
-      "Return all Warriors at max distance (ties possible)",
-      "Export function and type",
+      "Return all Warriors at max distance (ties possible)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Unit tests for calculateStarvationCandidates",
+    "steps": [
       "Add unit tests: single warrior per player",
       "Add unit tests: multiple warriors, clear furthest",
       "Add unit tests: tie scenario with 2 warriors equidistant",
@@ -651,35 +766,71 @@
   },
   {
     "category": "core-logic",
-    "description": "resolveStarvation function with unit tests",
+    "description": "Define StarvationChoice type and function signature",
     "steps": [
       "Add StarvationChoice type: { playerId: string, pieceId: string }",
+      "Add StarvationResult type: { newState, events, gameEnded, winnerId }",
+      "Export types from @jarls/shared"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Implement resolveStarvation core logic",
+    "steps": [
       "Add resolveStarvation(state: GameState, choices: StarvationChoice[]) function",
       "Validate each choice is a valid candidate",
       "Remove selected Warriors from state.pieces",
-      "Generate STARVATION_ELIMINATED event for each removed Warrior",
-      "If player had last Warrior and grace period passed, eliminate their Jarl",
+      "Generate STARVATION_ELIMINATED event for each removed Warrior"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Implement resolveStarvation game end checks",
+    "steps": [
       "Reset roundsSinceElimination to 0",
       "Check for last standing victory after eliminations",
       "Return { newState, events, gameEnded, winnerId }",
-      "Export function and type",
+      "Export function"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Unit tests for resolveStarvation",
+    "steps": [
       "Add unit tests: normal starvation removes warriors",
       "Add unit tests: counter resets to 0",
-      "Add unit tests: Jarl elimination when no warriors and grace period passed",
       "Add unit tests: last standing victory triggered by starvation"
     ],
     "passes": false
   },
   {
     "category": "core-logic",
-    "description": "Implement Jarl starvation grace period",
+    "description": "Add Jarl starvation grace period tracking",
     "steps": [
       "Track roundsSinceLastWarrior per player in game state",
       "When player loses last Warrior, start 5-round grace period",
+      "Add JARL_STARVED event type to GameEvent union"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Implement Jarl elimination after grace period",
+    "steps": [
       "During starvation trigger, if player has no Warriors AND grace period passed (5+ rounds)",
       "Eliminate that player's Jarl immediately",
       "Generate JARL_STARVED event",
-      "Check for last standing victory after Jarl elimination",
+      "Check for last standing victory after Jarl elimination"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Unit tests for Jarl starvation grace period",
+    "steps": [
       "Unit tests: Jarl survives during 5-round grace period",
       "Unit tests: Jarl eliminated after grace period expires"
     ],
@@ -692,13 +843,7 @@
       "Review existing applyMove implementation in shared/src/index.ts",
       "Ensure it handles simple move (no combat) correctly",
       "Ensure it handles attack with successful push",
-      "Ensure it handles blocked attack (attacker stops adjacent)",
-      "Ensure it generates all animation events with correct depth",
-      "Ensure it checks win conditions after move",
-      "Ensure it increments roundsSinceElimination (or resets on elimination)",
-      "Ensure it advances currentTurn to next player",
-      "Return MoveResult with newState and events",
-      "Add comprehensive unit tests for all scenarios"
+      "Ensure it handles blocked attack (attacker stops adjacent)"
     ],
     "passes": true
   },
@@ -709,37 +854,64 @@
       "In applyMove, when attack is BLOCKED (Attack <= Defense)",
       "Move attacker to hex adjacent to defender (last clear hex before target)",
       "Attacker does NOT take defender's position",
-      "Generate MOVE event with blocked destination",
-      "Unit tests: blocked attack stops attacker adjacent",
-      "Unit tests: attacker uses their turn even when blocked"
+      "Generate MOVE event with blocked destination"
     ],
     "passes": true
   },
   {
     "category": "state-machine",
-    "description": "Install XState v5 and define machine types",
+    "description": "Install XState v5 in server package",
     "steps": [
       "Install xstate@5 in server package",
       "Create packages/server/src/game/types.ts",
-      "Define GameMachineContext extending GameState with: turnTimerMs, disconnectedPlayers, starvationChoices",
-      "Define GameMachineEvent union: PLAYER_JOINED, PLAYER_LEFT, START_GAME, MAKE_MOVE, STARVATION_CHOICE, TIMEOUT, PLAYER_DISCONNECTED, PLAYER_RECONNECTED",
-      "Define each event's payload type",
-      "Define GameMachineInput for actor creation",
-      "Export all types"
+      "Define GameMachineInput for actor creation"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "Implement lobby state for player management",
+    "description": "Define game machine context types",
+    "steps": [
+      "Define GameMachineContext extending GameState with: turnTimerMs, disconnectedPlayers, starvationChoices",
+      "Export GameMachineContext type"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Define game machine event types",
+    "steps": [
+      "Define GameMachineEvent union: PLAYER_JOINED, PLAYER_LEFT, START_GAME, MAKE_MOVE, STARVATION_CHOICE, TIMEOUT, PLAYER_DISCONNECTED, PLAYER_RECONNECTED",
+      "Define each event's payload type",
+      "Export all event types"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Create game machine skeleton with lobby state",
     "steps": [
       "Create packages/server/src/game/machine.ts",
       "Import createMachine from xstate",
       "Define gameMachine with initial 'lobby' state",
+      "Add guard canStartGame: context.players.length >= 2"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Implement lobby state event handlers",
+    "steps": [
       "On PLAYER_JOINED: add player to context.players array (max 2 for MVP)",
       "On PLAYER_LEFT: remove player from context.players",
-      "Add guard canStartGame: context.players.length >= 2",
-      "On START_GAME with guard: transition to 'setup'",
+      "On START_GAME with guard: transition to 'setup'"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Unit tests for lobby state",
+    "steps": [
       "Add unit tests: player joins successfully",
       "Add unit tests: player leaves successfully",
       "Add unit tests: cannot start with < 2 players",
@@ -754,8 +926,20 @@
       "Add 'setup' state to machine",
       "In entry action: call createInitialState(context.players) from shared",
       "Merge generated state into context",
-      "Set context.phase = 'playing'",
-      "Use 'always' transition to immediately go to 'playing' state",
+      "Set context.phase = 'playing'"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Setup state transition to playing",
+    "steps": ["Use 'always' transition to immediately go to 'playing' state"],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Unit tests for setup state",
+    "steps": [
       "Add unit tests: board is generated on entering setup",
       "Add unit tests: correct number of pieces placed",
       "Add unit tests: transitions to playing automatically"
@@ -764,17 +948,40 @@
   },
   {
     "category": "state-machine",
-    "description": "Implement playing state with move execution",
+    "description": "Add playing state structure",
     "steps": [
       "Add 'playing' compound state with 'awaitingMove' initial substate",
+      "Add 'checkingGameEnd' substate",
+      "Add 'ended' state"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Implement MAKE_MOVE handler",
+    "steps": [
       "On MAKE_MOVE: validate move.playerId === currentTurnPlayerId",
       "Call validateMove from shared to check legality",
       "If invalid: return error, stay in awaitingMove",
-      "If valid: call applyMove, update context with newState and events",
-      "Transition to 'checkingGameEnd' substate",
+      "If valid: call applyMove, update context with newState and events"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Implement checkingGameEnd substate",
+    "steps": [
+      "Transition to 'checkingGameEnd' after move",
       "In checkingGameEnd: check if gameEnded flag is set",
       "If ended: transition to 'ended' state",
-      "If not ended: transition back to 'awaitingMove'",
+      "If not ended: transition back to 'awaitingMove'"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Unit tests for playing state",
+    "steps": [
       "Add unit tests: valid move updates state",
       "Add unit tests: invalid move rejected",
       "Add unit tests: game ends on victory"
@@ -787,7 +994,14 @@
     "steps": [
       "Add roundNumber and firstPlayerIndex to game state",
       "After all players move once, increment firstPlayerIndex = (firstPlayerIndex + 1) % playerCount",
-      "Turn sequence each round starts from firstPlayerIndex",
+      "Turn sequence each round starts from firstPlayerIndex"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Unit tests for rotating first player",
+    "steps": [
       "Unit tests: 2-player rotation P0,P1 -> P1,P0 -> P0,P1",
       "Unit tests: 3-player rotation P0,P1,P2 -> P1,P2,P0 -> P2,P0,P1"
     ],
@@ -795,15 +1009,29 @@
   },
   {
     "category": "state-machine",
-    "description": "Implement turn timer with auto-skip",
+    "description": "Implement turn timer delayed transition",
     "steps": [
       "Add turnTimerMs to context (null = disabled, or 30000/60000/120000)",
       "In 'awaitingMove' state: add after() delayed transition",
       "Delay uses context.turnTimerMs if not null",
+      "If turnTimerMs is null: no timeout (wait indefinitely)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Implement autoSkipTurn action",
+    "steps": [
       "On timeout: execute autoSkipTurn action (advance turn without move)",
       "Generate TURN_SKIPPED event",
-      "Transition to checkingGameEnd",
-      "If turnTimerMs is null: no timeout (wait indefinitely)",
+      "Transition to checkingGameEnd"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Unit tests for turn timer",
+    "steps": [
       "Add unit tests with fake timers: turn skipped after timeout",
       "Add unit tests: no skip when timer disabled"
     ],
@@ -811,17 +1039,38 @@
   },
   {
     "category": "state-machine",
-    "description": "Implement starvation state for warrior selection",
+    "description": "Add starvation state structure",
     "steps": [
       "In 'checkingGameEnd': also check checkStarvationTrigger()",
       "If starvation triggered: transition to 'starvation' state",
-      "In 'starvation' entry: call calculateStarvationCandidates(), store in context",
+      "In 'starvation' entry: call calculateStarvationCandidates(), store in context"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Implement starvation choice handler",
+    "steps": [
       "On STARVATION_CHOICE: record choice in context.starvationChoices",
       "Add guard allChoicesMade: all players with candidates have chosen",
+      "When all choices made: call resolveStarvation()"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Implement starvation auto-timeout",
+    "steps": [
       "If auto-timeout needed (use turn timer or 30s default): auto-select random candidate",
-      "When all choices made: call resolveStarvation()",
       "Update context with result",
-      "Transition to 'checkingGameEnd' or 'ended'",
+      "Transition to 'checkingGameEnd' or 'ended'"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Unit tests for starvation state",
+    "steps": [
       "Add unit tests: starvation flow with manual choices",
       "Add unit tests: auto-select on timeout"
     ],
@@ -829,14 +1078,28 @@
   },
   {
     "category": "state-machine",
-    "description": "Implement disconnection with game pause",
+    "description": "Add paused state structure",
     "steps": [
       "Add 'paused' state to machine",
       "On PLAYER_DISCONNECTED: start 2-minute timer, mark player as disconnected",
-      "If in 'awaitingMove' and disconnected player's turn: transition to 'paused'",
+      "If in 'awaitingMove' and disconnected player's turn: transition to 'paused'"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Implement reconnection handling",
+    "steps": [
       "In 'paused': wait for PLAYER_RECONNECTED or timeout",
       "On PLAYER_RECONNECTED: mark player connected, return to previous state",
-      "On 2-minute timeout: stay paused (game waits - future: configurable)",
+      "On 2-minute timeout: stay paused (game waits - future: configurable)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Unit tests for disconnection",
+    "steps": [
       "Add unit tests: game pauses on disconnect",
       "Add unit tests: game resumes on reconnect"
     ],
@@ -844,29 +1107,59 @@
   },
   {
     "category": "state-machine",
-    "description": "Implement database persistence for game state",
+    "description": "Implement saveSnapshot and loadSnapshot",
     "steps": [
       "Create packages/server/src/game/persistence.ts",
       "Implement saveSnapshot(gameId, state, version): INSERT or UPDATE game_snapshots with optimistic locking",
       "Implement loadSnapshot(gameId): SELECT from game_snapshots, return null if not found",
-      "Implement saveEvent(gameId, event): INSERT into game_events",
-      "Implement loadEvents(gameId): SELECT all events ordered by created_at",
-      "Add version check in saveSnapshot to prevent concurrent conflicts",
-      "Export all functions",
-      "Add integration tests with test database"
+      "Add version check in saveSnapshot to prevent concurrent conflicts"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "Integrate persistence with GameManager",
+    "description": "Implement saveEvent and loadEvents",
+    "steps": [
+      "Implement saveEvent(gameId, event): INSERT into game_events",
+      "Implement loadEvents(gameId): SELECT all events ordered by created_at",
+      "Export all functions"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Integration tests for persistence",
+    "steps": [
+      "Add integration tests with test database",
+      "Test saveSnapshot creates and updates records",
+      "Test loadSnapshot returns correct data"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Integrate persistence with GameManager create",
     "steps": [
       "Update GameManager.create() to save initial snapshot to database",
       "Subscribe to actor state changes: save snapshot on each change",
-      "Save events to game_events table for each transition",
+      "Save events to game_events table for each transition"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Implement GameManager recover",
+    "steps": [
       "Implement recover(): load active games from database on server start",
       "Recreate actors from snapshots",
-      "Add games to in-memory Map",
+      "Add games to in-memory Map"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Integration tests for persistence with GameManager",
+    "steps": [
       "Add integration tests: create game persists to DB",
       "Add integration tests: recover loads games from DB"
     ],
@@ -874,14 +1167,30 @@
   },
   {
     "category": "state-machine",
-    "description": "Create GameManager class with CRUD operations",
+    "description": "Create GameManager class structure",
     "steps": [
       "Create packages/server/src/game/manager.ts",
       "Create GameManager class with Map<gameId, Actor>",
-      "Implement create(config): create actor, generate gameId, return gameId",
+      "Implement create(config): create actor, generate gameId, return gameId"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Implement GameManager getState and listGames",
+    "steps": [
       "Implement getState(gameId): return current snapshot",
-      "Implement listGames(filter?): return array of game summaries",
-      "Add unit tests for create, getState, listGames"
+      "Implement listGames(filter?): return array of game summaries"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Unit tests for GameManager CRUD",
+    "steps": [
+      "Add unit tests for create",
+      "Add unit tests for getState",
+      "Add unit tests for listGames"
     ],
     "passes": false
   },
@@ -891,9 +1200,14 @@
     "steps": [
       "Implement join(gameId, playerName): send PLAYER_JOINED, return playerId",
       "Implement leave(gameId, playerId): send PLAYER_LEFT",
-      "Implement start(gameId, playerId): validate is host, send START_GAME",
-      "Add unit tests for join, leave, start"
+      "Implement start(gameId, playerId): validate is host, send START_GAME"
     ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Unit tests for GameManager player management",
+    "steps": ["Add unit tests for join", "Add unit tests for leave", "Add unit tests for start"],
     "passes": false
   },
   {
@@ -902,50 +1216,88 @@
     "steps": [
       "Implement makeMove(gameId, playerId, command): send MAKE_MOVE, return result",
       "Implement submitStarvationChoice(gameId, playerId, pieceId): send STARVATION_CHOICE",
-      "Subscribe to actor state changes for event emission",
-      "Add unit tests for makeMove, submitStarvationChoice"
+      "Subscribe to actor state changes for event emission"
     ],
     "passes": false
   },
   {
     "category": "state-machine",
-    "description": "Implement GameManager disconnection and recovery",
+    "description": "Unit tests for GameManager move execution",
+    "steps": ["Add unit tests for makeMove", "Add unit tests for submitStarvationChoice"],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Implement GameManager disconnection",
     "steps": [
       "Implement onDisconnect(gameId, playerId): send PLAYER_DISCONNECTED",
-      "Implement onReconnect(gameId, playerId): send PLAYER_RECONNECTED",
-      "Implement recover(): load active games from database on server start",
-      "Recreate actors from snapshots, add to in-memory Map",
-      "Add integration tests for disconnect, reconnect, recovery"
+      "Implement onReconnect(gameId, playerId): send PLAYER_RECONNECTED"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Integration tests for GameManager disconnection and recovery",
+    "steps": [
+      "Add integration tests for disconnect",
+      "Add integration tests for reconnect",
+      "Add integration tests for recovery"
     ],
     "passes": false
   },
   {
     "category": "network",
-    "description": "Set up Express server with middleware",
+    "description": "Set up Express app with body parser",
     "steps": [
       "Install express, cors, helmet in server package",
       "Create packages/server/src/server.ts",
       "Create Express app with JSON body parser",
-      "Add CORS configuration (allow localhost:5173 for dev)",
-      "Add helmet for security headers",
-      "Add request logging middleware",
-      "Create GET /health endpoint returning { status: 'ok', timestamp }",
-      "Export app and createServer() function",
-      "Add basic test: health endpoint returns 200"
+      "Add CORS configuration (allow localhost:5173 for dev)"
     ],
     "passes": false
   },
   {
     "category": "network",
-    "description": "Create error classes and error middleware",
+    "description": "Add Express security and health endpoint",
+    "steps": [
+      "Add helmet for security headers",
+      "Add request logging middleware",
+      "Create GET /health endpoint returning { status: 'ok', timestamp }",
+      "Export app and createServer() function"
+    ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Unit test for health endpoint",
+    "steps": ["Add basic test: health endpoint returns 200"],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Create error classes",
     "steps": [
       "Create packages/server/src/errors/index.ts",
       "Create GameError base class with code, message, statusCode",
       "Create GameNotFoundError (404)",
-      "Create InvalidMoveError (400)",
+      "Create InvalidMoveError (400)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Create additional error classes",
+    "steps": [
       "Create NotYourTurnError (400)",
       "Create UnauthorizedError (401)",
-      "Create ValidationError (400)",
+      "Create ValidationError (400)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Create error middleware",
+    "steps": [
       "Create packages/server/src/middleware/error.ts",
       "Implement error middleware: catch all errors, return { error, message, details? }",
       "Hide stack traces in production",
@@ -955,47 +1307,98 @@
   },
   {
     "category": "network",
-    "description": "Implement session management with Redis",
+    "description": "Implement session service",
     "steps": [
       "Create packages/server/src/services/session.ts",
       "Implement createSession(gameId, playerId, playerName): generate 64-char token, store in Redis with 24h TTL",
-      "Implement validateSession(token): get from Redis, return { gameId, playerId, playerName } or null",
-      "Implement invalidateSession(token): delete from Redis",
-      "Implement extendSession(token): refresh TTL to 24h",
-      "Create packages/server/src/middleware/auth.ts",
-      "Implement authenticateSession middleware: extract Bearer token, validate, attach to req",
-      "Add unit tests for session service",
-      "Add unit tests for auth middleware"
+      "Implement validateSession(token): get from Redis, return { gameId, playerId, playerName } or null"
     ],
     "passes": false
   },
   {
     "category": "network",
-    "description": "Implement REST API for game management",
+    "description": "Implement session service additional methods",
+    "steps": [
+      "Implement invalidateSession(token): delete from Redis",
+      "Implement extendSession(token): refresh TTL to 24h"
+    ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Implement auth middleware",
+    "steps": [
+      "Create packages/server/src/middleware/auth.ts",
+      "Implement authenticateSession middleware: extract Bearer token, validate, attach to req"
+    ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Unit tests for session service and auth middleware",
+    "steps": ["Add unit tests for session service", "Add unit tests for auth middleware"],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Implement game creation and listing endpoints",
     "steps": [
       "Create packages/server/src/routes/games.ts",
       "POST /api/games: validate body with Zod, call GameManager.create(), return { gameId }",
-      "GET /api/games: call GameManager.listGames(), return array",
-      "GET /api/games/:id: require auth, call GameManager.getState(), return state",
-      "POST /api/games/:id/join: validate body (playerName), call GameManager.join(), create session, return { sessionToken, playerId }",
-      "POST /api/games/:id/start: require auth, validate is host, call GameManager.start()",
-      "GET /api/games/:id/valid-moves/:pieceId: require auth, call getValidMoves from shared, return array",
-      "Mount routes in server.ts",
-      "Add integration tests for each endpoint"
+      "GET /api/games: call GameManager.listGames(), return array"
     ],
     "passes": false
   },
   {
     "category": "network",
-    "description": "Set up Socket.IO with typed events",
+    "description": "Implement game join and state endpoints",
+    "steps": [
+      "GET /api/games/:id: require auth, call GameManager.getState(), return state",
+      "POST /api/games/:id/join: validate body (playerName), call GameManager.join(), create session, return { sessionToken, playerId }"
+    ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Implement game start and valid moves endpoints",
+    "steps": [
+      "POST /api/games/:id/start: require auth, validate is host, call GameManager.start()",
+      "GET /api/games/:id/valid-moves/:pieceId: require auth, call getValidMoves from shared, return array",
+      "Mount routes in server.ts"
+    ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Integration tests for REST API endpoints",
+    "steps": ["Add integration tests for each endpoint"],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Set up Socket.IO server",
     "steps": [
       "Install socket.io in server package",
-      "Create packages/server/src/socket/types.ts",
-      "Define ClientToServerEvents: joinGame, playTurn, startGame, starvationChoice, disconnect",
-      "Define ServerToClientEvents: gameState, turnPlayed, gameEnded, playerJoined, playerLeft, starvationRequired, error",
       "Create packages/server/src/socket/server.ts",
       "Create and configure Socket.IO server",
-      "Attach to HTTP server from Express",
+      "Attach to HTTP server from Express"
+    ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Define Socket.IO event types",
+    "steps": [
+      "Create packages/server/src/socket/types.ts",
+      "Define ClientToServerEvents: joinGame, playTurn, startGame, starvationChoice, disconnect",
+      "Define ServerToClientEvents: gameState, turnPlayed, gameEnded, playerJoined, playerLeft, starvationRequired, error"
+    ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Configure Socket.IO options",
+    "steps": [
       "Configure Connection State Recovery (2-min window)",
       "Configure CORS to match Express"
     ],
@@ -1007,8 +1410,16 @@
     "steps": [
       "Create packages/server/src/socket/handlers.ts",
       "On 'joinGame': validate session token, join socket to game room, emit current gameState",
-      "On 'startGame': validate session is host, call GameManager.start(), broadcast gameState",
-      "Add integration tests for joinGame, startGame handlers"
+      "On 'startGame': validate session is host, call GameManager.start(), broadcast gameState"
+    ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Integration tests for Socket.IO lifecycle handlers",
+    "steps": [
+      "Add integration tests for joinGame handler",
+      "Add integration tests for startGame handler"
     ],
     "passes": false
   },
@@ -1018,9 +1429,14 @@
     "steps": [
       "On 'playTurn': validate session, call GameManager.makeMove()",
       "Broadcast turnPlayed to room with events and newState",
-      "Handle validation errors, emit error to client",
-      "Add integration tests for playTurn handler"
+      "Handle validation errors, emit error to client"
     ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Integration tests for playTurn handler",
+    "steps": ["Add integration tests for playTurn handler"],
     "passes": false
   },
   {
@@ -1029,9 +1445,14 @@
     "steps": [
       "On 'starvationChoice': call GameManager.submitStarvationChoice()",
       "Subscribe to GameManager events: broadcast starvationRequired when triggered",
-      "Broadcast resolution results to room",
-      "Add integration tests for starvationChoice handler"
+      "Broadcast resolution results to room"
     ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Integration tests for starvation handler",
+    "steps": ["Add integration tests for starvationChoice handler"],
     "passes": false
   },
   {
@@ -1040,23 +1461,46 @@
     "steps": [
       "On 'disconnect': call GameManager.onDisconnect(), broadcast playerLeft",
       "Handle connection recovery: rejoin room, emit current state",
-      "Subscribe to GameManager: broadcast gameEnded when game ends",
-      "Add integration tests for disconnect, reconnect, recovery"
+      "Subscribe to GameManager: broadcast gameEnded when game ends"
     ],
     "passes": false
   },
   {
     "category": "network",
-    "description": "Create main server entry point",
+    "description": "Integration tests for connection management",
+    "steps": [
+      "Add integration tests for disconnect",
+      "Add integration tests for reconnect",
+      "Add integration tests for recovery"
+    ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Create server entry point config loading",
     "steps": [
       "Create packages/server/src/index.ts",
       "Load environment config",
       "Initialize database pool",
-      "Initialize Redis client",
+      "Initialize Redis client"
+    ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Create server entry point app wiring",
+    "steps": [
       "Create Express app and HTTP server",
       "Attach Socket.IO",
       "Initialize GameManager",
-      "Call GameManager.recover() to load active games",
+      "Call GameManager.recover() to load active games"
+    ],
+    "passes": false
+  },
+  {
+    "category": "network",
+    "description": "Create server entry point startup and shutdown",
+    "steps": [
       "Start listening on PORT",
       "Add graceful shutdown handling (close connections)",
       "Update package.json start script"
@@ -1065,32 +1509,69 @@
   },
   {
     "category": "ai",
-    "description": "Implement easy AI that makes random valid moves",
+    "description": "Define AI types and interface",
     "steps": [
       "Create packages/server/src/ai/types.ts",
-      "Define AIPlayer interface: generateMove(state, playerId), makeStarvationChoice(candidates)",
-      "Create packages/server/src/ai/random.ts",
-      "Implement RandomAI class implementing AIPlayer",
-      "generateMove: get all pieces for playerId, get valid moves for each, pick random move",
-      "makeStarvationChoice: pick random candidate",
-      "Add configurable thinking delay (500-1500ms random)",
-      "Export RandomAI",
-      "Add unit tests: returned move is always valid"
+      "Define AIPlayer interface: generateMove(state, playerId), makeStarvationChoice(candidates)"
     ],
     "passes": false
   },
   {
     "category": "ai",
-    "description": "Implement medium AI with position evaluation",
+    "description": "Implement RandomAI class",
+    "steps": [
+      "Create packages/server/src/ai/random.ts",
+      "Implement RandomAI class implementing AIPlayer",
+      "generateMove: get all pieces for playerId, get valid moves for each, pick random move",
+      "makeStarvationChoice: pick random candidate"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ai",
+    "description": "Add AI thinking delay and export",
+    "steps": ["Add configurable thinking delay (500-1500ms random)", "Export RandomAI"],
+    "passes": false
+  },
+  {
+    "category": "ai",
+    "description": "Unit tests for RandomAI",
+    "steps": ["Add unit tests: returned move is always valid"],
+    "passes": false
+  },
+  {
+    "category": "ai",
+    "description": "Implement scoreMove function",
     "steps": [
       "Create packages/server/src/ai/heuristic.ts",
       "Implement scoreMove(state, move, playerId) function",
       "Score: +100 throne victory, +50 enemy Jarl elimination, +20 enemy piece elimination",
-      "Score: +10 successful push, +5 momentum attack",
+      "Score: +10 successful push, +5 momentum attack"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ai",
+    "description": "Add negative scoring factors",
+    "steps": [
       "Score: -30 own Jarl on edge, -10 own piece on edge after move",
       "Score: +3 per hex closer to throne for Jarl",
-      "Implement HeuristicAI.generateMove: score all moves, pick from top 3 with weighted random",
-      "Add small random factor to avoid predictability",
+      "Add small random factor to avoid predictability"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ai",
+    "description": "Implement HeuristicAI class",
+    "steps": [
+      "Implement HeuristicAI.generateMove: score all moves, pick from top 3 with weighted random"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ai",
+    "description": "Unit tests for HeuristicAI",
+    "steps": [
       "Add unit tests: prefers winning moves",
       "Add unit tests: avoids putting Jarl on edge"
     ],
@@ -1098,18 +1579,37 @@
   },
   {
     "category": "ai",
-    "description": "Integrate AI players into game flow",
+    "description": "Create Norse name generator",
     "steps": [
       "Create packages/server/src/ai/names.ts with Norse name arrays",
-      "Implement generateNorseName() function",
+      "Implement generateNorseName() function"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ai",
+    "description": "Integrate AI with GameManager",
+    "steps": [
       "Update GameManager: track AI players per game",
       "Implement addAIPlayer(gameId, difficulty): create AI instance, add to game as player",
-      "Subscribe to game state changes",
+      "Subscribe to game state changes"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ai",
+    "description": "Implement AI move execution",
+    "steps": [
       "When currentTurn is AI player: wait thinking delay, generate move, execute",
       "Handle AI starvation choices automatically",
-      "Add 2-second timeout protection (fallback to random move)",
-      "Add integration tests: AI makes moves on its turn"
+      "Add 2-second timeout protection (fallback to random move)"
     ],
+    "passes": false
+  },
+  {
+    "category": "ai",
+    "description": "Integration tests for AI",
+    "steps": ["Add integration tests: AI makes moves on its turn"],
     "passes": false
   },
   {
@@ -1149,32 +1649,55 @@
   },
   {
     "category": "frontend",
-    "description": "Set up client-side state management with Zustand",
+    "description": "Set up Zustand store structure",
     "steps": [
-      "Install zustand",
       "Create src/store/gameStore.ts",
-      "Define state: gameState, playerId, sessionToken, connectionStatus, selectedPieceId, validMoves",
-      "Define actions: setGameState, setPlayer, setSession, clearGame, selectPiece, clearSelection",
-      "Add computed selectors: isMyTurn, myPieces, currentPlayer",
-      "Export useGameStore hook",
-      "Add unit tests for store actions"
+      "Define state: gameState, playerId, sessionToken, connectionStatus, selectedPieceId, validMoves"
     ],
     "passes": false
   },
   {
     "category": "frontend",
-    "description": "Set up Socket.IO client with store integration",
+    "description": "Implement Zustand store actions",
+    "steps": [
+      "Define actions: setGameState, setPlayer, setSession, clearGame, selectPiece, clearSelection",
+      "Add computed selectors: isMyTurn, myPieces, currentPlayer",
+      "Export useGameStore hook"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Unit tests for Zustand store",
+    "steps": ["Add unit tests for store actions"],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Create Socket.IO client",
     "steps": [
       "Create src/socket/client.ts",
       "Create socket instance with autoConnect: false",
       "Create connect(sessionToken) function: set auth, connect",
-      "Create disconnect() function",
+      "Create disconnect() function"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Add Socket.IO event listeners",
+    "steps": [
       "Add event listeners: gameState -> update store, turnPlayed -> update store, etc.",
       "Create src/hooks/useSocket.ts hook",
       "Handle connection states: update store.connectionStatus",
-      "Handle reconnection automatically",
-      "Export socket instance and hook"
+      "Handle reconnection automatically"
     ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Export Socket.IO client",
+    "steps": ["Export socket instance and hook"],
     "passes": false
   },
   {
@@ -1184,7 +1707,14 @@
       "Create src/utils/hexMath.ts",
       "Import hex functions from @jarls/shared",
       "Implement hexToPixel(hex, hexSize, centerX, centerY): convert to canvas coordinates",
-      "Implement pixelToHex(x, y, hexSize, centerX, centerY): convert click to hex",
+      "Implement pixelToHex(x, y, hexSize, centerX, centerY): convert click to hex"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Add hex corner calculation and tests",
+    "steps": [
       "Implement getHexCorners(centerX, centerY, size): return 6 corner points for drawing",
       "Add unit tests for conversions"
     ],
@@ -1192,16 +1722,39 @@
   },
   {
     "category": "frontend",
-    "description": "Implement hex grid rendering on Canvas",
+    "description": "Create BoardRenderer class",
     "steps": [
       "Create src/components/Board/BoardRenderer.ts",
       "Create BoardRenderer class with canvas context",
-      "Implement calculateDimensions(boardRadius, canvasWidth, canvasHeight): compute hexSize and center",
+      "Implement calculateDimensions(boardRadius, canvasWidth, canvasHeight): compute hexSize and center"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Implement hex grid drawing",
+    "steps": [
       "Implement drawHex(hex, fillColor, strokeColor): draw single hex",
       "Implement drawGrid(boardRadius): draw all hexes in board",
       "Highlight throne hex at (0,0) with gold color",
-      "Draw hex borders with subtle gray",
-      "Add resize handling to recalculate dimensions"
+      "Draw hex borders with subtle gray"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Add BoardRenderer resize handling",
+    "steps": ["Add resize handling to recalculate dimensions"],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Implement piece drawing functions",
+    "steps": [
+      "Add player colors constant: { p1: '#e63946', p2: '#457b9d' }",
+      "Implement drawShield(hex): gray hex with shield icon",
+      "Implement drawWarrior(piece): colored circle at piece position",
+      "Implement drawJarl(piece): larger circle with crown indicator"
     ],
     "passes": false
   },
@@ -1209,10 +1762,6 @@
     "category": "frontend",
     "description": "Implement piece rendering",
     "steps": [
-      "Add player colors constant: { p1: '#e63946', p2: '#457b9d' }",
-      "Implement drawShield(hex): gray hex with shield icon",
-      "Implement drawWarrior(piece): colored circle at piece position",
-      "Implement drawJarl(piece): larger circle with crown indicator",
       "Implement drawPieces(pieces): iterate and draw all pieces",
       "Implement render(state): clear canvas, draw grid, draw pieces",
       "Add piece shadows for visual depth"
@@ -1221,11 +1770,18 @@
   },
   {
     "category": "frontend",
-    "description": "Implement move highlights and selection",
+    "description": "Implement move highlight functions",
     "steps": [
       "Implement drawSelection(hex): draw highlight ring around selected piece",
       "Implement drawValidMoves(moves): draw green overlay on move destinations",
-      "Implement drawAttackMoves(moves): draw red overlay on attack destinations",
+      "Implement drawAttackMoves(moves): draw red overlay on attack destinations"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Implement highlight integration",
+    "steps": [
       "Implement drawMomentumIndicator(hex): small icon showing +1 attack",
       "Update render() to include highlights based on store state",
       "Add highlight for current player's pieces (subtle glow)"
@@ -1239,7 +1795,14 @@
       "Create src/components/Board/Board.tsx",
       "Create canvas ref and renderer instance",
       "Connect to gameStore for state",
-      "Initialize renderer on mount",
+      "Initialize renderer on mount"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Add Board component effects",
+    "steps": [
       "Re-render on state changes (useEffect)",
       "Handle window resize: recalculate dimensions, re-render",
       "Export Board component"
@@ -1248,11 +1811,18 @@
   },
   {
     "category": "frontend",
-    "description": "Implement piece selection on click",
+    "description": "Implement click handler and hex detection",
     "steps": [
       "Add onClick handler to Board canvas",
       "Convert click coordinates to hex using pixelToHex",
-      "Check if hex contains a piece owned by current player",
+      "Check if hex contains a piece owned by current player"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Implement piece selection logic",
+    "steps": [
       "If own piece and is player's turn: select piece, fetch valid moves",
       "Fetch valid moves via socket or compute locally",
       "Store validMoves in gameStore",
@@ -1263,12 +1833,19 @@
   },
   {
     "category": "frontend",
-    "description": "Implement move execution on destination click",
+    "description": "Implement move execution on click",
     "steps": [
       "In Board onClick: check if clicked hex is a valid move destination",
       "If valid destination: emit playTurn via socket",
       "Clear selection while waiting for response",
-      "On turnPlayed event: update state (already handled by socket listener)",
+      "On turnPlayed event: update state (already handled by socket listener)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Add move execution error handling and touch",
+    "steps": [
       "On error: show error toast, restore selection",
       "Add touch event support (onTouchEnd) for mobile"
     ],
@@ -1276,12 +1853,19 @@
   },
   {
     "category": "frontend",
-    "description": "Show combat preview tooltip on hover",
+    "description": "Create CombatPreview component",
     "steps": [
       "Create src/components/Board/CombatPreview.tsx",
       "Display attack value with breakdown (base + momentum + support)",
       "Display defense value with breakdown (base + bracing)",
-      "Display outcome: 'PUSH' or 'BLOCKED'",
+      "Display outcome: 'PUSH' or 'BLOCKED'"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Integrate CombatPreview with hover",
+    "steps": [
       "Add onMouseMove handler to Board",
       "On hover over attack destination: show tooltip near cursor",
       "On mouse leave or hover elsewhere: hide tooltip",
@@ -1291,29 +1875,55 @@
   },
   {
     "category": "frontend",
-    "description": "Implement move and push animations",
+    "description": "Create AnimationSystem class",
     "steps": [
       "Create src/components/Board/AnimationSystem.ts",
       "Define Animation type: { pieceId, fromHex, toHex, duration, delay, type }",
-      "Implement parseEvents(events): convert GameEvents to Animation array",
-      "Implement animate(animations): return Promise, use requestAnimationFrame",
-      "Animate moves: 200ms ease-out",
-      "Stagger push chain: 80ms delay per depth level",
-      "Animate eliminations: piece flies off canvas edge (400ms)",
-      "Integrate with Board: wait for animation before updating rendered state"
+      "Implement parseEvents(events): convert GameEvents to Animation array"
     ],
     "passes": false
   },
   {
     "category": "frontend",
-    "description": "Implement turn indicator and player list",
+    "description": "Implement animation rendering",
+    "steps": [
+      "Implement animate(animations): return Promise, use requestAnimationFrame",
+      "Animate moves: 200ms ease-out",
+      "Stagger push chain: 80ms delay per depth level",
+      "Animate eliminations: piece flies off canvas edge (400ms)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Integrate animations with Board",
+    "steps": ["Integrate with Board: wait for animation before updating rendered state"],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Create TurnIndicator component",
     "steps": [
       "Create src/components/Game/TurnIndicator.tsx",
       "Display current player name and color",
-      "Show 'Your Turn' badge when applicable",
+      "Show 'Your Turn' badge when applicable"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Create Timer component",
+    "steps": [
       "Create src/components/Game/Timer.tsx",
       "Display countdown from turnTimerMs",
-      "Style urgently when < 10 seconds",
+      "Style urgently when < 10 seconds"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Create PlayerList component",
+    "steps": [
       "Create src/components/Game/PlayerList.tsx",
       "List all players with piece counts (Warriors, Jarl status)",
       "Highlight current player",
@@ -1323,14 +1933,26 @@
   },
   {
     "category": "frontend",
-    "description": "Implement game end and starvation modals",
+    "description": "Create GameEndModal component",
     "steps": [
       "Create src/components/Modals/GameEndModal.tsx",
       "Show on game.phase === 'ended'",
       "Display 'Victory!' or 'Defeat' based on winner",
       "Show win condition (Throne or Last Standing)",
-      "Add 'Play Again' button (returns to lobby)",
-      "Add 'Leave' button (returns to home)",
+      "Add 'Play Again' button (returns to lobby)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Add GameEndModal leave button",
+    "steps": ["Add 'Leave' button (returns to home)"],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Create StarvationModal component",
+    "steps": [
       "Create src/components/Modals/StarvationModal.tsx",
       "Show when starvation selection required",
       "List candidate warriors with their positions",
@@ -1346,7 +1968,14 @@
       "Create src/components/Lobby/CreateGameForm.tsx",
       "Form fields: player name input",
       "Opponent type selector (Human/AI)",
-      "AI difficulty dropdown (when AI selected)",
+      "AI difficulty dropdown (when AI selected)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Add CreateGameForm timer and submit",
+    "steps": [
       "Turn timer dropdown (None, 30s, 60s, 120s)",
       "Submit: POST /api/games, then POST /join",
       "Navigate to waiting room on success"
@@ -1360,9 +1989,14 @@
       "Create src/components/Lobby/GameList.tsx",
       "Fetch GET /api/games on mount",
       "Display list of joinable games with player counts",
-      "Join button for each game",
-      "On join: POST /api/games/:id/join, navigate to waiting room"
+      "Join button for each game"
     ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Add GameList join functionality",
+    "steps": ["On join: POST /api/games/:id/join, navigate to waiting room"],
     "passes": false
   },
   {
@@ -1372,37 +2006,66 @@
       "Create src/components/Lobby/WaitingRoom.tsx",
       "Connect to socket, join game room",
       "Display player slots (filled/empty)",
-      "Host sees Start Game button (enabled when 2 players)",
-      "Non-host sees waiting message",
-      "On startGame event: navigate to Game page"
+      "Host sees Start Game button (enabled when 2 players)"
     ],
     "passes": false
   },
   {
     "category": "frontend",
-    "description": "Implement lobby routing and navigation",
+    "description": "Add WaitingRoom non-host behavior",
+    "steps": ["Non-host sees waiting message", "On startGame event: navigate to Game page"],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Implement lobby routing",
     "steps": [
       "Update src/App.tsx with lobby routes",
       "Route /: Home with create/join options",
       "Route /lobby/create: CreateGameForm",
-      "Route /lobby/games: GameList",
-      "Route /lobby/:gameId: WaitingRoom",
-      "Route /game/:gameId: Game page"
+      "Route /lobby/games: GameList"
+    ],
+    "passes": false
+  },
+  {
+    "category": "frontend",
+    "description": "Add game routing",
+    "steps": ["Route /lobby/:gameId: WaitingRoom", "Route /game/:gameId: Game page"],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Set up integration test infrastructure",
+    "steps": [
+      "Install supertest as dev dependency",
+      "Create packages/server/src/__tests__/api.test.ts",
+      "Set up test database and Redis (docker-compose.test.yml or in-memory)"
     ],
     "passes": false
   },
   {
     "category": "testing",
-    "description": "Integration tests for REST API endpoints",
+    "description": "Integration tests for game creation endpoints",
     "steps": [
-      "Install supertest as dev dependency",
-      "Create packages/server/src/__tests__/api.test.ts",
-      "Set up test database and Redis (docker-compose.test.yml or in-memory)",
       "Test POST /api/games: creates game, returns gameId",
-      "Test GET /api/games: lists games in lobby status",
+      "Test GET /api/games: lists games in lobby status"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Integration tests for game join and state endpoints",
+    "steps": [
       "Test POST /api/games/:id/join: returns session token",
       "Test GET /api/games/:id: requires auth, returns state",
-      "Test POST /api/games/:id/start: requires host, starts game",
+      "Test POST /api/games/:id/start: requires host, starts game"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Integration tests for API error cases",
+    "steps": [
       "Test error cases: 404 for missing game, 401 for bad token",
       "Clean up test data after each test"
     ],
@@ -1410,13 +2073,27 @@
   },
   {
     "category": "testing",
-    "description": "Integration tests for Socket.IO events",
+    "description": "Set up Socket.IO test infrastructure",
     "steps": [
       "Create packages/server/src/__tests__/socket.test.ts",
-      "Set up socket.io-client for testing",
+      "Set up socket.io-client for testing"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Integration tests for Socket.IO game events",
+    "steps": [
       "Test joinGame: receives gameState",
       "Test playTurn: move executes, all clients receive turnPlayed",
-      "Test startGame: game starts, all clients receive gameState",
+      "Test startGame: game starts, all clients receive gameState"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Integration tests for Socket.IO error and disconnect",
+    "steps": [
       "Test invalid move: error returned, state unchanged",
       "Test disconnect/reconnect: game pauses, resumes",
       "Clean up socket connections after tests"
@@ -1442,9 +2119,14 @@
       "Create e2e/lobby.spec.ts",
       "Test: create game from home page",
       "Test: second player joins game from game list",
-      "Test: waiting room shows both players",
-      "Test: host can start game when 2 players present"
+      "Test: waiting room shows both players"
     ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "E2E tests for game start",
+    "steps": ["Test: host can start game when 2 players present"],
     "passes": false
   },
   {
@@ -1454,18 +2136,30 @@
       "Create e2e/gameplay.spec.ts",
       "Test: board renders correctly after game start",
       "Test: click piece shows valid moves highlighted",
-      "Test: make a move, verify board updates",
-      "Test: opponent's turn indicator shown"
+      "Test: make a move, verify board updates"
     ],
     "passes": false
   },
   {
     "category": "testing",
-    "description": "E2E tests for game completion and mobile",
+    "description": "E2E tests for turn indicator",
+    "steps": ["Test: opponent's turn indicator shown"],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "E2E tests for game completion",
     "steps": [
       "Create e2e/endgame.spec.ts",
       "Test: play to victory, verify end modal appears",
-      "Test: victory condition displayed correctly",
+      "Test: victory condition displayed correctly"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "E2E tests for mobile",
+    "steps": [
       "Create e2e/mobile.spec.ts",
       "Test: mobile viewport touch interactions work",
       "Test: responsive layout adapts correctly"
@@ -1474,12 +2168,19 @@
   },
   {
     "category": "non-functional",
-    "description": "Verify performance requirements",
+    "description": "Performance tests for game logic",
     "steps": [
       "Add performance test for getValidMoves: must complete < 10ms",
+      "Verify AI move generation: must complete < 2 seconds"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Performance tests for network",
+    "steps": [
       "Add performance test for API endpoints: must respond < 100ms",
       "Measure WebSocket latency: must be < 50ms",
-      "Verify AI move generation: must complete < 2 seconds",
       "Run tests with production build",
       "Document results in test output"
     ],
@@ -1487,14 +2188,21 @@
   },
   {
     "category": "non-functional",
-    "description": "Verify security requirements",
+    "description": "Security verification for sessions",
     "steps": [
       "Verify session tokens are 64 chars (sufficient entropy)",
       "Verify all game mutations require valid session",
+      "Verify sessions expire after 24 hours"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Security verification for game logic",
+    "steps": [
       "Verify players can only move their own pieces",
       "Verify all API input validated with Zod",
-      "Verify error messages don't leak sensitive info",
-      "Verify sessions expire after 24 hours"
+      "Verify error messages don't leak sensitive info"
     ],
     "passes": false
   },
@@ -1512,12 +2220,19 @@
   },
   {
     "category": "non-functional",
-    "description": "Verify browser compatibility",
+    "description": "Browser compatibility desktop",
     "steps": [
       "Test in Chrome (latest 2 versions)",
       "Test in Firefox (latest 2 versions)",
       "Test in Safari (latest 2 versions)",
-      "Test in Edge (latest 2 versions)",
+      "Test in Edge (latest 2 versions)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Browser compatibility mobile",
+    "steps": [
       "Test on iOS Safari mobile",
       "Test on Chrome Android mobile",
       "Verify all features work, no console errors"
@@ -1526,7 +2241,7 @@
   },
   {
     "category": "non-functional",
-    "description": "Verify client reliability",
+    "description": "Verify client reliability requirements",
     "steps": [
       "Verify client only sends commands (server authoritative)",
       "Verify reconnection works with Connection State Recovery",
@@ -1538,27 +2253,46 @@
   },
   {
     "category": "deployment",
-    "description": "Create production Dockerfile",
+    "description": "Create Dockerfile build stage",
     "steps": [
       "Create Dockerfile at project root",
-      "Stage 1 (build): use node:20-alpine, install deps, build TypeScript",
-      "Stage 2 (production): use node:20-alpine, copy dist and prod deps only",
-      "Set NODE_ENV=production",
-      "Add HEALTHCHECK instruction",
-      "Expose port 3000",
-      "Set CMD to start server",
-      "Build and test locally"
+      "Stage 1 (build): use node:20-alpine, install deps, build TypeScript"
     ],
     "passes": false
   },
   {
     "category": "deployment",
-    "description": "Create production docker-compose",
+    "description": "Create Dockerfile production stage",
+    "steps": [
+      "Stage 2 (production): use node:20-alpine, copy dist and prod deps only",
+      "Set NODE_ENV=production",
+      "Add HEALTHCHECK instruction",
+      "Expose port 3000",
+      "Set CMD to start server"
+    ],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "Test Dockerfile locally",
+    "steps": ["Build and test locally"],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "Create production docker-compose services",
     "steps": [
       "Create docker-compose.prod.yml",
       "Add app service built from Dockerfile",
       "Add postgres service with volume",
-      "Add redis service with volume",
+      "Add redis service with volume"
+    ],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "Configure production docker-compose",
+    "steps": [
       "Configure environment variables via .env",
       "Add restart: unless-stopped policies",
       "Add healthchecks for all services",
@@ -1568,19 +2302,31 @@
   },
   {
     "category": "deployment",
-    "description": "Set up CI pipeline",
+    "description": "Set up CI pipeline workflow file",
     "steps": [
       "Create .github/workflows/ci.yml",
       "Trigger on push to main and pull requests",
       "Set up Node.js 20 with pnpm",
-      "Cache pnpm dependencies",
+      "Cache pnpm dependencies"
+    ],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "Configure CI pipeline services and commands",
+    "steps": [
       "Start postgres and redis services",
       "Run pnpm install",
       "Run pnpm lint",
       "Run pnpm test",
-      "Run pnpm build",
-      "Fail workflow on any error"
+      "Run pnpm build"
     ],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "Add CI failure handling",
+    "steps": ["Fail workflow on any error"],
     "passes": false
   },
   {

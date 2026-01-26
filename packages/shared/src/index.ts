@@ -1415,6 +1415,8 @@ export interface MoveValidation {
   isValid: boolean;
   error?: MoveValidationError;
   hasMomentum?: boolean; // true if piece moved 2 hexes (grants +1 attack)
+  /** When a Jarl's 2-hex move crosses the Throne, this is the adjusted destination */
+  adjustedDestination?: AxialCoord;
 }
 
 /**
@@ -1489,6 +1491,29 @@ export function getLineDirection(from: AxialCoord, to: AxialCoord): HexDirection
   }
 
   // Not in a straight line
+  return null;
+}
+
+/**
+ * Check if a 2-hex move path crosses through the Throne (0,0).
+ * Used to detect when a Jarl's 2-hex move should stop at the Throne.
+ *
+ * @param start - The starting position
+ * @param end - The destination position
+ * @returns The Throne position {q:0, r:0} if the path crosses through it, null otherwise
+ */
+export function pathCrossesThrone(start: AxialCoord, end: AxialCoord): AxialCoord | null {
+  // Get all hexes on the line from start to end
+  const pathHexes = hexLineAxial(start, end);
+
+  // Check if any intermediate hex (not start or end) is the Throne
+  for (let i = 1; i < pathHexes.length - 1; i++) {
+    const hex = pathHexes[i];
+    if (hex.q === 0 && hex.r === 0) {
+      return { q: 0, r: 0 };
+    }
+  }
+
   return null;
 }
 
@@ -1592,9 +1617,20 @@ export function validateMove(
     return { isValid: false, error: 'PATH_BLOCKED' };
   }
 
+  // 13. Check if Jarl 2-hex move crosses through the Throne
+  // If so, the Jarl stops at the Throne (and wins immediately)
+  let adjustedDestination: AxialCoord | undefined;
+  if (piece.type === 'jarl' && distance === 2) {
+    const thronePosition = pathCrossesThrone(piece.position, destination);
+    if (thronePosition) {
+      // Jarl will stop at the Throne instead of the original destination
+      adjustedDestination = thronePosition;
+    }
+  }
+
   // Move is valid
   const hasMomentum = distance === 2;
-  return { isValid: true, hasMomentum };
+  return { isValid: true, hasMomentum, adjustedDestination };
 }
 
 /**
@@ -2077,22 +2113,10 @@ export function detectChain(
       };
     }
 
-    // Check if next position is the throne (center)
-    if (nextPos.q === 0 && nextPos.r === 0) {
-      // Check if there's already a piece on the throne
-      const pieceOnThrone = getPieceAt(state, nextPos);
-      if (!pieceOnThrone) {
-        // Empty throne - chain ends here (throne acts as terminator for non-Jarl pieces,
-        // but we report it as 'throne' so resolution can handle it appropriately)
-        return {
-          pieces,
-          terminator: 'throne',
-          terminatorPosition: nextPos,
-        };
-      }
-      // If there's a piece on the throne, it becomes part of the chain
-      // and we continue checking what's beyond
-    }
+    // Note: The throne (center hex at 0,0) does NOT block pushes.
+    // Pieces can be pushed onto the throne (they just can't voluntarily move there).
+    // If the throne is empty, it acts like any other empty hex for push purposes.
+    // If there's a piece on the throne, it becomes part of the chain.
 
     currentPos = nextPos;
   }
@@ -3103,4 +3127,243 @@ export function getValidMoves(state: GameState, pieceId: string): ValidMove[] {
       combatPreview,
     };
   });
+}
+
+/**
+ * Get the next player in turn order who is not eliminated.
+ * Wraps around to the first player after the last player.
+ *
+ * @param state - The current game state
+ * @param currentPlayerId - The current player's ID
+ * @returns The ID of the next active (non-eliminated) player
+ */
+function getNextActivePlayerId(state: GameState, currentPlayerId: string): string {
+  const activePlayers = state.players.filter((p) => !p.isEliminated);
+  if (activePlayers.length === 0) {
+    return currentPlayerId; // Shouldn't happen, but fallback
+  }
+
+  const currentIndex = activePlayers.findIndex((p) => p.id === currentPlayerId);
+  const nextIndex = (currentIndex + 1) % activePlayers.length;
+  return activePlayers[nextIndex].id;
+}
+
+/**
+ * Apply a move to the game state, handling all scenarios:
+ * - Simple move (no combat)
+ * - Attack with push (defender pushed)
+ * - Blocked attack (attacker stops adjacent to defender)
+ *
+ * This is the main entry point for executing moves. It:
+ * 1. Validates the move
+ * 2. Applies the move (including combat resolution)
+ * 3. Handles player elimination if a Jarl is pushed off
+ * 4. Checks win conditions
+ * 5. Advances the turn
+ * 6. Generates all animation events
+ *
+ * @param state - The current game state
+ * @param playerId - The ID of the player making the move
+ * @param command - The move command (pieceId and destination)
+ * @returns MoveResult with success status, new state, and events
+ */
+export function applyMove(state: GameState, playerId: string, command: MoveCommand): MoveResult {
+  // 1. Validate the move
+  const validation = validateMove(state, playerId, command);
+  if (!validation.isValid) {
+    return {
+      success: false,
+      error: validation.error,
+      newState: state,
+      events: [],
+    };
+  }
+
+  const { pieceId } = command;
+  // Use adjusted destination if Jarl's 2-hex move crosses the Throne
+  const destination = validation.adjustedDestination ?? command.destination;
+  const piece = getPieceById(state, pieceId)!; // Validated above
+  const hasMomentum = validation.hasMomentum ?? false;
+  const events: GameEvent[] = [];
+
+  // Get the direction of movement (use original destination for direction calculation)
+  const direction = getLineDirection(piece.position, command.destination)!; // Validated as straight line
+
+  // Check if there's an enemy piece at the destination (attack)
+  // Note: When Jarl crosses Throne, the adjusted destination is the Throne,
+  // which cannot have an enemy piece (Warriors can't enter, Jarls can't start there)
+  const targetPiece = getPieceAt(state, destination);
+  const isAttack = targetPiece !== undefined && targetPiece.playerId !== playerId;
+
+  let resultState: GameState;
+  let eliminatedJarlPlayerId: string | null = null;
+
+  if (isAttack) {
+    // Attack scenario - calculate combat
+    // For combat calculation, the attacker is positioned adjacent to the defender
+    // (one hex before destination if moving 2 hexes, or at the piece's original position if moving 1 hex)
+    const attackerCombatPosition = hasMomentum
+      ? getNeighborAxial(destination, getOppositeDirection(direction))
+      : piece.position;
+
+    // Create temporary state with attacker at combat position for accurate support calculation
+    const tempState: GameState = {
+      ...state,
+      pieces: state.pieces.map((p) =>
+        p.id === piece.id ? { ...p, position: attackerCombatPosition } : p
+      ),
+    };
+
+    const combatResult = calculateCombat(
+      tempState,
+      { ...piece, position: attackerCombatPosition },
+      attackerCombatPosition,
+      targetPiece,
+      destination,
+      direction,
+      hasMomentum
+    );
+
+    if (combatResult.outcome === 'push') {
+      // Push succeeds - use resolvePush to handle the push chain
+      const pushResult = resolvePush(
+        state,
+        pieceId,
+        piece.position,
+        destination,
+        direction,
+        hasMomentum
+      );
+
+      resultState = pushResult.newState;
+      events.push(...pushResult.events);
+
+      // Check if any eliminated piece was a Jarl
+      for (const eliminatedId of pushResult.eliminatedPieceIds) {
+        const eliminatedPiece = getPieceById(state, eliminatedId);
+        if (eliminatedPiece && eliminatedPiece.type === 'jarl' && eliminatedPiece.playerId) {
+          eliminatedJarlPlayerId = eliminatedPiece.playerId;
+        }
+      }
+    } else {
+      // Attack blocked - attacker moves to adjacent position (one hex before destination)
+      const blockedPosition = getNeighborAxial(destination, getOppositeDirection(direction));
+
+      // Update piece position
+      resultState = {
+        ...state,
+        pieces: state.pieces.map((p) =>
+          p.id === pieceId ? { ...p, position: blockedPosition } : p
+        ),
+      };
+
+      // Generate MOVE event (to the blocked position)
+      const moveEvent: MoveEvent = {
+        type: 'MOVE',
+        pieceId,
+        from: piece.position,
+        to: blockedPosition,
+        hasMomentum,
+      };
+      events.push(moveEvent);
+    }
+  } else {
+    // Simple move - no combat
+    resultState = {
+      ...state,
+      pieces: state.pieces.map((p) => (p.id === pieceId ? { ...p, position: destination } : p)),
+    };
+
+    // Generate MOVE event
+    const moveEvent: MoveEvent = {
+      type: 'MOVE',
+      pieceId,
+      from: piece.position,
+      to: destination,
+      hasMomentum,
+    };
+    events.push(moveEvent);
+  }
+
+  // Handle player elimination if a Jarl was pushed off
+  if (eliminatedJarlPlayerId) {
+    const eliminationResult = eliminatePlayer(resultState, eliminatedJarlPlayerId);
+    resultState = eliminationResult.newState;
+    events.push(...eliminationResult.events);
+  }
+
+  // Check win conditions
+  // For throne victory, the piece ID to check is the one that moved (could be attacker taking throne)
+  // wasVoluntaryMove is true for attacker's move, false for pushed pieces
+  const wasVoluntaryMove = true; // The attacker's move is always voluntary
+  const winCheck = checkWinConditions(resultState, pieceId, wasVoluntaryMove);
+
+  if (winCheck.isVictory && winCheck.winnerId && winCheck.condition) {
+    // Game ends - set winner and phase
+    resultState = {
+      ...resultState,
+      phase: 'ended',
+      winnerId: winCheck.winnerId,
+      winCondition: winCheck.condition,
+    };
+
+    // Add game ended event
+    const gameEndedEvent: GameEndedEvent = {
+      type: 'GAME_ENDED',
+      winnerId: winCheck.winnerId,
+      winCondition: winCheck.condition,
+    };
+    events.push(gameEndedEvent);
+
+    // Return early - don't advance turn
+    return {
+      success: true,
+      newState: resultState,
+      events,
+    };
+  }
+
+  // Advance turn
+  const nextPlayerId = getNextActivePlayerId(resultState, playerId);
+  const newTurnNumber = resultState.turnNumber + 1;
+
+  // Check if a round has completed (all active players have taken a turn)
+  // A round completes when we wrap back to the first player
+  const activePlayers = resultState.players.filter((p) => !p.isEliminated);
+  const firstActivePlayer = activePlayers[0];
+  const isNewRound = nextPlayerId === firstActivePlayer?.id && newTurnNumber > 0;
+  const newRoundNumber = isNewRound ? resultState.roundNumber + 1 : resultState.roundNumber;
+
+  // Update rounds since elimination
+  // Reset to 0 if any piece was eliminated, otherwise increment on new round
+  const pieceWasEliminated = events.some((e) => e.type === 'ELIMINATED');
+  let newRoundsSinceElimination = resultState.roundsSinceElimination;
+  if (pieceWasEliminated) {
+    newRoundsSinceElimination = 0;
+  } else if (isNewRound) {
+    newRoundsSinceElimination = resultState.roundsSinceElimination + 1;
+  }
+
+  resultState = {
+    ...resultState,
+    currentPlayerId: nextPlayerId,
+    turnNumber: newTurnNumber,
+    roundNumber: newRoundNumber,
+    roundsSinceElimination: newRoundsSinceElimination,
+  };
+
+  // Add turn ended event
+  const turnEndedEvent: TurnEndedEvent = {
+    type: 'TURN_ENDED',
+    playerId,
+    nextPlayerId,
+    turnNumber: newTurnNumber,
+  };
+  events.push(turnEndedEvent);
+
+  return {
+    success: true,
+    newState: resultState,
+    events,
+  };
 }
