@@ -280,7 +280,7 @@
       "Formula 3r² + 3r + 1 verified",
       "All hexes satisfy cube coordinate constraint"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

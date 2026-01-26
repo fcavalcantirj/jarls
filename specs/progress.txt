@@ -596,3 +596,36 @@
 **Files Modified**:
 - packages/shared/src/index.ts (added PLAYER_SCALING constant and getConfigForPlayerCount function)
 - packages/shared/src/index.test.ts (added unit tests for getConfigForPlayerCount)
+
+---
+
+### 2026-01-25: Core Logic - generateAllBoardHexes Function Verified
+
+**Feature Completed**: "generateAllBoardHexes creates correct hex count"
+
+**Work Done**:
+- Verified existing implementation of `getBoardHexCount(radius)` function
+  - Calculates total hexes using formula: 3r² + 3r + 1
+  - Returns correct counts for all board sizes (1, 7, 19, 37, 91, 127, 169, 217)
+- Verified existing implementation of `generateAllBoardHexes(radius)` function
+  - Generates array of all valid CubeCoord positions for given radius
+  - Iterates through q/r coordinates and derives s from constraint q + r + s = 0
+  - Returns hexes in consistent order (by q, then by r)
+- Verified existing implementation of `generateAllBoardHexesAxial(radius)` function
+  - Convenience wrapper returning AxialCoord array
+- Existing tests (27 tests) verify:
+  - Radius 3 generates exactly 37 hexes
+  - Formula 3r² + 3r + 1 verified for all standard board sizes
+  - All hexes satisfy cube coordinate constraint (q + r + s = 0)
+  - All hexes within board radius (isOnBoard returns true)
+  - All unique hexes generated
+  - Complete coverage (includes center/Throne, all edge hexes, all distances)
+  - Consistency between cube and axial versions
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (183 tests total, 27 tests for getBoardHexCount/generateAllBoardHexes)
+
+**Files Verified** (already existed):
+- packages/shared/src/index.ts (getBoardHexCount, generateAllBoardHexes, generateAllBoardHexesAxial at lines 519-579)
+- packages/shared/src/index.test.ts (tests at lines 1483-1719)
