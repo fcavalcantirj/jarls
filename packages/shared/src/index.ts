@@ -1292,3 +1292,100 @@ export function isPathClear(state: GameState, start: AxialCoord, end: AxialCoord
 
   return true; // Path is clear
 }
+
+/**
+ * Check if a Jarl has a draft formation in a specific direction.
+ * A draft formation exists when there are 2 or more friendly Warriors
+ * behind the Jarl in a straight line (in the opposite direction of movement).
+ *
+ * The Warriors don't need to be consecutive - gaps are allowed.
+ * The direction parameter represents the intended movement direction,
+ * so we check for Warriors in the opposite direction (behind the Jarl).
+ *
+ * @param state - The current game state
+ * @param jarlPosition - The Jarl's current position
+ * @param playerId - The player ID who owns the Jarl
+ * @param movementDirection - The direction the Jarl intends to move
+ * @returns true if there are 2+ friendly Warriors behind the Jarl in the opposite direction
+ */
+export function hasDraftFormationInDirection(
+  state: GameState,
+  jarlPosition: AxialCoord,
+  playerId: string,
+  movementDirection: HexDirection
+): boolean {
+  const oppositeDirection = getOppositeDirection(movementDirection);
+  const jarlCube = axialToCube(jarlPosition);
+
+  // Count friendly Warriors in a straight line behind the Jarl
+  let warriorCount = 0;
+  let currentHex = jarlCube;
+
+  // Walk backwards from the Jarl in the opposite direction
+  // Keep going until we're off the board or have counted enough
+  const radius = state.config.boardRadius;
+
+  while (warriorCount < 2) {
+    // Move to the next hex in the opposite direction
+    currentHex = getNeighbor(currentHex, oppositeDirection);
+
+    // Stop if we've gone off the board
+    if (!isOnBoard(currentHex, radius)) {
+      break;
+    }
+
+    // Check what's at this hex
+    const piece = getPieceAt(state, cubeToAxial(currentHex));
+
+    if (piece === undefined) {
+      // Empty hex - continue looking (gaps are allowed)
+      continue;
+    }
+
+    if (piece.type === 'warrior' && piece.playerId === playerId) {
+      // Friendly Warrior - count it
+      warriorCount++;
+    } else {
+      // Non-friendly piece or non-Warrior - stop searching
+      // Enemy pieces or shields block the draft line
+      break;
+    }
+  }
+
+  return warriorCount >= 2;
+}
+
+/**
+ * Check if a Jarl has a draft formation that enables 2-hex movement.
+ * This checks all 6 directions to see if any direction has 2+ Warriors behind.
+ *
+ * Returns the directions in which the Jarl can make a draft move (2-hex move).
+ * If the returned array is empty, the Jarl can only move 1 hex.
+ *
+ * Rules:
+ * - A draft formation requires 2 or more friendly Warriors directly behind the Jarl
+ * - "Behind" means in the opposite direction of the intended movement
+ * - Warriors don't need to be consecutive (gaps are allowed)
+ * - Enemy pieces or shields block the draft line
+ *
+ * @param state - The current game state
+ * @param jarlPosition - The Jarl's current position
+ * @param playerId - The player ID who owns the Jarl
+ * @returns Array of HexDirection values where draft movement is possible
+ */
+export function hasDraftFormation(
+  state: GameState,
+  jarlPosition: AxialCoord,
+  playerId: string
+): HexDirection[] {
+  const draftDirections: HexDirection[] = [];
+
+  for (let d = 0; d < 6; d++) {
+    const direction = d as HexDirection;
+    if (hasDraftFormationInDirection(state, jarlPosition, playerId, direction)) {
+      draftDirections.push(direction);
+    }
+  }
+
+  return draftDirections;
+}

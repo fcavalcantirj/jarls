@@ -362,7 +362,7 @@
       "Returns false with only 1 Warrior behind",
       "Unit tests cover gap scenarios"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

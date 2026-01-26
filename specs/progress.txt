@@ -883,3 +883,44 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added isPathClear function)
 - packages/shared/src/index.test.ts (added unit tests for isPathClear)
+
+---
+
+### 2026-01-26: Core Logic - hasDraftFormation Function
+
+**Feature Completed**: "hasDraftFormation detects 2+ Warriors behind Jarl"
+
+**Work Done**:
+- Implemented `hasDraftFormationInDirection(state, jarlPosition, playerId, movementDirection)` function:
+  - Checks if there are 2+ friendly Warriors behind the Jarl in a straight line
+  - "Behind" means in the opposite direction of the intended movement
+  - Warriors don't need to be consecutive - gaps between them are allowed
+  - Enemy pieces and shields block the draft line
+  - Stops searching when hitting board edge
+- Implemented `hasDraftFormation(state, jarlPosition, playerId)` function:
+  - Checks all 6 directions to find where draft movement is possible
+  - Returns array of HexDirection values where Jarl can make 2-hex draft moves
+  - Empty array means Jarl can only move 1 hex
+- Both functions are used to enable the Jarl's special 2-hex movement ability when backed by Warriors
+- Added comprehensive unit tests (20 new tests) covering:
+  - Returns true with 2 consecutive Warriors behind
+  - Returns true with 2 non-consecutive Warriors in line (gaps allowed)
+  - Returns false with only 1 Warrior behind
+  - Returns false with no Warriors behind
+  - Returns false when enemy Warrior is in the line
+  - Returns false when shield blocks the line
+  - Checks correct direction (opposite of movement)
+  - Returns false when Warriors are in front, not behind
+  - Handles Jarl near board edge
+  - Returns false when off board before finding 2 Warriors
+  - Main function returns empty array, single direction, or multiple directions
+  - Gap scenarios with 1 or 2 empty hexes between Warriors
+  - Works with real game states
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (382 tests total, 20 new tests for hasDraftFormation)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added hasDraftFormationInDirection and hasDraftFormation functions)
+- packages/shared/src/index.test.ts (added unit tests for hasDraftFormation functions)
