@@ -331,7 +331,7 @@
       "Players initialized with IDs",
       "Game phase set to 'setup'"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

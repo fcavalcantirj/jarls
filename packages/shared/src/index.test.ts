@@ -34,6 +34,8 @@ import {
   validateShieldPlacement,
   getDirectionTowardThrone,
   placeWarriors,
+  generateId,
+  createInitialState,
   AxialCoord,
   CubeCoord,
   GameConfig,
@@ -2642,6 +2644,309 @@ describe('@jarls/shared', () => {
           ...player2Warriors.map(hexToKey),
         ]);
         expect(allWarriorKeys.size).toBe(player1Warriors.length + player2Warriors.length);
+      });
+    });
+  });
+
+  describe('generateId', () => {
+    it('should generate a non-empty string', () => {
+      const id = generateId();
+      expect(typeof id).toBe('string');
+      expect(id.length).toBeGreaterThan(0);
+    });
+
+    it('should generate unique IDs', () => {
+      const ids = new Set<string>();
+      for (let i = 0; i < 100; i++) {
+        ids.add(generateId());
+      }
+      expect(ids.size).toBe(100);
+    });
+
+    it('should contain a hyphen separator', () => {
+      const id = generateId();
+      expect(id).toContain('-');
+    });
+  });
+
+  describe('createInitialState', () => {
+    describe('basic creation', () => {
+      it('should create a GameState object with all required fields', () => {
+        const state = createInitialState(['Player 1', 'Player 2']);
+        expect(state).toHaveProperty('id');
+        expect(state).toHaveProperty('phase');
+        expect(state).toHaveProperty('config');
+        expect(state).toHaveProperty('players');
+        expect(state).toHaveProperty('pieces');
+        expect(state).toHaveProperty('currentPlayerId');
+        expect(state).toHaveProperty('turnNumber');
+        expect(state).toHaveProperty('roundNumber');
+        expect(state).toHaveProperty('roundsSinceElimination');
+        expect(state).toHaveProperty('winnerId');
+        expect(state).toHaveProperty('winCondition');
+      });
+
+      it('should set phase to setup', () => {
+        const state = createInitialState(['Player 1', 'Player 2']);
+        expect(state.phase).toBe('setup');
+      });
+
+      it('should generate a unique game ID', () => {
+        const state1 = createInitialState(['Player 1', 'Player 2']);
+        const state2 = createInitialState(['Player 1', 'Player 2']);
+        expect(state1.id).not.toBe(state2.id);
+      });
+
+      it('should initialize counters to zero', () => {
+        const state = createInitialState(['Player 1', 'Player 2']);
+        expect(state.turnNumber).toBe(0);
+        expect(state.roundNumber).toBe(0);
+        expect(state.roundsSinceElimination).toBe(0);
+      });
+
+      it('should initialize winner to null', () => {
+        const state = createInitialState(['Player 1', 'Player 2']);
+        expect(state.winnerId).toBeNull();
+        expect(state.winCondition).toBeNull();
+      });
+
+      it('should set first player as current player', () => {
+        const state = createInitialState(['Player 1', 'Player 2']);
+        expect(state.currentPlayerId).toBe(state.players[0].id);
+      });
+    });
+
+    describe('player initialization', () => {
+      it('should create correct number of players', () => {
+        const state2 = createInitialState(['A', 'B']);
+        expect(state2.players).toHaveLength(2);
+
+        const state3 = createInitialState(['A', 'B', 'C']);
+        expect(state3.players).toHaveLength(3);
+
+        const state6 = createInitialState(['A', 'B', 'C', 'D', 'E', 'F']);
+        expect(state6.players).toHaveLength(6);
+      });
+
+      it('should assign player names correctly', () => {
+        const names = ['Alice', 'Bob'];
+        const state = createInitialState(names);
+        expect(state.players[0].name).toBe('Alice');
+        expect(state.players[1].name).toBe('Bob');
+      });
+
+      it('should generate unique IDs for each player', () => {
+        const state = createInitialState(['A', 'B', 'C', 'D']);
+        const ids = state.players.map((p) => p.id);
+        const uniqueIds = new Set(ids);
+        expect(uniqueIds.size).toBe(ids.length);
+      });
+
+      it('should assign different colors to each player', () => {
+        const state = createInitialState(['A', 'B', 'C', 'D']);
+        const colors = state.players.map((p) => p.color);
+        const uniqueColors = new Set(colors);
+        expect(uniqueColors.size).toBe(colors.length);
+      });
+
+      it('should initialize all players as not eliminated', () => {
+        const state = createInitialState(['A', 'B', 'C']);
+        state.players.forEach((player) => {
+          expect(player.isEliminated).toBe(false);
+        });
+      });
+    });
+
+    describe('configuration', () => {
+      it('should use correct config for 2 players', () => {
+        const state = createInitialState(['A', 'B']);
+        expect(state.config.playerCount).toBe(2);
+        expect(state.config.boardRadius).toBe(3);
+        expect(state.config.shieldCount).toBe(5);
+        expect(state.config.warriorCount).toBe(5);
+      });
+
+      it('should use correct config for 3 players', () => {
+        const state = createInitialState(['A', 'B', 'C']);
+        expect(state.config.playerCount).toBe(3);
+        expect(state.config.boardRadius).toBe(5);
+        expect(state.config.shieldCount).toBe(4);
+        expect(state.config.warriorCount).toBe(5);
+      });
+
+      it('should apply turn timer when specified', () => {
+        const state = createInitialState(['A', 'B'], 30000);
+        expect(state.config.turnTimerMs).toBe(30000);
+      });
+
+      it('should have null turn timer by default', () => {
+        const state = createInitialState(['A', 'B']);
+        expect(state.config.turnTimerMs).toBeNull();
+      });
+    });
+
+    describe('piece placement', () => {
+      it('should create correct total number of pieces for 2 players', () => {
+        const state = createInitialState(['A', 'B']);
+        // 2 Jarls + 2 * 5 Warriors + 5 Shields = 17 pieces
+        expect(state.pieces).toHaveLength(17);
+      });
+
+      it('should create correct number of shields', () => {
+        const state = createInitialState(['A', 'B']);
+        const shields = state.pieces.filter((p) => p.type === 'shield');
+        expect(shields).toHaveLength(5);
+      });
+
+      it('should create one Jarl per player', () => {
+        const state = createInitialState(['A', 'B', 'C']);
+        const jarls = state.pieces.filter((p) => p.type === 'jarl');
+        expect(jarls).toHaveLength(3);
+      });
+
+      it('should create correct number of warriors per player', () => {
+        const state = createInitialState(['A', 'B']);
+        state.players.forEach((player) => {
+          const warriors = state.pieces.filter(
+            (p) => p.type === 'warrior' && p.playerId === player.id
+          );
+          expect(warriors).toHaveLength(5);
+        });
+      });
+
+      it('should place Jarls on edge hexes', () => {
+        const state = createInitialState(['A', 'B']);
+        const jarls = state.pieces.filter((p) => p.type === 'jarl');
+        jarls.forEach((jarl) => {
+          expect(isOnEdgeAxial(jarl.position, state.config.boardRadius)).toBe(true);
+        });
+      });
+
+      it('should give shields null playerId', () => {
+        const state = createInitialState(['A', 'B']);
+        const shields = state.pieces.filter((p) => p.type === 'shield');
+        shields.forEach((shield) => {
+          expect(shield.playerId).toBeNull();
+        });
+      });
+
+      it('should assign correct playerId to Jarls', () => {
+        const state = createInitialState(['A', 'B']);
+        const jarls = state.pieces.filter((p) => p.type === 'jarl');
+        const playerIds = state.players.map((p) => p.id);
+        jarls.forEach((jarl) => {
+          expect(playerIds).toContain(jarl.playerId);
+        });
+      });
+
+      it('should assign correct playerId to Warriors', () => {
+        const state = createInitialState(['A', 'B']);
+        const warriors = state.pieces.filter((p) => p.type === 'warrior');
+        const playerIds = state.players.map((p) => p.id);
+        warriors.forEach((warrior) => {
+          expect(playerIds).toContain(warrior.playerId);
+        });
+      });
+
+      it('should place pieces at unique positions', () => {
+        const state = createInitialState(['A', 'B']);
+        const positionKeys = state.pieces.map((p) => hexToKey(p.position));
+        const uniqueKeys = new Set(positionKeys);
+        expect(uniqueKeys.size).toBe(positionKeys.length);
+      });
+
+      it('should give all pieces unique IDs', () => {
+        const state = createInitialState(['A', 'B']);
+        const ids = state.pieces.map((p) => p.id);
+        const uniqueIds = new Set(ids);
+        expect(uniqueIds.size).toBe(ids.length);
+      });
+
+      it('should place all pieces within board bounds', () => {
+        const state = createInitialState(['A', 'B']);
+        state.pieces.forEach((piece) => {
+          expect(isOnBoardAxial(piece.position, state.config.boardRadius)).toBe(true);
+        });
+      });
+
+      it('should not place any piece on the Throne except potentially during game', () => {
+        const state = createInitialState(['A', 'B']);
+        const throneKey = hexToKey({ q: 0, r: 0 });
+        state.pieces.forEach((piece) => {
+          expect(hexToKey(piece.position)).not.toBe(throneKey);
+        });
+      });
+    });
+
+    describe('error handling', () => {
+      it('should throw error for 1 player', () => {
+        expect(() => createInitialState(['Solo'])).toThrow(/Invalid player count/);
+      });
+
+      it('should throw error for 0 players', () => {
+        expect(() => createInitialState([])).toThrow(/Invalid player count/);
+      });
+
+      it('should throw error for 7 players', () => {
+        expect(() => createInitialState(['A', 'B', 'C', 'D', 'E', 'F', 'G'])).toThrow(
+          /Invalid player count/
+        );
+      });
+    });
+
+    describe('game scenarios', () => {
+      it('should create valid state for all supported player counts', () => {
+        for (let count = 2; count <= 6; count++) {
+          const names = Array.from({ length: count }, (_, i) => `Player ${i + 1}`);
+          const state = createInitialState(names);
+          expect(state.players).toHaveLength(count);
+          expect(state.config.playerCount).toBe(count);
+        }
+      });
+
+      it('should create consistent state structure across multiple calls', () => {
+        const state1 = createInitialState(['A', 'B']);
+        const state2 = createInitialState(['A', 'B']);
+
+        // Same structure
+        expect(Object.keys(state1)).toEqual(Object.keys(state2));
+
+        // Same player count
+        expect(state1.players.length).toBe(state2.players.length);
+
+        // Same piece counts
+        expect(state1.pieces.length).toBe(state2.pieces.length);
+        expect(state1.pieces.filter((p) => p.type === 'jarl').length).toBe(
+          state2.pieces.filter((p) => p.type === 'jarl').length
+        );
+        expect(state1.pieces.filter((p) => p.type === 'warrior').length).toBe(
+          state2.pieces.filter((p) => p.type === 'warrior').length
+        );
+        expect(state1.pieces.filter((p) => p.type === 'shield').length).toBe(
+          state2.pieces.filter((p) => p.type === 'shield').length
+        );
+      });
+
+      it('should ensure Warriors are positioned between their Jarl and the Throne', () => {
+        const state = createInitialState(['A', 'B']);
+        const throne: AxialCoord = { q: 0, r: 0 };
+
+        state.players.forEach((player) => {
+          const jarl = state.pieces.find((p) => p.type === 'jarl' && p.playerId === player.id);
+          const warriors = state.pieces.filter(
+            (p) => p.type === 'warrior' && p.playerId === player.id
+          );
+
+          if (jarl) {
+            const jarlDistance = hexDistanceAxial(jarl.position, throne);
+
+            // At least some warriors should be closer to throne than the Jarl
+            const closerWarriors = warriors.filter(
+              (w) => hexDistanceAxial(w.position, throne) < jarlDistance
+            );
+            expect(closerWarriors.length).toBeGreaterThan(0);
+          }
+        });
       });
     });
   });

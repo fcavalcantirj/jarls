@@ -774,3 +774,44 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added getDirectionTowardThrone and placeWarriors functions)
 - packages/shared/src/index.test.ts (added unit tests for new functions)
+
+---
+
+### 2026-01-25: Core Logic - createInitialState Function
+
+**Feature Completed**: "createInitialState generates complete game state"
+
+**Work Done**:
+- Implemented `generateId()` helper function:
+  - Generates unique IDs for game entities using timestamp + random string
+  - Used for game ID, player IDs, and piece IDs
+- Implemented `createInitialState(playerNames, turnTimerMs?)` function:
+  - Creates a complete GameState object ready for gameplay
+  - Accepts array of player names (2-6 players) and optional turn timer
+  - Creates Player objects with unique IDs, names, and distinct colors
+  - Calculates Jarl starting positions using `calculateStartingPositions`
+  - Generates shield positions using `generateSymmetricalShields` with path validation
+  - Places Jarls on edge hexes at starting positions
+  - Places Warriors in front of each Jarl using `placeWarriors`
+  - Sets game phase to 'setup'
+  - Initializes all counters (turnNumber, roundNumber, roundsSinceElimination) to 0
+  - Sets first player as currentPlayerId
+- Enhanced `generateSymmetricalShields` to accept optional starting positions:
+  - Avoids placing shields on direct paths from starting positions to Throne
+  - Ensures valid shield placements that don't block all paths for any player
+- Added PLAYER_COLORS constant for up to 6 distinct player colors
+- Added comprehensive unit tests (36 new tests) covering:
+  - Basic creation: all required fields, unique IDs, initial counters
+  - Player initialization: correct count, names, unique IDs, distinct colors, not eliminated
+  - Configuration: correct config for player counts, turn timer handling
+  - Piece placement: correct counts, positions, player assignments, uniqueness
+  - Error handling: invalid player counts
+  - Game scenarios: all supported player counts, consistent structure, proper Warrior positioning
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (320 tests total, 36 new tests for generateId/createInitialState)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added PLAYER_COLORS, generateId, createInitialState; enhanced generateSymmetricalShields)
+- packages/shared/src/index.test.ts (added unit tests for generateId and createInitialState)

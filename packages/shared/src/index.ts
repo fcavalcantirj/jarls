@@ -714,17 +714,20 @@ export function rotateHex(hex: CubeCoord, steps: number): CubeCoord {
  * - No shield on the Throne (center hex at 0,0)
  * - No shield on edge hexes (where pieces start)
  * - Shields are placed in the interior of the board
+ * - Shields must not block all paths from starting positions to the Throne
  *
  * @param playerCount - Number of players (2-6), determines rotational symmetry
  * @param radius - Board radius
  * @param shieldCount - Total number of shields to place
+ * @param startingPositions - Optional array of starting positions to avoid blocking paths
  * @returns Array of shield positions in axial coordinates
  * @throws Error if unable to place the requested number of shields
  */
 export function generateSymmetricalShields(
   playerCount: number,
   radius: number,
-  shieldCount: number
+  shieldCount: number,
+  startingPositions?: AxialCoord[]
 ): AxialCoord[] {
   if (playerCount < 2 || playerCount > 6) {
     throw new Error(`Invalid player count: ${playerCount}. Must be between 2 and 6.`);
@@ -743,6 +746,20 @@ export function generateSymmetricalShields(
     const dist = hexDistance(hex, center);
     return dist > 0 && dist < radius;
   });
+
+  // Build set of hexes that are on direct paths from starting positions to throne
+  // These should be avoided to ensure valid placements
+  const pathHexKeys = new Set<string>();
+  if (startingPositions) {
+    const throne: AxialCoord = { q: 0, r: 0 };
+    for (const startPos of startingPositions) {
+      const pathHexes = hexLineAxial(startPos, throne);
+      // Add all hexes on the path except start and end
+      for (let i = 1; i < pathHexes.length - 1; i++) {
+        pathHexKeys.add(hexToKey(pathHexes[i]));
+      }
+    }
+  }
 
   // Group hexes by their "canonical" form under rotation
   // This helps us find hexes that can form symmetric groups
@@ -779,8 +796,14 @@ export function generateSymmetricalShields(
 
   // Sort groups by size and distance from center for consistent placement
   // Prefer groups that give us exactly the symmetry we need
+  // Also deprioritize groups that would block paths to throne
   const sortedGroups = Array.from(hexGroups.values()).sort((a, b) => {
-    // First, prefer groups with size equal to playerCount (perfect symmetry)
+    // First, check if group blocks paths (deprioritize blocking groups)
+    const aBlocksPath = a.some((hex) => pathHexKeys.has(hexToKey(hex)));
+    const bBlocksPath = b.some((hex) => pathHexKeys.has(hexToKey(hex)));
+    if (aBlocksPath !== bBlocksPath) return aBlocksPath ? 1 : -1;
+
+    // Then, prefer groups with size equal to playerCount (perfect symmetry)
     const aIsPerfect = a.length === playerCount ? 0 : 1;
     const bIsPerfect = b.length === playerCount ? 0 : 1;
     if (aIsPerfect !== bIsPerfect) return aIsPerfect - bIsPerfect;
@@ -823,8 +846,13 @@ export function generateSymmetricalShields(
     // Get remaining interior hexes not yet used
     const remainingHexes = interiorHexes.filter((hex) => !usedKeys.has(hexToKey(hex)));
 
-    // Sort by distance from center (prefer inner hexes)
-    remainingHexes.sort((a, b) => hexDistance(a, center) - hexDistance(b, center));
+    // Sort by: first non-path-blocking, then by distance from center
+    remainingHexes.sort((a, b) => {
+      const aBlocksPath = pathHexKeys.has(hexToKey(a));
+      const bBlocksPath = pathHexKeys.has(hexToKey(b));
+      if (aBlocksPath !== bBlocksPath) return aBlocksPath ? 1 : -1;
+      return hexDistance(a, center) - hexDistance(b, center);
+    });
 
     for (const hex of remainingHexes) {
       if (selectedShields.length >= shieldCount) break;
@@ -1066,4 +1094,148 @@ export function placeWarriors(
   }
 
   return warriors;
+}
+
+// Default player colors for up to 6 players
+const PLAYER_COLORS = [
+  '#E53935', // Red
+  '#1E88E5', // Blue
+  '#43A047', // Green
+  '#FB8C00', // Orange
+  '#8E24AA', // Purple
+  '#00ACC1', // Cyan
+];
+
+/**
+ * Generate a unique ID for game entities.
+ * Uses a simple combination of timestamp and random string.
+ *
+ * @returns A unique string ID
+ */
+export function generateId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
+ * Create the initial game state for a new game.
+ * This includes:
+ * - Creating the game with a unique ID
+ * - Setting up players with IDs and colors
+ * - Placing shields symmetrically on the board
+ * - Placing each player's Jarl at their starting position
+ * - Placing each player's Warriors in front of their Jarl
+ *
+ * @param playerNames - Array of player names (2-6 players)
+ * @param turnTimerMs - Optional turn timer in milliseconds (null for no timer)
+ * @returns Complete GameState ready for the playing phase
+ * @throws Error if unable to create valid board
+ */
+export function createInitialState(
+  playerNames: string[],
+  turnTimerMs: number | null = null
+): GameState {
+  const playerCount = playerNames.length;
+
+  if (playerCount < 2 || playerCount > 6) {
+    throw new Error(`Invalid player count: ${playerCount}. Must be between 2 and 6.`);
+  }
+
+  // Get game configuration for this player count
+  const config = getConfigForPlayerCount(playerCount, turnTimerMs);
+
+  // Create players with IDs and colors
+  const players: Player[] = playerNames.map((name, index) => ({
+    id: generateId(),
+    name,
+    color: PLAYER_COLORS[index],
+    isEliminated: false,
+  }));
+
+  // Calculate starting positions for Jarls
+  const startingPositions = calculateStartingPositions(playerCount, config.boardRadius);
+
+  // Generate shields with starting positions to avoid blocking direct paths
+  const shieldPositions = generateSymmetricalShields(
+    playerCount,
+    config.boardRadius,
+    config.shieldCount,
+    startingPositions
+  );
+
+  // Validate the placement (should always pass when starting positions are provided)
+  const validation = validateShieldPlacement(
+    shieldPositions,
+    startingPositions,
+    config.boardRadius
+  );
+  if (!validation.isValid) {
+    throw new Error(
+      `Unable to generate valid shield placement. ` +
+        `Some players would have no clear path to the Throne.`
+    );
+  }
+
+  // Create shield position set for quick lookup
+  const shieldSet = new Set(shieldPositions.map(hexToKey));
+
+  // Create all pieces
+  const pieces: Piece[] = [];
+
+  // Add shields (no player owner)
+  for (const shieldPos of shieldPositions) {
+    pieces.push({
+      id: generateId(),
+      type: 'shield',
+      playerId: null,
+      position: shieldPos,
+    });
+  }
+
+  // Add Jarls and Warriors for each player
+  for (let i = 0; i < playerCount; i++) {
+    const player = players[i];
+    const jarlPosition = startingPositions[i];
+
+    // Add Jarl
+    pieces.push({
+      id: generateId(),
+      type: 'jarl',
+      playerId: player.id,
+      position: jarlPosition,
+    });
+
+    // Place Warriors in front of the Jarl
+    const warriorPositions = placeWarriors(
+      jarlPosition,
+      config.warriorCount,
+      shieldSet,
+      config.boardRadius
+    );
+
+    for (const warriorPos of warriorPositions) {
+      pieces.push({
+        id: generateId(),
+        type: 'warrior',
+        playerId: player.id,
+        position: warriorPos,
+      });
+    }
+  }
+
+  // Create the initial game state
+  const gameState: GameState = {
+    id: generateId(),
+    phase: 'setup',
+    config,
+    players,
+    pieces,
+    currentPlayerId: players[0].id, // First player starts
+    turnNumber: 0,
+    roundNumber: 0,
+    roundsSinceElimination: 0,
+    winnerId: null,
+    winCondition: null,
+  };
+
+  return gameState;
 }
