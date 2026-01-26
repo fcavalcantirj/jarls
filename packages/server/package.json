@@ -9,7 +9,7 @@
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No tests yet\" && exit 0",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest --selectProjects server",
     "lint": "echo \"Lint not configured\" && exit 0"
   },
   "dependencies": {

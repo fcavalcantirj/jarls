@@ -15,7 +15,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No tests yet\" && exit 0",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest --selectProjects shared",
     "lint": "echo \"Lint not configured\" && exit 0"
   },
   "devDependencies": {

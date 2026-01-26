@@ -164,3 +164,37 @@
 
 **Files Modified**:
 - package.json (added husky, lint-staged dependencies, prepare script, lint-staged config)
+
+---
+
+### 2026-01-25: Infrastructure - Jest Testing Configuration
+
+**Feature Completed**: "Jest configured for testing"
+
+**Work Done**:
+- Installed Jest 30.x, ts-jest, @types/jest, and jest-environment-jsdom at workspace root
+- Created jest.config.js using ESM export format with project references:
+  - Separate project configurations for shared, server, and client packages
+  - ts-jest configured with ESM support for TypeScript
+  - jsdom test environment configured for client package (React testing)
+  - Module name mappers for ESM compatibility and workspace package resolution
+- Updated root package.json test script to run Jest with NODE_OPTIONS for ESM support
+- Updated each package's test script to run Jest with --selectProjects for package-specific testing
+- Created sample test file (packages/shared/src/index.test.ts) demonstrating test setup
+- Test files use *.test.ts naming convention as required
+
+**Verification**:
+- `pnpm test` runs Jest successfully, finding and executing test files
+- `pnpm typecheck` still passes for all packages
+- `pnpm lint` still passes with no errors
+- 2 tests passing in shared package
+
+**Files Created**:
+- jest.config.js
+- packages/shared/src/index.test.ts
+
+**Files Modified**:
+- package.json (added jest, ts-jest, @types/jest, jest-environment-jsdom dependencies, updated test script)
+- packages/shared/package.json (updated test script)
+- packages/server/package.json (updated test script)
+- packages/client/package.json (updated test script)
