@@ -1919,3 +1919,35 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Modified**:
 - packages/shared/src/index.ts (now contains only re-exports from all module files)
+
+---
+
+### 2026-01-26: Infrastructure - Split shared/src/index.ts - finalize and verify
+
+**Feature Completed**: "Split shared/src/index.ts - finalize and verify"
+
+**Work Done**:
+- Verified `packages/shared/src/index.ts` now contains only re-exports (126 lines)
+- All module files created and functioning:
+  - `types.ts` (398 lines) - All type definitions
+  - `hex.ts` (319 lines) - Hex coordinate functions
+  - `board.ts` (796 lines) - Board generation functions
+  - `combat.ts` (925 lines) - Combat calculation functions  
+  - `move.ts` (1,012 lines) - Move validation/execution functions
+- Ran `pnpm typecheck` - all packages pass
+- Ran `pnpm test` - all 756 tests pass
+- Verified server imports `VERSION, GameState` from `@jarls/shared` - works
+- Verified client imports `VERSION, GameState` from `@jarls/shared` - works
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (756 tests total)
+- Server and client can still import from @jarls/shared
+
+**Files Verified**:
+- packages/shared/src/index.ts (only contains re-exports)
+- packages/shared/src/types.ts
+- packages/shared/src/hex.ts
+- packages/shared/src/board.ts
+- packages/shared/src/combat.ts
+- packages/shared/src/move.ts

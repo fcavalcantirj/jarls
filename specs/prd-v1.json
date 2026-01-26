@@ -154,7 +154,7 @@
       "Run pnpm typecheck to verify all exports work",
       "Verify server and client can still import from @jarls/shared"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
