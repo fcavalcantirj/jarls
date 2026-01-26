@@ -18,7 +18,7 @@
       "TypeScript project references configured between packages",
       "Strict mode enabled in all packages"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
