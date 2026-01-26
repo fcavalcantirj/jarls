@@ -163,7 +163,7 @@
       "AxialCoord interface with q, r properties",
       "Exported from @jarls/shared"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
@@ -173,7 +173,7 @@
       "DIRECTIONS array has all 6 direction vectors",
       "Directions follow consistent hexagonal ordering"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

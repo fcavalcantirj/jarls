@@ -14,6 +14,21 @@ export interface CubeCoord {
   s: number;
 }
 
+// Hex direction type (0-5 for 6 directions)
+// Direction 0 is East, then counter-clockwise: NE, NW, W, SW, SE
+export type HexDirection = 0 | 1 | 2 | 3 | 4 | 5;
+
+// Direction vectors in cube coordinates
+// Following pointy-top hex orientation with consistent ordering
+export const DIRECTIONS: readonly CubeCoord[] = [
+  { q: 1, r: 0, s: -1 }, // 0: East
+  { q: 1, r: -1, s: 0 }, // 1: Northeast
+  { q: 0, r: -1, s: 1 }, // 2: Northwest
+  { q: -1, r: 0, s: 1 }, // 3: West
+  { q: -1, r: 1, s: 0 }, // 4: Southwest
+  { q: 0, r: 1, s: -1 }, // 5: Southeast
+] as const;
+
 // Piece types
 export type PieceType = 'jarl' | 'warrior' | 'shield';
 

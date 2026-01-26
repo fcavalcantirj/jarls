@@ -257,3 +257,35 @@
 
 **Files Modified**:
 - package.json (added dev:client and dev:server scripts)
+
+---
+
+### 2026-01-25: Core Logic - HexDirection Type and DIRECTIONS Constant
+
+**Feature Completed**: "HexDirection type and DIRECTIONS constant defined"
+
+**Work Done**:
+- Added HexDirection type (0-5) representing the 6 directions in a hexagonal grid
+- Added DIRECTIONS constant array with all 6 direction vectors in cube coordinates
+- Directions follow pointy-top hex orientation, counter-clockwise from East:
+  - 0: East (q+1, r+0, s-1)
+  - 1: Northeast (q+1, r-1, s+0)
+  - 2: Northwest (q+0, r-1, s+1)
+  - 3: West (q-1, r+0, s+1)
+  - 4: Southwest (q-1, r+1, s+0)
+  - 5: Southeast (q+0, r+1, s-1)
+- Added comprehensive unit tests verifying:
+  - Exactly 6 directions exist
+  - All direction vectors satisfy cube coordinate constraint (q + r + s = 0)
+  - All direction vectors are unit vectors (magnitude 2 in cube coords)
+  - All directions are unique
+  - Consistent hexagonal ordering (opposite directions are 3 apart)
+  - HexDirection type works correctly as array index
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (8 tests total, 6 new tests for HexDirection/DIRECTIONS)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added HexDirection type and DIRECTIONS constant)
+- packages/shared/src/index.test.ts (added unit tests for HexDirection and DIRECTIONS)
