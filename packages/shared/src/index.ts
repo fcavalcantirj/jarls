@@ -1816,3 +1816,40 @@ export function calculateAttack(
     total,
   };
 }
+
+/**
+ * Calculate the defense power of a defender.
+ * Defense = Base Strength + Bracing (friendly pieces behind defender in push direction)
+ *
+ * @param state - The current game state
+ * @param defender - The defending piece
+ * @param defenderPosition - The position of the defender
+ * @param pushDirection - The direction the defender would be pushed (same as attack direction)
+ * @returns CombatBreakdown with base strength, momentum (always 0 for defense), support (bracing), and total
+ */
+export function calculateDefense(
+  state: GameState,
+  defender: Piece,
+  defenderPosition: AxialCoord,
+  pushDirection: HexDirection
+): CombatBreakdown {
+  // Base strength depends on piece type
+  const baseStrength = getPieceStrength(defender);
+
+  // Defenders don't get momentum (that's an attacker bonus)
+  const momentum = 0;
+
+  // Bracing: sum of strength of friendly pieces directly behind (in push direction)
+  const bracingResult = findBracing(state, defenderPosition, defender.playerId!, pushDirection);
+  const support = bracingResult.totalStrength;
+
+  // Total defense power
+  const total = baseStrength + momentum + support;
+
+  return {
+    baseStrength,
+    momentum,
+    support,
+    total,
+  };
+}

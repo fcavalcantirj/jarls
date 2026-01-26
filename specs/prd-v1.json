@@ -418,7 +418,7 @@
       "Adds bracing support strength",
       "Returns total defense value"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

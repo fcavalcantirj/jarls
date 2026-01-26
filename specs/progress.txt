@@ -1077,3 +1077,33 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added calculateAttack function)
 - packages/shared/src/index.test.ts (added unit tests for calculateAttack)
+
+---
+
+### 2026-01-26: Core Logic - calculateDefense Function
+
+**Feature Completed**: "calculateDefense computes total defense power"
+
+**Work Done**:
+- Implemented `calculateDefense(state, defender, defenderPosition, pushDirection)` function:
+  - Calculates total defense power using formula: Base Strength + Bracing
+  - Base strength: 1 for Warrior, 2 for Jarl (uses existing `getPieceStrength` function)
+  - Momentum is always 0 for defenders (attackers-only bonus)
+  - Bracing: Sum of strength of friendly pieces behind defender in push direction (uses existing `findBracing` function)
+  - Returns `CombatBreakdown` object with `baseStrength`, `momentum` (always 0), `support` (bracing), and `total` fields
+- This is the defensive counterpart to `calculateAttack` (which computes attack power)
+- Added comprehensive unit tests (16 new tests) covering:
+  - Base strength: Warrior (1), Jarl (2)
+  - No momentum: always 0 for defense
+  - Bracing support: single piece, Jarl bracing (strength 2), multiple pieces, enemy pieces ignored, gaps break line
+  - Combined calculation: base + bracing totals correctly, correct breakdown structure
+  - Different push directions: Northeast, West (all 6 directions work)
+  - Game scenarios: actual initial game state, shield wall formation
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (499 tests total, 16 new tests for calculateDefense)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added calculateDefense function)
+- packages/shared/src/index.test.ts (added unit tests for calculateDefense)
