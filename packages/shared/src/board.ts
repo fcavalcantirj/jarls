@@ -1,0 +1,796 @@
+// Board generation functions for Jarls game
+// Handles hex board generation, starting positions, shield placement, and initial game setup
+
+import type {
+  AxialCoord,
+  CubeCoord,
+  HexDirection,
+  Piece,
+  Player,
+  GameConfig,
+  PlayerScaling,
+  GameState,
+} from './types.js';
+
+import {
+  axialToCube,
+  cubeToAxial,
+  hexDistance,
+  getNeighbor,
+  hexLineAxial,
+  isOnBoardAxial,
+  isOnEdgeAxial,
+  hexToKey,
+} from './hex.js';
+
+// Board scaling configuration based on player count
+// From the ruleset scaling table:
+// | Players | Board Radius | Shields | Warriors/Player |
+// | 2       | 3            | 5       | 5               |
+// | 3       | 5            | 4       | 5               |
+// | 4       | 6            | 4       | 4               |
+// | 5       | 7            | 3       | 4               |
+// | 6       | 8            | 3       | 4               |
+
+const PLAYER_SCALING: Record<number, PlayerScaling> = {
+  2: { boardRadius: 3, shieldCount: 5, warriorCount: 5 },
+  3: { boardRadius: 5, shieldCount: 4, warriorCount: 5 },
+  4: { boardRadius: 6, shieldCount: 4, warriorCount: 4 },
+  5: { boardRadius: 7, shieldCount: 3, warriorCount: 4 },
+  6: { boardRadius: 8, shieldCount: 3, warriorCount: 4 },
+};
+
+// Default player colors for up to 6 players
+const PLAYER_COLORS = [
+  '#E53935', // Red
+  '#1E88E5', // Blue
+  '#43A047', // Green
+  '#FB8C00', // Orange
+  '#8E24AA', // Purple
+  '#00ACC1', // Cyan
+];
+
+/**
+ * Get the game configuration for a given player count.
+ * Returns scaling values from the ruleset:
+ * - Board radius (hex grid size)
+ * - Number of shields (neutral obstacles)
+ * - Number of warriors per player
+ *
+ * @param playerCount - Number of players (2-6)
+ * @param turnTimerMs - Optional turn timer in milliseconds (null for no timer)
+ * @returns GameConfig object with all configuration values
+ * @throws Error if playerCount is outside valid range (2-6)
+ */
+export function getConfigForPlayerCount(
+  playerCount: number,
+  turnTimerMs: number | null = null
+): GameConfig {
+  const scaling = PLAYER_SCALING[playerCount];
+
+  if (!scaling) {
+    throw new Error(`Invalid player count: ${playerCount}. Must be between 2 and 6.`);
+  }
+
+  return {
+    playerCount,
+    boardRadius: scaling.boardRadius,
+    shieldCount: scaling.shieldCount,
+    warriorCount: scaling.warriorCount,
+    turnTimerMs,
+  };
+}
+
+/**
+ * Calculate the total number of hexes on a board with given radius.
+ * Formula: 3r² + 3r + 1
+ * - Radius 0: 1 hex (center only)
+ * - Radius 1: 7 hexes
+ * - Radius 2: 19 hexes
+ * - Radius 3: 37 hexes (2-player board)
+ *
+ * @param radius - The board radius (distance from center to edge)
+ * @returns The total number of hexes on the board
+ */
+export function getBoardHexCount(radius: number): number {
+  return 3 * radius * radius + 3 * radius + 1;
+}
+
+/**
+ * Generate all hexes on a board with the given radius.
+ * Returns an array of all valid hex positions in cube coordinates.
+ * The hexes are returned in a consistent order (by r, then by q).
+ *
+ * @param radius - The board radius (distance from center to edge)
+ * @returns Array of all hex positions on the board
+ */
+export function generateAllBoardHexes(radius: number): CubeCoord[] {
+  const hexes: CubeCoord[] = [];
+
+  // Iterate through all possible q and r values within the bounds
+  // For a hex grid with given radius, valid coordinates satisfy:
+  // -radius <= q <= radius
+  // -radius <= r <= radius
+  // -radius <= s <= radius (where s = -q - r)
+  for (let q = -radius; q <= radius; q++) {
+    // For each q, calculate the valid range of r
+    // r must satisfy both: -radius <= r <= radius AND -radius <= -q - r <= radius
+    // The second constraint simplifies to: -radius - q <= r <= radius - q
+    const r1 = Math.max(-radius, -q - radius);
+    const r2 = Math.min(radius, -q + radius);
+
+    for (let r = r1; r <= r2; r++) {
+      const s = -q - r;
+      // Normalize -0 to 0 to avoid equality issues
+      hexes.push({
+        q: q === 0 ? 0 : q,
+        r: r === 0 ? 0 : r,
+        s: s === 0 ? 0 : s,
+      });
+    }
+  }
+
+  return hexes;
+}
+
+/**
+ * Generate all hexes on a board with the given radius in axial coordinates.
+ *
+ * @param radius - The board radius (distance from center to edge)
+ * @returns Array of all hex positions on the board in axial coordinates
+ */
+export function generateAllBoardHexesAxial(radius: number): AxialCoord[] {
+  return generateAllBoardHexes(radius).map(cubeToAxial);
+}
+
+/**
+ * Convert axial hex coordinates to pixel coordinates for rendering.
+ * Uses pointy-top hex orientation.
+ * Returns the center point of the hex.
+ *
+ * @param hex - The hex coordinate
+ * @param size - The size of the hex (distance from center to corner)
+ * @returns Object with x and y pixel coordinates
+ */
+export function hexToPixel(hex: AxialCoord, size: number): { x: number; y: number } {
+  // Pointy-top orientation
+  const x = size * (Math.sqrt(3) * hex.q + (Math.sqrt(3) / 2) * hex.r);
+  const y = size * ((3 / 2) * hex.r);
+  return { x, y };
+}
+
+/**
+ * Calculate the angle (in radians) from the center of the board to a hex.
+ * Angle 0 is to the right (East), increasing counter-clockwise.
+ *
+ * @param hex - The hex coordinate
+ * @returns Angle in radians from -π to π
+ */
+export function hexToAngle(hex: AxialCoord): number {
+  const pixel = hexToPixel(hex, 1); // Size doesn't matter for angle calculation
+  return Math.atan2(pixel.y, pixel.x);
+}
+
+/**
+ * Calculate the starting positions for Jarls based on player count.
+ * All Jarls start on edge hexes, equidistantly spaced around the board.
+ * Since all edge hexes are at the same distance from center (= radius),
+ * all Jarls are automatically equidistant from the Throne.
+ *
+ * For N players, positions are at angles: 0, 2π/N, 4π/N, ..., (N-1)*2π/N
+ * For 2 players: directly opposite (0 and π radians = East and West)
+ *
+ * @param playerCount - Number of players (2-6)
+ * @param radius - Board radius
+ * @returns Array of starting positions in axial coordinates, one per player
+ * @throws Error if playerCount is outside valid range (2-6)
+ */
+export function calculateStartingPositions(playerCount: number, radius: number): AxialCoord[] {
+  if (playerCount < 2 || playerCount > 6) {
+    throw new Error(`Invalid player count: ${playerCount}. Must be between 2 and 6.`);
+  }
+
+  // Get all edge hexes
+  const allHexes = generateAllBoardHexesAxial(radius);
+  const edgeHexes = allHexes.filter((hex) => isOnEdgeAxial(hex, radius));
+
+  // Calculate target angles for each player (evenly spaced around the circle)
+  // Start at 0 radians (East direction) for player 1
+  const targetAngles: number[] = [];
+  for (let i = 0; i < playerCount; i++) {
+    // Angles go counter-clockwise from East (0 radians)
+    targetAngles.push((i * 2 * Math.PI) / playerCount);
+  }
+
+  // For each target angle, find the closest edge hex
+  const positions: AxialCoord[] = [];
+  const usedKeys = new Set<string>();
+
+  for (const targetAngle of targetAngles) {
+    let bestHex: AxialCoord | null = null;
+    let bestAngleDiff = Infinity;
+
+    for (const hex of edgeHexes) {
+      const key = hexToKey(hex);
+      if (usedKeys.has(key)) continue; // Don't reuse positions
+
+      const hexAngle = hexToAngle(hex);
+
+      // Calculate angular difference (handle wrap-around)
+      let angleDiff = Math.abs(hexAngle - targetAngle);
+      if (angleDiff > Math.PI) {
+        angleDiff = 2 * Math.PI - angleDiff;
+      }
+
+      if (angleDiff < bestAngleDiff) {
+        bestAngleDiff = angleDiff;
+        bestHex = hex;
+      }
+    }
+
+    if (bestHex) {
+      positions.push(bestHex);
+      usedKeys.add(hexToKey(bestHex));
+    }
+  }
+
+  return positions;
+}
+
+/**
+ * Rotate a hex position around the center by a given number of 60-degree steps.
+ * Used for generating rotationally symmetric shield positions.
+ *
+ * @param hex - The hex to rotate (in cube coordinates)
+ * @param steps - Number of 60-degree steps to rotate (positive = counter-clockwise)
+ * @returns The rotated hex position
+ */
+export function rotateHex(hex: CubeCoord, steps: number): CubeCoord {
+  // Normalize steps to 0-5 range
+  steps = ((steps % 6) + 6) % 6;
+
+  let { q, r, s } = hex;
+
+  for (let i = 0; i < steps; i++) {
+    // Rotate 60 degrees counter-clockwise: (q, r, s) -> (-r, -s, -q)
+    const newQ = -r;
+    const newR = -s;
+    const newS = -q;
+    q = newQ;
+    r = newR;
+    s = newS;
+  }
+
+  // Normalize -0 to 0
+  return {
+    q: q === 0 ? 0 : q,
+    r: r === 0 ? 0 : r,
+    s: s === 0 ? 0 : s,
+  };
+}
+
+/**
+ * Generate symmetrical shield positions for the game board.
+ * Shields are placed with rotational symmetry based on player count,
+ * ensuring fair gameplay where shields are equidistant from all starting positions.
+ *
+ * Rules:
+ * - Shields have N-fold rotational symmetry (where N = playerCount)
+ * - No shield on the Throne (center hex at 0,0)
+ * - No shield on edge hexes (where pieces start)
+ * - Shields are placed in the interior of the board
+ * - Shields must not block all paths from starting positions to the Throne
+ *
+ * @param playerCount - Number of players (2-6), determines rotational symmetry
+ * @param radius - Board radius
+ * @param shieldCount - Total number of shields to place
+ * @param startingPositions - Optional array of starting positions to avoid blocking paths
+ * @returns Array of shield positions in axial coordinates
+ * @throws Error if unable to place the requested number of shields
+ */
+export function generateSymmetricalShields(
+  playerCount: number,
+  radius: number,
+  shieldCount: number,
+  startingPositions?: AxialCoord[]
+): AxialCoord[] {
+  if (playerCount < 2 || playerCount > 6) {
+    throw new Error(`Invalid player count: ${playerCount}. Must be between 2 and 6.`);
+  }
+
+  if (shieldCount <= 0) {
+    return [];
+  }
+
+  // Get all interior hexes (not center, not edge)
+  const allHexes = generateAllBoardHexes(radius);
+  const center: CubeCoord = { q: 0, r: 0, s: 0 };
+
+  // Filter to interior hexes only (distance > 0 and distance < radius)
+  const interiorHexes = allHexes.filter((hex) => {
+    const dist = hexDistance(hex, center);
+    return dist > 0 && dist < radius;
+  });
+
+  // Build set of hexes that are on direct paths from starting positions to throne
+  // These should be avoided to ensure valid placements
+  const pathHexKeys = new Set<string>();
+  if (startingPositions) {
+    const throne: AxialCoord = { q: 0, r: 0 };
+    for (const startPos of startingPositions) {
+      const pathHexes = hexLineAxial(startPos, throne);
+      // Add all hexes on the path except start and end
+      for (let i = 1; i < pathHexes.length - 1; i++) {
+        pathHexKeys.add(hexToKey(pathHexes[i]));
+      }
+    }
+  }
+
+  // Group hexes by their "canonical" form under rotation
+  // This helps us find hexes that can form symmetric groups
+  const hexGroups = new Map<string, CubeCoord[]>();
+
+  for (const hex of interiorHexes) {
+    // Find all rotations of this hex
+    const rotations: CubeCoord[] = [];
+    for (let i = 0; i < playerCount; i++) {
+      rotations.push(rotateHex(hex, i));
+    }
+
+    // Use the lexicographically smallest as the canonical key
+    const sortedRotations = rotations
+      .map((h) => ({ hex: h, key: `${h.q},${h.r},${h.s}` }))
+      .sort((a, b) => a.key.localeCompare(b.key));
+
+    const canonicalKey = sortedRotations[0].key;
+
+    if (!hexGroups.has(canonicalKey)) {
+      // Store unique rotations only (some hexes map to themselves under rotation)
+      const uniqueRotations: CubeCoord[] = [];
+      const seenKeys = new Set<string>();
+      for (const rot of rotations) {
+        const key = hexToKey(rot);
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key);
+          uniqueRotations.push(rot);
+        }
+      }
+      hexGroups.set(canonicalKey, uniqueRotations);
+    }
+  }
+
+  // Sort groups by size and distance from center for consistent placement
+  // Prefer groups that give us exactly the symmetry we need
+  // Also deprioritize groups that would block paths to throne
+  const sortedGroups = Array.from(hexGroups.values()).sort((a, b) => {
+    // First, check if group blocks paths (deprioritize blocking groups)
+    const aBlocksPath = a.some((hex) => pathHexKeys.has(hexToKey(hex)));
+    const bBlocksPath = b.some((hex) => pathHexKeys.has(hexToKey(hex)));
+    if (aBlocksPath !== bBlocksPath) return aBlocksPath ? 1 : -1;
+
+    // Then, prefer groups with size equal to playerCount (perfect symmetry)
+    const aIsPerfect = a.length === playerCount ? 0 : 1;
+    const bIsPerfect = b.length === playerCount ? 0 : 1;
+    if (aIsPerfect !== bIsPerfect) return aIsPerfect - bIsPerfect;
+
+    // Then sort by group size (descending for efficiency)
+    if (a.length !== b.length) return b.length - a.length;
+
+    // Then by distance from center (prefer closer to center)
+    const aDist = hexDistance(a[0], center);
+    const bDist = hexDistance(b[0], center);
+    return aDist - bDist;
+  });
+
+  // Select groups to reach the target shield count
+  const selectedShields: AxialCoord[] = [];
+  const usedKeys = new Set<string>();
+
+  for (const group of sortedGroups) {
+    if (selectedShields.length >= shieldCount) break;
+
+    // Check if adding this group would exceed the count
+    const remaining = shieldCount - selectedShields.length;
+
+    // Only add the group if all hexes are unused
+    const allUnused = group.every((hex) => !usedKeys.has(hexToKey(hex)));
+    if (!allUnused) continue;
+
+    // If the group fits exactly or we have room, add it
+    if (group.length <= remaining) {
+      for (const hex of group) {
+        selectedShields.push(cubeToAxial(hex));
+        usedKeys.add(hexToKey(hex));
+      }
+    }
+  }
+
+  // If we couldn't place enough shields, try to fill remaining spots
+  // with individual hexes (this maintains partial symmetry)
+  if (selectedShields.length < shieldCount) {
+    // Get remaining interior hexes not yet used
+    const remainingHexes = interiorHexes.filter((hex) => !usedKeys.has(hexToKey(hex)));
+
+    // Sort by: first non-path-blocking, then by distance from center
+    remainingHexes.sort((a, b) => {
+      const aBlocksPath = pathHexKeys.has(hexToKey(a));
+      const bBlocksPath = pathHexKeys.has(hexToKey(b));
+      if (aBlocksPath !== bBlocksPath) return aBlocksPath ? 1 : -1;
+      return hexDistance(a, center) - hexDistance(b, center);
+    });
+
+    for (const hex of remainingHexes) {
+      if (selectedShields.length >= shieldCount) break;
+      selectedShields.push(cubeToAxial(hex));
+      usedKeys.add(hexToKey(hex));
+    }
+  }
+
+  if (selectedShields.length < shieldCount) {
+    throw new Error(
+      `Unable to place ${shieldCount} shields. Only ${selectedShields.length} positions available.`
+    );
+  }
+
+  return selectedShields;
+}
+
+/**
+ * Check if there exists an unobstructed straight-line path from a starting position
+ * to the Throne (center hex) that doesn't pass through any shield.
+ *
+ * A "straight-line path" means the hexes that form a line drawn from the starting
+ * position through the center. Uses the hexLine function to get the exact hexes.
+ * The path is "unobstructed" if no shields are on any hex along the path.
+ *
+ * @param startPosition - The starting position (typically a Jarl's starting hex)
+ * @param shieldPositions - Set of shield position keys for quick lookup
+ * @param radius - Board radius (unused but kept for API consistency)
+ * @returns true if the straight-line path to the Throne has no shields
+ */
+export function hasPathToThrone(
+  startPosition: AxialCoord,
+  shieldPositions: Set<string>,
+  _radius: number
+): boolean {
+  const throne: AxialCoord = { q: 0, r: 0 };
+
+  // Get all hexes on the straight line from start to throne
+  const pathHexes = hexLineAxial(startPosition, throne);
+
+  // Check if any hex on the path (excluding start and end) has a shield
+  for (let i = 1; i < pathHexes.length - 1; i++) {
+    const hex = pathHexes[i];
+    if (shieldPositions.has(hexToKey(hex))) {
+      return false; // Shield blocks this path
+    }
+  }
+
+  return true; // Path is clear
+}
+
+/**
+ * Validate that a shield placement allows at least one unobstructed straight-line
+ * path to the Throne for each player's starting position.
+ *
+ * This ensures fair gameplay where no player is completely blocked from reaching
+ * the Throne by shields.
+ *
+ * @param shieldPositions - Array of shield positions in axial coordinates
+ * @param startingPositions - Array of player starting positions (Jarl positions)
+ * @param radius - Board radius
+ * @returns Object with isValid boolean and optional error message
+ */
+export function validateShieldPlacement(
+  shieldPositions: AxialCoord[],
+  startingPositions: AxialCoord[],
+  radius: number
+): { isValid: boolean; blockedPlayers: number[] } {
+  // Create a Set of shield position keys for O(1) lookup
+  const shieldSet = new Set(shieldPositions.map(hexToKey));
+
+  const blockedPlayers: number[] = [];
+
+  // Check each starting position has at least one path to the Throne
+  for (let i = 0; i < startingPositions.length; i++) {
+    const startPos = startingPositions[i];
+    if (!hasPathToThrone(startPos, shieldSet, radius)) {
+      blockedPlayers.push(i);
+    }
+  }
+
+  return {
+    isValid: blockedPlayers.length === 0,
+    blockedPlayers,
+  };
+}
+
+/**
+ * Find the hex direction that most closely points from a starting position toward the Throne.
+ * This is used to determine which direction Warriors should be placed (in front of the Jarl).
+ *
+ * @param startPosition - The starting position (Jarl's hex)
+ * @returns The HexDirection that points most toward the center
+ */
+export function getDirectionTowardThrone(startPosition: AxialCoord): HexDirection {
+  const startCube = axialToCube(startPosition);
+  const throne: CubeCoord = { q: 0, r: 0, s: 0 };
+
+  // If at the throne, default to direction 0 (shouldn't happen in practice)
+  if (startCube.q === 0 && startCube.r === 0 && startCube.s === 0) {
+    return 0;
+  }
+
+  // Find the direction that minimizes distance to throne when we move from startPosition
+  let bestDirection: HexDirection = 0;
+  let bestDistance = Infinity;
+
+  for (let d = 0; d < 6; d++) {
+    const neighbor = getNeighbor(startCube, d as HexDirection);
+    const dist = hexDistance(neighbor, throne);
+    if (dist < bestDistance) {
+      bestDistance = dist;
+      bestDirection = d as HexDirection;
+    }
+  }
+
+  return bestDirection;
+}
+
+/**
+ * Place Warriors in front of the Jarl, between the Jarl and the Throne.
+ * Warriors are placed along the straight line from Jarl toward the Throne,
+ * starting from the hex adjacent to the Jarl and moving toward the center.
+ *
+ * Rules:
+ * - Warriors placed between Jarl and Throne (not behind the Jarl)
+ * - Warriors form a line formation toward the center
+ * - Warriors cannot occupy the Throne hex
+ * - Warriors cannot occupy hexes with shields
+ * - If a hex is blocked, skip to the next available hex toward the center
+ *
+ * @param jarlPosition - The Jarl's starting position
+ * @param warriorCount - Number of Warriors to place
+ * @param shieldPositions - Set of shield position keys to avoid
+ * @param radius - Board radius (for bounds checking)
+ * @returns Array of Warrior positions in axial coordinates
+ */
+export function placeWarriors(
+  jarlPosition: AxialCoord,
+  warriorCount: number,
+  shieldPositions: Set<string>,
+  radius: number
+): AxialCoord[] {
+  if (warriorCount <= 0) {
+    return [];
+  }
+
+  const warriors: AxialCoord[] = [];
+  const throne: AxialCoord = { q: 0, r: 0 };
+  const jarlKey = hexToKey(jarlPosition);
+  const throneKey = hexToKey(throne);
+
+  // Get all hexes on the line from Jarl to Throne
+  const pathToThrone = hexLineAxial(jarlPosition, throne);
+
+  // Use hexes on the path (excluding Jarl position and Throne)
+  // These are the primary placement positions
+  const usedKeys = new Set<string>();
+  usedKeys.add(jarlKey); // Don't place on Jarl
+
+  for (const hex of pathToThrone) {
+    if (warriors.length >= warriorCount) break;
+
+    const key = hexToKey(hex);
+
+    // Skip Jarl position, Throne, shields, and already used positions
+    if (key === jarlKey || key === throneKey || shieldPositions.has(key) || usedKeys.has(key)) {
+      continue;
+    }
+
+    // Skip if off board
+    if (!isOnBoardAxial(hex, radius)) {
+      continue;
+    }
+
+    warriors.push(hex);
+    usedKeys.add(key);
+  }
+
+  // If we couldn't place all warriors on the direct path (due to shields),
+  // try to place remaining warriors on adjacent hexes near the path
+  if (warriors.length < warriorCount) {
+    // Get the direction toward throne to prioritize "forward" hexes
+    const dirToThrone = getDirectionTowardThrone(jarlPosition);
+
+    // Start from Jarl and expand outward looking for available hexes
+    const jarlCube = axialToCube(jarlPosition);
+
+    // Check neighbors of the Jarl first, prioritizing the direction toward throne
+    const directionPriority = [
+      dirToThrone,
+      (dirToThrone + 1) % 6,
+      (dirToThrone + 5) % 6, // +5 is same as -1 mod 6
+      (dirToThrone + 2) % 6,
+      (dirToThrone + 4) % 6,
+      (dirToThrone + 3) % 6, // Opposite direction last
+    ] as HexDirection[];
+
+    // Try adjacent hexes to the Jarl
+    for (const dir of directionPriority) {
+      if (warriors.length >= warriorCount) break;
+
+      const neighborCube = getNeighbor(jarlCube, dir);
+      const neighborAxial = cubeToAxial(neighborCube);
+      const key = hexToKey(neighborAxial);
+
+      if (
+        !usedKeys.has(key) &&
+        !shieldPositions.has(key) &&
+        key !== throneKey &&
+        isOnBoardAxial(neighborAxial, radius)
+      ) {
+        warriors.push(neighborAxial);
+        usedKeys.add(key);
+      }
+    }
+
+    // If still not enough, try hexes at distance 2 from Jarl
+    if (warriors.length < warriorCount) {
+      for (const dir of directionPriority) {
+        if (warriors.length >= warriorCount) break;
+
+        const neighbor1 = getNeighbor(jarlCube, dir);
+        const neighbor2 = getNeighbor(neighbor1, dir);
+        const neighborAxial = cubeToAxial(neighbor2);
+        const key = hexToKey(neighborAxial);
+
+        if (
+          !usedKeys.has(key) &&
+          !shieldPositions.has(key) &&
+          key !== throneKey &&
+          isOnBoardAxial(neighborAxial, radius)
+        ) {
+          warriors.push(neighborAxial);
+          usedKeys.add(key);
+        }
+      }
+    }
+  }
+
+  return warriors;
+}
+
+/**
+ * Generate a unique ID for game entities.
+ * Uses a simple combination of timestamp and random string.
+ *
+ * @returns A unique string ID
+ */
+export function generateId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
+ * Create the initial game state for a new game.
+ * This includes:
+ * - Creating the game with a unique ID
+ * - Setting up players with IDs and colors
+ * - Placing shields symmetrically on the board
+ * - Placing each player's Jarl at their starting position
+ * - Placing each player's Warriors in front of their Jarl
+ *
+ * @param playerNames - Array of player names (2-6 players)
+ * @param turnTimerMs - Optional turn timer in milliseconds (null for no timer)
+ * @returns Complete GameState ready for the playing phase
+ * @throws Error if unable to create valid board
+ */
+export function createInitialState(
+  playerNames: string[],
+  turnTimerMs: number | null = null
+): GameState {
+  const playerCount = playerNames.length;
+
+  if (playerCount < 2 || playerCount > 6) {
+    throw new Error(`Invalid player count: ${playerCount}. Must be between 2 and 6.`);
+  }
+
+  // Get game configuration for this player count
+  const config = getConfigForPlayerCount(playerCount, turnTimerMs);
+
+  // Create players with IDs and colors
+  const players: Player[] = playerNames.map((name, index) => ({
+    id: generateId(),
+    name,
+    color: PLAYER_COLORS[index],
+    isEliminated: false,
+  }));
+
+  // Calculate starting positions for Jarls
+  const startingPositions = calculateStartingPositions(playerCount, config.boardRadius);
+
+  // Generate shields with starting positions to avoid blocking direct paths
+  const shieldPositions = generateSymmetricalShields(
+    playerCount,
+    config.boardRadius,
+    config.shieldCount,
+    startingPositions
+  );
+
+  // Validate the placement (should always pass when starting positions are provided)
+  const validation = validateShieldPlacement(
+    shieldPositions,
+    startingPositions,
+    config.boardRadius
+  );
+  if (!validation.isValid) {
+    throw new Error(
+      `Unable to generate valid shield placement. ` +
+        `Some players would have no clear path to the Throne.`
+    );
+  }
+
+  // Create shield position set for quick lookup
+  const shieldSet = new Set(shieldPositions.map(hexToKey));
+
+  // Create all pieces
+  const pieces: Piece[] = [];
+
+  // Add shields (no player owner)
+  for (const shieldPos of shieldPositions) {
+    pieces.push({
+      id: generateId(),
+      type: 'shield',
+      playerId: null,
+      position: shieldPos,
+    });
+  }
+
+  // Add Jarls and Warriors for each player
+  for (let i = 0; i < playerCount; i++) {
+    const player = players[i];
+    const jarlPosition = startingPositions[i];
+
+    // Add Jarl
+    pieces.push({
+      id: generateId(),
+      type: 'jarl',
+      playerId: player.id,
+      position: jarlPosition,
+    });
+
+    // Place Warriors in front of the Jarl
+    const warriorPositions = placeWarriors(
+      jarlPosition,
+      config.warriorCount,
+      shieldSet,
+      config.boardRadius
+    );
+
+    for (const warriorPos of warriorPositions) {
+      pieces.push({
+        id: generateId(),
+        type: 'warrior',
+        playerId: player.id,
+        position: warriorPos,
+      });
+    }
+  }
+
+  // Create the initial game state
+  const gameState: GameState = {
+    id: generateId(),
+    phase: 'setup',
+    config,
+    players,
+    pieces,
+    currentPlayerId: players[0].id, // First player starts
+    turnNumber: 0,
+    roundNumber: 0,
+    roundsSinceElimination: 0,
+    winnerId: null,
+    winCondition: null,
+  };
+
+  return gameState;
+}

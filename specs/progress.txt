@@ -1776,3 +1776,51 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Modified**:
 - packages/shared/src/index.ts (added imports/re-exports from hex.ts, removed hex function definitions)
+
+---
+
+### 2026-01-26: Infrastructure - Split shared/src/index.ts - extract board.ts
+
+**Feature Completed**: "Split shared/src/index.ts - extract board.ts"
+
+**Work Done**:
+- Created `packages/shared/src/board.ts` containing all board generation functions
+- Moved 15 functions/constants from index.ts to board.ts:
+  - PLAYER_SCALING constant (scaling table for 2-6 players)
+  - PLAYER_COLORS constant (6 distinct player colors)
+  - getConfigForPlayerCount: returns GameConfig for player count
+  - getBoardHexCount: calculates total hexes using formula 3r² + 3r + 1
+  - generateAllBoardHexes, generateAllBoardHexesAxial: generates all board hexes
+  - hexToPixel: converts hex to pixel coordinates for rendering
+  - hexToAngle: calculates angle from center to hex
+  - calculateStartingPositions: calculates Jarl starting positions
+  - rotateHex: rotates hex for symmetric shield placement
+  - generateSymmetricalShields: generates symmetric shield positions
+  - hasPathToThrone, validateShieldPlacement: validates shield placement
+  - getDirectionTowardThrone: finds direction toward center
+  - placeWarriors: places Warriors in front of Jarl
+  - generateId: generates unique IDs for game entities
+  - createInitialState: creates complete initial game state
+- Updated `packages/shared/src/index.ts`:
+  - Added `export { ... } from './board.js'` to re-export all board functions
+  - Removed all board function definitions (~725 lines of code removed)
+  - Cleaned up unused type imports (CubeCoord, Player, GameConfig, PlayerScaling)
+  - Cleaned up unused hex function imports (hexDistance, isOnEdgeAxial)
+- All functions remain accessible to consumers via `import { ... } from '@jarls/shared'`
+
+**Why This Matters**:
+- Reduces index.ts file size significantly (~725 lines removed)
+- board.ts is now ~640 lines - well within the 800-line guideline
+- Continues the critical file-splitting infrastructure work
+- Improves code organization and maintainability
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (756 tests total)
+- Server and client can still import board functions from @jarls/shared
+
+**Files Created**:
+- packages/shared/src/board.ts
+
+**Files Modified**:
+- packages/shared/src/index.ts (added re-exports from board.ts, removed board function definitions, cleaned up unused imports)
