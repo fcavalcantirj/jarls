@@ -1471,3 +1471,42 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added LastStandingResult interface and checkLastStanding function)
 - packages/shared/src/index.test.ts (added import for checkLastStanding, added unit tests)
+
+---
+
+### 2026-01-26: Core Logic - checkWinConditions Function
+
+**Feature Completed**: "checkWinConditions checks both conditions with precedence"
+
+**Work Done**:
+- Implemented `WinCondition` type: `'throne' | 'lastStanding'`
+- Implemented `WinConditionsResult` interface:
+  - `isVictory`: Boolean indicating if any victory condition was met
+  - `winnerId`: The player ID who won (or null if no victory)
+  - `condition`: The win condition that was met ('throne' or 'lastStanding', or null)
+- Implemented `checkWinConditions(state, movedPieceId, wasVoluntaryMove)` function:
+  - Checks throne victory first (higher precedence)
+  - Checks last standing victory second
+  - Returns correct winner ID and win condition
+  - Uses existing `checkThroneVictory` and `checkLastStanding` functions
+- Win condition precedence:
+  - Throne victory takes priority over last standing
+  - If a Jarl moves onto the throne while also being the last Jarl, throne victory is returned
+- Added comprehensive unit tests (16 new tests) covering:
+  - Throne victory detection: player 1, player 2
+  - Last standing detection: single Jarl remaining, involuntary moves
+  - Correct winner and condition returned
+  - No victory when both Jarls exist
+  - No victory with involuntary throne entry
+  - Throne victory takes precedence over last standing
+  - Edge cases: piece not found, warrior moves, empty pieces
+  - Multi-player scenarios (3 players with 2 or 1 Jarl remaining)
+  - Result structure verification for all outcomes
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (676 tests total, 16 new tests for checkWinConditions)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added WinCondition type, WinConditionsResult interface, checkWinConditions function)
+- packages/shared/src/index.test.ts (added import for checkWinConditions, added unit tests)

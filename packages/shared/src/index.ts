@@ -2836,3 +2836,65 @@ export function checkLastStanding(state: GameState): LastStandingResult {
   // no victory can be determined
   return noVictory;
 }
+
+/**
+ * Type representing the win condition that ended the game.
+ */
+export type WinCondition = 'throne' | 'lastStanding';
+
+/**
+ * Result of checking all win conditions.
+ */
+export interface WinConditionsResult {
+  /** Whether any victory condition was met */
+  isVictory: boolean;
+  /** The player ID who won (if victory) */
+  winnerId: string | null;
+  /** The win condition that was met (if victory) */
+  condition: WinCondition | null;
+}
+
+/**
+ * Check all win conditions with proper precedence.
+ *
+ * Win condition priority:
+ * 1. Throne Victory - checked first (Jarl voluntarily moves onto Throne)
+ * 2. Last Standing - checked second (only one Jarl remains on the board)
+ *
+ * This function should be called after every move to determine if the game has ended.
+ *
+ * @param state - The current game state (after the move was applied)
+ * @param movedPieceId - The ID of the piece that was just moved (for throne check)
+ * @param wasVoluntaryMove - Whether the move was voluntary (for throne check)
+ * @returns WinConditionsResult indicating if victory occurred, who won, and how
+ */
+export function checkWinConditions(
+  state: GameState,
+  movedPieceId: string,
+  wasVoluntaryMove: boolean
+): WinConditionsResult {
+  const noVictory: WinConditionsResult = { isVictory: false, winnerId: null, condition: null };
+
+  // Check throne victory first (higher precedence)
+  const throneResult = checkThroneVictory(state, movedPieceId, wasVoluntaryMove);
+  if (throneResult.isVictory) {
+    return {
+      isVictory: true,
+      winnerId: throneResult.winnerId,
+      condition: 'throne',
+    };
+  }
+
+  // Check last standing victory second
+  const lastStandingResult = checkLastStanding(state);
+  if (lastStandingResult.isVictory) {
+    return {
+      isVictory: true,
+      winnerId: lastStandingResult.winnerId,
+      condition: 'lastStanding',
+    };
+  }
+
+  // No victory condition met
+  return noVictory;
+}

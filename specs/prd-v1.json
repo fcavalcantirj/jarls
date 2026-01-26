@@ -521,7 +521,7 @@
       "Checks last standing second",
       "Returns correct winner and condition"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
