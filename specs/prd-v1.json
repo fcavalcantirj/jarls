@@ -397,7 +397,7 @@
       "Opposite direction from push",
       "Sums strength of all bracing pieces"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

@@ -46,6 +46,7 @@ import {
   validateMove,
   getPieceStrength,
   findInlineSupport,
+  findBracing,
   AxialCoord,
   CubeCoord,
   GameConfig,
@@ -4678,6 +4679,357 @@ describe('@jarls/shared', () => {
         // Check all 6 directions - should not crash
         for (let d = 0; d < 6; d++) {
           const result = findInlineSupport(
+            state,
+            warrior.position,
+            state.currentPlayerId!,
+            d as HexDirection
+          );
+          expect(result.pieces).toBeDefined();
+          expect(result.totalStrength).toBeGreaterThanOrEqual(0);
+        }
+      });
+    });
+  });
+
+  describe('findBracing', () => {
+    // Helper to create a minimal game state for testing
+    function createTestState(pieces: Piece[]): GameState {
+      return {
+        id: 'test',
+        phase: 'playing',
+        config: {
+          playerCount: 2,
+          boardRadius: 3,
+          shieldCount: 0,
+          warriorCount: 5,
+          turnTimerMs: null,
+        },
+        players: [
+          { id: 'p1', name: 'Player 1', color: 'red', isEliminated: false },
+          { id: 'p2', name: 'Player 2', color: 'blue', isEliminated: false },
+        ],
+        pieces,
+        currentPlayerId: 'p1',
+        turnNumber: 0,
+        roundNumber: 0,
+        roundsSinceElimination: 0,
+        winnerId: null,
+        winCondition: null,
+      };
+    }
+
+    describe('basic functionality', () => {
+      it('should return empty array when no pieces are behind defender', () => {
+        // Defender at (0,0), being pushed East (direction 0)
+        // No pieces behind (to the East)
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(0);
+        expect(result.totalStrength).toBe(0);
+      });
+
+      it('should find single Warrior providing bracing', () => {
+        // Defender at (0,0), being pushed East (direction 0)
+        // Warrior at (1,0) - directly behind in push direction (East)
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'bracer', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(1);
+        expect(result.pieces[0].id).toBe('bracer');
+        expect(result.totalStrength).toBe(1);
+      });
+
+      it('should find multiple Warriors providing bracing', () => {
+        // Defender at (0,0), being pushed East (direction 0)
+        // Warriors at (1,0) and (2,0) - two behind in push direction
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'bracer1', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
+          { id: 'bracer2', type: 'warrior', playerId: 'p1', position: { q: 2, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(2);
+        expect(result.totalStrength).toBe(2); // 1 + 1
+      });
+
+      it('should find Jarl providing bracing with strength 2', () => {
+        // Defender at (0,0), being pushed East (direction 0)
+        // Jarl at (1,0) - directly behind in push direction
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'jarl', type: 'jarl', playerId: 'p1', position: { q: 1, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(1);
+        expect(result.pieces[0].id).toBe('jarl');
+        expect(result.totalStrength).toBe(2);
+      });
+
+      it('should sum strength of mixed piece types', () => {
+        // Defender at (0,0), being pushed East (direction 0)
+        // Warrior at (1,0), Jarl at (2,0)
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'warrior', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
+          { id: 'jarl', type: 'jarl', playerId: 'p1', position: { q: 2, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(2);
+        expect(result.totalStrength).toBe(3); // 1 (Warrior) + 2 (Jarl)
+      });
+    });
+
+    describe('stops at empty hex', () => {
+      it('should stop collecting bracing at first empty hex', () => {
+        // Defender at (0,0), being pushed East (direction 0)
+        // Warrior at (1,0), empty at (2,0), Warrior at (3,0)
+        // Bracing line should stop at the gap
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'bracer1', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
+          // Gap at (2, 0)
+          { id: 'bracer2', type: 'warrior', playerId: 'p1', position: { q: 3, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(1);
+        expect(result.pieces[0].id).toBe('bracer1');
+        expect(result.totalStrength).toBe(1);
+      });
+
+      it('should return empty when first hex behind is empty', () => {
+        // Defender at (0,0), being pushed East (direction 0)
+        // Empty at (1,0), Warrior at (2,0)
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'bracer', type: 'warrior', playerId: 'p1', position: { q: 2, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(0);
+        expect(result.totalStrength).toBe(0);
+      });
+    });
+
+    describe('stops at enemy piece', () => {
+      it('should stop collecting bracing at enemy piece', () => {
+        // Defender at (0,0), being pushed East (direction 0)
+        // Warrior at (1,0), enemy at (2,0), Warrior at (3,0)
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'bracer', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
+          { id: 'enemy', type: 'warrior', playerId: 'p2', position: { q: 2, r: 0 } },
+          { id: 'blocked', type: 'warrior', playerId: 'p1', position: { q: 3, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(1);
+        expect(result.pieces[0].id).toBe('bracer');
+        expect(result.totalStrength).toBe(1);
+      });
+
+      it('should return empty when enemy is directly behind', () => {
+        // Defender at (0,0), being pushed East (direction 0)
+        // Enemy at (1,0)
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'enemy', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(0);
+        expect(result.totalStrength).toBe(0);
+      });
+    });
+
+    describe('stops at shield', () => {
+      it('should stop collecting bracing at shield', () => {
+        // Defender at (0,0), being pushed East (direction 0)
+        // Warrior at (1,0), shield at (2,0), Warrior at (3,0)
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'bracer', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
+          { id: 'shield', type: 'shield', playerId: null, position: { q: 2, r: 0 } },
+          { id: 'blocked', type: 'warrior', playerId: 'p1', position: { q: 3, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(1);
+        expect(result.pieces[0].id).toBe('bracer');
+        expect(result.totalStrength).toBe(1);
+      });
+
+      it('should return empty when shield is directly behind', () => {
+        // Defender at (0,0), being pushed East (direction 0)
+        // Shield at (1,0)
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'shield', type: 'shield', playerId: null, position: { q: 1, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(0);
+        expect(result.totalStrength).toBe(0);
+      });
+    });
+
+    describe('stops at board edge', () => {
+      it('should stop collecting bracing at board edge', () => {
+        // Defender at (2,0), being pushed East (direction 0)
+        // Warrior at (3,0) - at edge, radius is 3
+        // Should find the warrior but stop at edge
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 2, r: 0 } },
+          { id: 'bracer', type: 'warrior', playerId: 'p1', position: { q: 3, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 2, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(1);
+        expect(result.pieces[0].id).toBe('bracer');
+        expect(result.totalStrength).toBe(1);
+      });
+
+      it('should return empty when at board edge with no room behind', () => {
+        // Defender at (3,0), being pushed East (direction 0)
+        // No room behind because (4,0) is off board (radius 3)
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 3, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 3, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(0);
+        expect(result.totalStrength).toBe(0);
+      });
+    });
+
+    describe('different push directions', () => {
+      it('should find bracing when pushed Northeast (direction 1)', () => {
+        // Push direction 1 (Northeast), bracing from Northeast
+        // Direction 1 vector: { q: 1, r: -1 }
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'bracer', type: 'warrior', playerId: 'p1', position: { q: 1, r: -1 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 1);
+
+        expect(result.pieces).toHaveLength(1);
+        expect(result.totalStrength).toBe(1);
+      });
+
+      it('should find bracing when pushed West (direction 3)', () => {
+        // Push direction 3 (West), bracing from West
+        // Direction 3 vector: { q: -1, r: 0 }
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'bracer', type: 'warrior', playerId: 'p1', position: { q: -1, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 3);
+
+        expect(result.pieces).toHaveLength(1);
+        expect(result.totalStrength).toBe(1);
+      });
+
+      it('should find bracing when pushed Southeast (direction 5)', () => {
+        // Push direction 5 (Southeast), bracing from Southeast
+        // Direction 5 vector: { q: 0, r: 1 }
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'bracer', type: 'warrior', playerId: 'p1', position: { q: 0, r: 1 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 5);
+
+        expect(result.pieces).toHaveLength(1);
+        expect(result.totalStrength).toBe(1);
+      });
+    });
+
+    describe('pieces not in bracing line are ignored', () => {
+      it('should not include pieces adjacent but not in line', () => {
+        // Defender at (0,0), being pushed East (direction 0)
+        // Warrior at (0,1) - adjacent but not in push direction (Southeast, not East)
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'notBracer', type: 'warrior', playerId: 'p1', position: { q: 0, r: 1 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(0);
+        expect(result.totalStrength).toBe(0);
+      });
+
+      it('should not include pieces in opposite direction of push', () => {
+        // Defender at (0,0), being pushed East (direction 0)
+        // Warrior at (-1,0) - in opposite direction (West, not East)
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'notBracer', type: 'warrior', playerId: 'p1', position: { q: -1, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(0);
+        expect(result.totalStrength).toBe(0);
+      });
+    });
+
+    describe('game scenarios', () => {
+      it('should calculate bracing in realistic defense scenario', () => {
+        // Player 1 defender has a formation:
+        // Defender Warrior at (1,0) being pushed East
+        // Jarl at (2,0) and Warrior at (3,0) bracing behind
+        const state = createTestState([
+          { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
+          { id: 'jarl', type: 'jarl', playerId: 'p1', position: { q: 2, r: 0 } },
+          { id: 'warrior', type: 'warrior', playerId: 'p1', position: { q: 3, r: 0 } },
+          { id: 'attacker', type: 'warrior', playerId: 'p2', position: { q: 0, r: 0 } },
+        ]);
+
+        const result = findBracing(state, { q: 1, r: 0 }, 'p1', 0);
+
+        expect(result.pieces).toHaveLength(2);
+        expect(result.totalStrength).toBe(3); // Jarl (2) + Warrior (1)
+      });
+
+      it('should work with actual initial game state', () => {
+        const state = createInitialState(['Player 1', 'Player 2']);
+        state.phase = 'playing';
+
+        // Find a warrior that might have bracing
+        const warrior = state.pieces.find(
+          (p) => p.type === 'warrior' && p.playerId === state.currentPlayerId
+        );
+        expect(warrior).toBeDefined();
+        if (!warrior) return;
+
+        // Check all 6 directions - should not crash
+        for (let d = 0; d < 6; d++) {
+          const result = findBracing(
             state,
             warrior.position,
             state.currentPlayerId!,

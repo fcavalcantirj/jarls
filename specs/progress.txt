@@ -1010,3 +1010,40 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added InlineSupportResult, getPieceStrength, findInlineSupport)
 - packages/shared/src/index.test.ts (added unit tests for getPieceStrength and findInlineSupport)
+
+---
+
+### 2026-01-26: Core Logic - findBracing Function
+
+**Feature Completed**: "findBracing finds pieces behind defender"
+
+**Work Done**:
+- Implemented `BracingResult` interface:
+  - `pieces`: Array of pieces directly behind the defender in the bracing line
+  - `totalStrength`: Sum of individual piece strengths
+- Implemented `findBracing(state, defenderPosition, defenderId, pushDirection)` function:
+  - Finds all friendly pieces directly behind the defender in the push direction
+  - Bracing pieces resist the push by adding to defense strength
+  - Collects pieces in order from closest to furthest behind defender
+  - Stops collecting at first empty hex (bracing line must be continuous)
+  - Stops collecting at enemy piece or shield
+  - Stops collecting at board edge
+  - Sums strength of all bracing pieces (Warrior: 1, Jarl: 2)
+- This is the defensive counterpart to `findInlineSupport` (which is for attackers)
+- Added comprehensive unit tests (20 new tests) covering:
+  - Basic functionality: no bracing, single Warrior, multiple Warriors, Jarl bracing (strength 2), mixed piece types
+  - Stops at empty hex: gap in bracing line, empty hex directly behind
+  - Stops at enemy piece: enemy blocks line, enemy directly behind
+  - Stops at shield: shield blocks line, shield directly behind
+  - Stops at board edge: bracing at edge, no room behind
+  - Different push directions: Northeast, West, Southeast (all 6 directions work)
+  - Pieces not in bracing line ignored: adjacent but not in line, opposite direction of push
+  - Game scenarios: realistic defense with Jarl+Warrior bracing, actual initial game state
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (466 tests total, 20 new tests for findBracing)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added BracingResult interface and findBracing function)
+- packages/shared/src/index.test.ts (added unit tests for findBracing)

@@ -1690,3 +1690,78 @@ export function findInlineSupport(
 
   return { pieces: supportPieces, totalStrength };
 }
+
+/**
+ * Result of finding bracing support for a defender.
+ */
+export interface BracingResult {
+  /** Array of pieces directly behind the defender in the bracing line */
+  pieces: Piece[];
+  /** Total strength contributed by bracing pieces (sum of individual strengths) */
+  totalStrength: number;
+}
+
+/**
+ * Find all pieces providing bracing support for a defender.
+ * Bracing comes from friendly pieces directly behind the defender
+ * in the direction they would be pushed (same as the attack direction).
+ *
+ * Rules:
+ * - Bracing pieces must be friendly (same playerId as defender)
+ * - Bracing pieces must be in a continuous line behind the defender
+ * - The line stops at the first empty hex or enemy piece
+ * - Each bracing piece adds its strength (Warrior: 1, Jarl: 2)
+ *
+ * @param state - The current game state
+ * @param defenderPosition - The position of the defender
+ * @param defenderId - The player ID of the defender (for determining friendly pieces)
+ * @param pushDirection - The direction the defender would be pushed (same as attack direction)
+ * @returns BracingResult with bracing pieces and total strength
+ */
+export function findBracing(
+  state: GameState,
+  defenderPosition: AxialCoord,
+  defenderId: string,
+  pushDirection: HexDirection
+): BracingResult {
+  const bracingPieces: Piece[] = [];
+  let totalStrength = 0;
+
+  // Bracing comes from behind the defender in the push direction
+  // (the pieces that would resist the push)
+  const radius = state.config.boardRadius;
+
+  // Start from the position directly behind the defender (in push direction)
+  let currentHex = axialToCube(defenderPosition);
+
+  // Walk in the push direction from the defender, collecting bracing pieces
+  while (true) {
+    // Move to the next hex in the push direction (behind the defender)
+    currentHex = getNeighbor(currentHex, pushDirection);
+
+    // Stop if we've gone off the board
+    if (!isOnBoard(currentHex, radius)) {
+      break;
+    }
+
+    // Check what's at this hex
+    const piece = getPieceAt(state, cubeToAxial(currentHex));
+
+    if (piece === undefined) {
+      // Empty hex - stop collecting bracing
+      // Bracing line must be continuous (no gaps allowed)
+      break;
+    }
+
+    if (piece.playerId === defenderId) {
+      // Friendly piece - adds to bracing
+      bracingPieces.push(piece);
+      totalStrength += getPieceStrength(piece);
+    } else {
+      // Enemy piece or shield - stops the bracing line
+      break;
+    }
+  }
+
+  return { pieces: bracingPieces, totalStrength };
+}
