@@ -18,6 +18,9 @@ import {
   isOnBoardAxial,
   isOnEdge,
   isOnEdgeAxial,
+  hexToKey,
+  keyToHex,
+  keyToHexCube,
   AxialCoord,
   CubeCoord,
 } from './index';
@@ -1050,6 +1053,233 @@ describe('@jarls/shared', () => {
           expect(onEdge).toBe(false);
         }
       }
+    });
+  });
+
+  describe('hexToKey', () => {
+    it('should convert origin to "0,0"', () => {
+      const origin: AxialCoord = { q: 0, r: 0 };
+      expect(hexToKey(origin)).toBe('0,0');
+    });
+
+    it('should convert positive coordinates correctly', () => {
+      const hex: AxialCoord = { q: 3, r: 2 };
+      expect(hexToKey(hex)).toBe('3,2');
+    });
+
+    it('should convert negative coordinates correctly', () => {
+      const hex: AxialCoord = { q: -2, r: -5 };
+      expect(hexToKey(hex)).toBe('-2,-5');
+    });
+
+    it('should convert mixed positive/negative coordinates', () => {
+      const hex: AxialCoord = { q: 3, r: -1 };
+      expect(hexToKey(hex)).toBe('3,-1');
+    });
+
+    it('should work with cube coordinates', () => {
+      const cube: CubeCoord = { q: 2, r: -1, s: -1 };
+      // Should use only q and r, ignoring s
+      expect(hexToKey(cube)).toBe('2,-1');
+    });
+
+    it('should produce unique keys for different hexes', () => {
+      const hexes: AxialCoord[] = [
+        { q: 0, r: 0 },
+        { q: 1, r: 0 },
+        { q: 0, r: 1 },
+        { q: -1, r: 0 },
+        { q: 0, r: -1 },
+        { q: 1, r: -1 },
+        { q: -1, r: 1 },
+        { q: 3, r: 2 },
+        { q: 2, r: 3 },
+      ];
+
+      const keys = hexes.map(hexToKey);
+      const uniqueKeys = new Set(keys);
+      expect(uniqueKeys.size).toBe(hexes.length);
+    });
+
+    it('should produce consistent keys for same hex', () => {
+      const hex: AxialCoord = { q: 5, r: -3 };
+      expect(hexToKey(hex)).toBe(hexToKey(hex));
+      expect(hexToKey(hex)).toBe(hexToKey({ q: 5, r: -3 }));
+    });
+  });
+
+  describe('keyToHex', () => {
+    it('should convert "0,0" to origin', () => {
+      const result = keyToHex('0,0');
+      expect(result).toEqual({ q: 0, r: 0 });
+    });
+
+    it('should convert positive coordinate keys', () => {
+      const result = keyToHex('3,2');
+      expect(result).toEqual({ q: 3, r: 2 });
+    });
+
+    it('should convert negative coordinate keys', () => {
+      const result = keyToHex('-2,-5');
+      expect(result).toEqual({ q: -2, r: -5 });
+    });
+
+    it('should convert mixed coordinate keys', () => {
+      const result = keyToHex('3,-1');
+      expect(result).toEqual({ q: 3, r: -1 });
+    });
+
+    it('should return null for invalid keys with wrong format', () => {
+      expect(keyToHex('')).toBeNull();
+      expect(keyToHex('1')).toBeNull();
+      expect(keyToHex('1,2,3')).toBeNull();
+      expect(keyToHex('abc')).toBeNull();
+    });
+
+    it('should return null for non-numeric values', () => {
+      expect(keyToHex('a,b')).toBeNull();
+      expect(keyToHex('1,b')).toBeNull();
+      expect(keyToHex('a,2')).toBeNull();
+    });
+
+    it('should handle large coordinate values', () => {
+      const result = keyToHex('1000,-999');
+      expect(result).toEqual({ q: 1000, r: -999 });
+    });
+  });
+
+  describe('keyToHexCube', () => {
+    it('should convert "0,0" to cube origin', () => {
+      const result = keyToHexCube('0,0');
+      expect(result).toEqual({ q: 0, r: 0, s: 0 });
+    });
+
+    it('should convert keys to valid cube coordinates', () => {
+      const result = keyToHexCube('3,-1');
+      expect(result).not.toBeNull();
+      expect(result!.q + result!.r + result!.s).toBe(0);
+      expect(result).toEqual({ q: 3, r: -1, s: -2 });
+    });
+
+    it('should return null for invalid keys', () => {
+      expect(keyToHexCube('')).toBeNull();
+      expect(keyToHexCube('invalid')).toBeNull();
+      expect(keyToHexCube('1,2,3')).toBeNull();
+    });
+
+    it('should produce cube coordinates satisfying constraint', () => {
+      const testKeys = ['0,0', '3,-1', '-2,5', '10,-10', '-5,-5'];
+
+      for (const key of testKeys) {
+        const result = keyToHexCube(key);
+        expect(result).not.toBeNull();
+        expect(result!.q + result!.r + result!.s).toBe(0);
+      }
+    });
+  });
+
+  describe('hexToKey and keyToHex round-trip', () => {
+    it('should preserve axial coordinates through round-trip', () => {
+      const testCases: AxialCoord[] = [
+        { q: 0, r: 0 },
+        { q: 1, r: 0 },
+        { q: 0, r: 1 },
+        { q: -1, r: 0 },
+        { q: 0, r: -1 },
+        { q: 3, r: -2 },
+        { q: -5, r: 7 },
+        { q: 100, r: -50 },
+      ];
+
+      for (const original of testCases) {
+        const key = hexToKey(original);
+        const result = keyToHex(key);
+        expect(result).toEqual(original);
+      }
+    });
+
+    it('should preserve cube coordinates (q, r) through round-trip', () => {
+      const testCases: CubeCoord[] = [
+        { q: 0, r: 0, s: 0 },
+        { q: 1, r: 0, s: -1 },
+        { q: 0, r: 1, s: -1 },
+        { q: -1, r: 0, s: 1 },
+        { q: 3, r: -2, s: -1 },
+      ];
+
+      for (const original of testCases) {
+        const key = hexToKey(original);
+        const result = keyToHexCube(key);
+        expect(result).not.toBeNull();
+        expect(result!.q).toBe(original.q);
+        expect(result!.r).toBe(original.r);
+        // s is recalculated and should satisfy the constraint
+        expect(result!.q + result!.r + result!.s).toBe(0);
+      }
+    });
+  });
+
+  describe('hexToKey with Map storage', () => {
+    it('should work correctly as Map keys', () => {
+      const hexMap = new Map<string, string>();
+
+      const hex1: AxialCoord = { q: 0, r: 0 };
+      const hex2: AxialCoord = { q: 1, r: -1 };
+      const hex3: AxialCoord = { q: -2, r: 3 };
+
+      hexMap.set(hexToKey(hex1), 'throne');
+      hexMap.set(hexToKey(hex2), 'warrior');
+      hexMap.set(hexToKey(hex3), 'jarl');
+
+      expect(hexMap.get(hexToKey(hex1))).toBe('throne');
+      expect(hexMap.get(hexToKey(hex2))).toBe('warrior');
+      expect(hexMap.get(hexToKey(hex3))).toBe('jarl');
+      expect(hexMap.get(hexToKey({ q: 5, r: 5 }))).toBeUndefined();
+    });
+
+    it('should correctly identify same hex in Map', () => {
+      const hexMap = new Map<string, number>();
+
+      const hex: AxialCoord = { q: 2, r: -1 };
+      hexMap.set(hexToKey(hex), 42);
+
+      // Same hex, different object instance
+      const sameHex: AxialCoord = { q: 2, r: -1 };
+      expect(hexMap.get(hexToKey(sameHex))).toBe(42);
+    });
+
+    it('should handle game board scenario with pieces', () => {
+      const boardState = new Map<string, { type: string; player: number }>();
+
+      // Place some pieces
+      const pieces = [
+        { pos: { q: 0, r: 0 }, type: 'throne', player: 0 },
+        { pos: { q: 3, r: 0 }, type: 'jarl', player: 1 },
+        { pos: { q: -3, r: 0 }, type: 'jarl', player: 2 },
+        { pos: { q: 2, r: 0 }, type: 'warrior', player: 1 },
+        { pos: { q: 1, r: 0 }, type: 'warrior', player: 1 },
+        { pos: { q: -2, r: 0 }, type: 'warrior', player: 2 },
+      ];
+
+      for (const piece of pieces) {
+        boardState.set(hexToKey(piece.pos), { type: piece.type, player: piece.player });
+      }
+
+      expect(boardState.size).toBe(6);
+      expect(boardState.get(hexToKey({ q: 3, r: 0 }))).toEqual({ type: 'jarl', player: 1 });
+      expect(boardState.has(hexToKey({ q: 5, r: 5 }))).toBe(false);
+
+      // Simulate moving a piece
+      const oldPos: AxialCoord = { q: 2, r: 0 };
+      const newPos: AxialCoord = { q: 2, r: -1 };
+      const piece = boardState.get(hexToKey(oldPos));
+      if (piece) {
+        boardState.delete(hexToKey(oldPos));
+        boardState.set(hexToKey(newPos), piece);
+      }
+
+      expect(boardState.has(hexToKey(oldPos))).toBe(false);
+      expect(boardState.get(hexToKey(newPos))).toEqual({ type: 'warrior', player: 1 });
     });
   });
 });

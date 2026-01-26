@@ -255,6 +255,55 @@ export function isOnEdgeAxial(hex: AxialCoord, radius: number): boolean {
   return isOnEdge(axialToCube(hex), radius);
 }
 
+/**
+ * Convert a hex coordinate to a unique string key for use as Map keys.
+ * Uses axial coordinates for minimal storage.
+ *
+ * @param hex - The hex coordinate (cube or axial)
+ * @returns A unique string key representing the hex position
+ */
+export function hexToKey(hex: CubeCoord | AxialCoord): string {
+  return `${hex.q},${hex.r}`;
+}
+
+/**
+ * Convert a string key back to an axial coordinate.
+ * This is the inverse of hexToKey.
+ *
+ * @param key - The string key from hexToKey
+ * @returns The axial coordinate, or null if the key is invalid
+ */
+export function keyToHex(key: string): AxialCoord | null {
+  const parts = key.split(',');
+  if (parts.length !== 2) {
+    return null;
+  }
+
+  const q = parseInt(parts[0], 10);
+  const r = parseInt(parts[1], 10);
+
+  if (isNaN(q) || isNaN(r)) {
+    return null;
+  }
+
+  return { q, r };
+}
+
+/**
+ * Convert a string key back to a cube coordinate.
+ * This is the inverse of hexToKey, returning cube coordinates.
+ *
+ * @param key - The string key from hexToKey
+ * @returns The cube coordinate, or null if the key is invalid
+ */
+export function keyToHexCube(key: string): CubeCoord | null {
+  const axial = keyToHex(key);
+  if (axial === null) {
+    return null;
+  }
+  return axialToCube(axial);
+}
+
 // Piece types
 export type PieceType = 'jarl' | 'warrior' | 'shield';
 

@@ -489,3 +489,38 @@
 **Files Modified**:
 - packages/shared/src/index.ts (added isOnBoard, isOnBoardAxial, isOnEdge, isOnEdgeAxial functions)
 - packages/shared/src/index.test.ts (added unit tests for all new functions)
+
+---
+
+### 2026-01-25: Core Logic - hexToKey and keyToHex Functions
+
+**Feature Completed**: "hexToKey and keyToHex enable Map storage"
+
+**Work Done**:
+- Implemented `hexToKey(hex: CubeCoord | AxialCoord): string` function
+  - Converts hex coordinates to a unique string key for Map storage
+  - Uses format "q,r" for minimal storage (axial coordinates)
+  - Works with both cube and axial coordinate inputs
+- Implemented `keyToHex(key: string): AxialCoord | null` function
+  - Converts string key back to axial coordinates
+  - Returns null for invalid keys (wrong format, non-numeric values)
+- Implemented `keyToHexCube(key: string): CubeCoord | null` function
+  - Convenience wrapper that returns cube coordinates
+  - Calculates s component from constraint q + r + s = 0
+- Added comprehensive unit tests (23 new tests) covering:
+  - Origin conversion
+  - Positive, negative, and mixed coordinates
+  - Cube coordinate input (uses q, r only)
+  - Unique keys for different hexes
+  - Consistent keys for same hex
+  - Invalid key handling (wrong format, non-numeric)
+  - Round-trip conversions (axial and cube)
+  - Map storage scenarios including game board piece tracking
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (134 tests total, 23 new tests for hexToKey/keyToHex)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added hexToKey, keyToHex, keyToHexCube functions)
+- packages/shared/src/index.test.ts (added unit tests for all new functions)

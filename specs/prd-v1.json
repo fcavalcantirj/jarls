@@ -247,7 +247,7 @@
       "keyToHex(key) reconstructs original hex",
       "Keys work correctly as Map keys"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
