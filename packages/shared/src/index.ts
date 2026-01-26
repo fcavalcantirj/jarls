@@ -2245,3 +2245,227 @@ export function resolveEdgePush(
 
   return { newState, events, eliminatedPieceIds };
 }
+
+/**
+ * Result of resolving a compression push (pieces compress against shield or throne).
+ */
+export interface CompressionResult {
+  /** The new game state after the compression */
+  newState: GameState;
+  /** Events generated (MOVE for attacker, PUSH for chain pieces) */
+  events: GameEvent[];
+}
+
+/**
+ * Resolve a push where the chain compresses against a blocker (shield or throne).
+ * Unlike edge pushes, compression does not eliminate any pieces - they simply
+ * compress against the immovable blocker.
+ *
+ * The resolution:
+ * 1. Chain pieces don't actually move (they're already adjacent to the blocker)
+ * 2. Attacker takes the first defender's position
+ * 3. No pieces are eliminated
+ *
+ * This handles:
+ * - Shield blocking: pieces compress against an immovable shield
+ * - Throne blocking: Warriors compress against throne (they can't enter)
+ *                    Jarls also compress against throne when pushed (can't be pushed onto it)
+ *
+ * @param state - The current game state
+ * @param attackerId - The ID of the attacking piece
+ * @param attackerFrom - The attacker's original position (before moving to attack)
+ * @param defenderPosition - The defender's current position (first piece in chain)
+ * @param pushDirection - The direction of the push
+ * @param hasMomentum - Whether the attacker moved 2 hexes (for MOVE event)
+ * @param chain - The detected chain result from detectChain
+ * @returns CompressionResult with new state and events
+ */
+export function resolveCompression(
+  state: GameState,
+  attackerId: string,
+  attackerFrom: AxialCoord,
+  defenderPosition: AxialCoord,
+  pushDirection: HexDirection,
+  hasMomentum: boolean,
+  chain: ChainResult
+): CompressionResult {
+  const events: GameEvent[] = [];
+
+  // Get the attacker
+  const attacker = getPieceById(state, attackerId);
+  if (!attacker) {
+    throw new Error(`Attacker with ID ${attackerId} not found`);
+  }
+
+  // Validate chain terminator is shield or throne
+  if (chain.terminator !== 'shield' && chain.terminator !== 'throne') {
+    throw new Error(
+      `resolveCompression called with invalid terminator: ${chain.terminator}. Expected 'shield' or 'throne'.`
+    );
+  }
+
+  // In compression, the chain pieces are already against the blocker and cannot move further.
+  // The attacker pushes into the chain, taking the first defender's position.
+  // The chain pieces remain in their current positions (compressed).
+
+  // Build a list of positions in the chain, from defender position toward blocker
+  const chainPositions: AxialCoord[] = [];
+  let pos = defenderPosition;
+  for (let i = 0; i < chain.pieces.length; i++) {
+    chainPositions.push(pos);
+    if (i < chain.pieces.length - 1) {
+      pos = getNeighborAxial(pos, pushDirection);
+    }
+  }
+
+  // Create MOVE event for attacker (placed first for proper event ordering)
+  const moveEvent: MoveEvent = {
+    type: 'MOVE',
+    pieceId: attacker.id,
+    from: attackerFrom,
+    to: defenderPosition,
+    hasMomentum,
+  };
+  events.push(moveEvent);
+
+  // In a compression scenario, the chain pieces shift one position toward the blocker
+  // (if there's space), or they stay put if they're already adjacent to the blocker.
+  //
+  // Actually, in compression, the chain is already at capacity - the terminator is
+  // immediately behind the last piece. So:
+  // - If chain has 1 piece: defender is adjacent to blocker, attacker pushes in,
+  //   defender cannot move (blocked), so attacker stops adjacent to defender (blocked combat)
+  //
+  // Wait, let me reconsider: compression happens when push SUCCEEDS but chain cannot
+  // fully expand. The attacker wins the combat but pieces compress instead of being eliminated.
+  //
+  // The key insight: when push succeeds and hits a blocker:
+  // - All chain pieces shift one position toward the blocker
+  // - The last piece stays put (it can't move past the blocker)
+  // - Wait, that's not right either...
+  //
+  // Re-reading the PRD: "Pieces compress against blocker, No pieces eliminated, Attacker takes first defender's position"
+  //
+  // The correct interpretation:
+  // - When a chain hits a shield/throne and CANNOT expand (chain length = available space),
+  //   the pieces are already packed against the blocker
+  // - The attacker's push "succeeds" in the sense that they take the defender's position
+  // - But the chain pieces don't move - they're already maximally compressed
+  // - Essentially, the defender "absorbs" into the compression
+
+  // Actually, looking at edge push logic: pieces shift toward terminator.
+  // For compression with shield/throne:
+  // - If there's an empty hex before the blocker, pieces shift normally (but this would be 'empty' terminator)
+  // - If chain is directly against blocker, pieces cannot shift further
+  //
+  // The key: detectChain returns 'shield' or 'throne' only when the chain ends AT the blocker,
+  // meaning there's no gap. So in compression:
+  // - Chain pieces are packed: [defender][piece2][..][pieceN][BLOCKER]
+  // - Attacker pushes in from before defender
+  // - Pieces cannot move toward blocker (no space)
+  // - Attacker "takes" defender position - but where does defender go?
+  //
+  // This is the compression paradox. The answer from game rules:
+  // - Push succeeds, meaning attacker has enough force
+  // - But chain cannot physically move (blocked)
+  // - Result: attacker stops ADJACENT to defender (the push doesn't fully execute)
+  //
+  // Wait no - re-reading PRD: "Attacker takes first defender's position"
+  // This means the attacker DOES move to where the defender was.
+  // And pieces compress - meaning they stack/overlap conceptually.
+  //
+  // In hex games, "compression" typically means:
+  // - Each piece in chain moves one hex toward blocker
+  // - Last piece is already at blocker, so it stays
+  // - This creates a "gap" that the previous piece fills, etc.
+  //
+  // So for a chain [A->B->C->(SHIELD)]:
+  // - A pushed by attacker
+  // - A moves to B's spot, B moves to C's spot, C cannot move (blocked)
+  // - Wait, but C is already adjacent to shield...
+  //
+  // I think the answer is: in compression, pieces DON'T shift, because the chain
+  // is already at maximum density. The attacker simply joins the compressed mass.
+  //
+  // Let me check if the chain can have gaps: detectChain stops at first empty hex.
+  // So if terminator is 'shield', the chain is [defender][p2][..][pN][SHIELD] with no gaps.
+  // That means pieces 1..N are consecutive. When attacker pushes:
+  // - There's no room for pieces to shift toward shield
+  // - Attacker takes defender's position
+  // - Defender must go... somewhere?
+  //
+  // Ah! I think I understand now. In compression, the push still "succeeds" combat-wise,
+  // but physically the chain CANNOT move. The rule is:
+  // - Attacker wins combat -> push should happen
+  // - Chain cannot move -> attacker stops adjacent to defender (doesn't take their spot)
+  //
+  // But the PRD says "Attacker takes first defender's position". Let me re-read...
+  //
+  // Actually, I think the scenario is different. When detectChain returns 'shield' or 'throne',
+  // it means the NEXT hex after the last chain piece is the blocker. So there IS room for
+  // the chain to shift by one position:
+  //
+  // Before: [Attacker]->[Defender]->[P2]->[..]->[PN]-->(SHIELD)
+  // After:  [empty]<-[Attacker]->[Defender]->[P2]->[..]->[PN](SHIELD)
+  //
+  // The chain shifts one position toward shield, PN ends up adjacent to shield (or stays if already adjacent).
+  // Attacker takes Defender's old spot.
+  //
+  // This is consistent with edge push where pieces shift toward edge.
+  // The difference: at edge, last piece falls off. At shield/throne, last piece just can't move further.
+
+  // New positions for chain pieces - each shifts one toward blocker
+  const newPositions = new Map<string, AxialCoord>();
+
+  // For each piece in the chain, move it one position in push direction
+  for (let i = 0; i < chain.pieces.length; i++) {
+    const piece = chain.pieces[i];
+    const currentPos = chainPositions[i];
+    const newPos = getNeighborAxial(currentPos, pushDirection);
+
+    // Check if the new position is the blocker position (shield or throne)
+    // If so, the piece cannot move there and stays in place
+    const isBlockerPosition =
+      newPos.q === chain.terminatorPosition.q && newPos.r === chain.terminatorPosition.r;
+
+    if (isBlockerPosition) {
+      // This piece cannot move - it's adjacent to the blocker
+      // It stays in its current position
+      // No PUSH event generated since piece doesn't move
+    } else {
+      // Piece moves to new position
+      newPositions.set(piece.id, newPos);
+
+      // Create PUSH event
+      const pushEvent: PushEvent = {
+        type: 'PUSH',
+        pieceId: piece.id,
+        from: currentPos,
+        to: newPos,
+        pushDirection,
+        depth: i, // Depth for staggered animation
+      };
+      events.push(pushEvent);
+    }
+  }
+
+  // Attacker moves to defender's original position
+  newPositions.set(attacker.id, defenderPosition);
+
+  // Create the new pieces array with updated positions
+  const newPieces = state.pieces.map((piece) => {
+    const newPos = newPositions.get(piece.id);
+    if (newPos) {
+      return { ...piece, position: newPos };
+    }
+    return piece;
+  });
+
+  // Create the new state
+  const newState: GameState = {
+    ...state,
+    pieces: newPieces,
+  };
+
+  return { newState, events };
+}

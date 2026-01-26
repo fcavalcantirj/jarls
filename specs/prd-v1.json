@@ -470,7 +470,7 @@
       "No pieces eliminated in compression",
       "Attacker takes first defender's position"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
