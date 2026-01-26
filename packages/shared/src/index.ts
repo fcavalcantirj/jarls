@@ -1765,3 +1765,54 @@ export function findBracing(
 
   return { pieces: bracingPieces, totalStrength };
 }
+
+/**
+ * Calculate the total attack power for a piece attacking another.
+ *
+ * Attack = Base Strength + Momentum + Inline Support
+ *
+ * Where:
+ * - Base Strength: 1 for Warrior, 2 for Jarl
+ * - Momentum: +1 if the attacker moved 2 hexes to reach the defender
+ * - Inline Support: Sum of strength of all friendly pieces directly behind the attacker
+ *
+ * @param state - The current game state
+ * @param attacker - The attacking piece
+ * @param attackerPosition - The position where the attacker will be when attacking
+ *                           (the hex adjacent to the defender, NOT the attacker's current position)
+ * @param attackDirection - The direction of the attack (toward the defender)
+ * @param hasMomentum - Whether the attacker moved 2 hexes (grants +1 attack)
+ * @returns CombatBreakdown with base strength, momentum, support, and total
+ */
+export function calculateAttack(
+  state: GameState,
+  attacker: Piece,
+  attackerPosition: AxialCoord,
+  attackDirection: HexDirection,
+  hasMomentum: boolean
+): CombatBreakdown {
+  // Base strength depends on piece type
+  const baseStrength = getPieceStrength(attacker);
+
+  // Momentum bonus: +1 if moved 2 hexes
+  const momentum = hasMomentum ? 1 : 0;
+
+  // Inline support: sum of strength of friendly pieces directly behind
+  const supportResult = findInlineSupport(
+    state,
+    attackerPosition,
+    attacker.playerId!,
+    attackDirection
+  );
+  const support = supportResult.totalStrength;
+
+  // Total attack power
+  const total = baseStrength + momentum + support;
+
+  return {
+    baseStrength,
+    momentum,
+    support,
+    total,
+  };
+}

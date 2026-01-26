@@ -408,7 +408,7 @@
       "Adds inline support strength",
       "Returns total attack value"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

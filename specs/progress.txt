@@ -1047,3 +1047,33 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added BracingResult interface and findBracing function)
 - packages/shared/src/index.test.ts (added unit tests for findBracing)
+
+---
+
+### 2026-01-26: Core Logic - calculateAttack Function
+
+**Feature Completed**: "calculateAttack computes total attack power"
+
+**Work Done**:
+- Implemented `calculateAttack(state, attacker, attackerPosition, attackDirection, hasMomentum)` function:
+  - Calculates total attack power using formula: Base Strength + Momentum + Inline Support
+  - Base strength: 1 for Warrior, 2 for Jarl (uses existing `getPieceStrength` function)
+  - Momentum bonus: +1 if attacker moved 2 hexes to reach defender
+  - Inline support: Sum of strength of all friendly pieces behind attacker (uses existing `findInlineSupport` function)
+  - Returns `CombatBreakdown` object with `baseStrength`, `momentum`, `support`, and `total` fields
+- Function takes `attackerPosition` parameter (where attacker will be when attacking) to properly calculate support from that position
+- Added comprehensive unit tests (17 new tests) covering:
+  - Base strength: Warrior (1), Jarl (2)
+  - Momentum bonus: +1 when hasMomentum is true, 0 otherwise
+  - Inline support: single piece, Jarl support (strength 2), multiple pieces, enemy pieces ignored
+  - Combined calculation: base + momentum + support totals correctly
+  - Different attack directions: Northeast, West (all 6 directions work)
+  - Game scenarios: actual initial game state, attacker position different from piece position
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (483 tests total, 17 new tests for calculateAttack)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added calculateAttack function)
+- packages/shared/src/index.test.ts (added unit tests for calculateAttack)

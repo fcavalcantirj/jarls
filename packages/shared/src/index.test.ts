@@ -47,6 +47,7 @@ import {
   getPieceStrength,
   findInlineSupport,
   findBracing,
+  calculateAttack,
   AxialCoord,
   CubeCoord,
   GameConfig,
@@ -5038,6 +5039,437 @@ describe('@jarls/shared', () => {
           expect(result.pieces).toBeDefined();
           expect(result.totalStrength).toBeGreaterThanOrEqual(0);
         }
+      });
+    });
+  });
+
+  describe('calculateAttack', () => {
+    // Helper to create a minimal game state for testing
+    function createTestState(pieces: Piece[]): GameState {
+      return {
+        id: 'test',
+        phase: 'playing',
+        config: {
+          playerCount: 2,
+          boardRadius: 3,
+          shieldCount: 0,
+          warriorCount: 5,
+          turnTimerMs: null,
+        },
+        players: [
+          { id: 'p1', name: 'Player 1', color: 'red', isEliminated: false },
+          { id: 'p2', name: 'Player 2', color: 'blue', isEliminated: false },
+        ],
+        pieces,
+        currentPlayerId: 'p1',
+        turnNumber: 0,
+        roundNumber: 0,
+        roundsSinceElimination: 0,
+        winnerId: null,
+        winCondition: null,
+      };
+    }
+
+    describe('base strength', () => {
+      it('should return base strength 1 for Warrior', () => {
+        const warrior: Piece = {
+          id: 'w1',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        const state = createTestState([warrior]);
+
+        const result = calculateAttack(state, warrior, { q: 0, r: 0 }, 0, false);
+
+        expect(result.baseStrength).toBe(1);
+        expect(result.total).toBe(1);
+      });
+
+      it('should return base strength 2 for Jarl', () => {
+        const jarl: Piece = {
+          id: 'j1',
+          type: 'jarl',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        const state = createTestState([jarl]);
+
+        const result = calculateAttack(state, jarl, { q: 0, r: 0 }, 0, false);
+
+        expect(result.baseStrength).toBe(2);
+        expect(result.total).toBe(2);
+      });
+    });
+
+    describe('momentum bonus', () => {
+      it('should add +1 momentum when hasMomentum is true', () => {
+        const warrior: Piece = {
+          id: 'w1',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        const state = createTestState([warrior]);
+
+        const result = calculateAttack(state, warrior, { q: 0, r: 0 }, 0, true);
+
+        expect(result.baseStrength).toBe(1);
+        expect(result.momentum).toBe(1);
+        expect(result.total).toBe(2); // 1 + 1
+      });
+
+      it('should not add momentum when hasMomentum is false', () => {
+        const warrior: Piece = {
+          id: 'w1',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        const state = createTestState([warrior]);
+
+        const result = calculateAttack(state, warrior, { q: 0, r: 0 }, 0, false);
+
+        expect(result.momentum).toBe(0);
+      });
+
+      it('should give Warrior total attack of 2 when moving 2 hexes', () => {
+        // Warrior moves 2 hexes into enemy
+        // Base attack is 1, momentum adds +1, total is 2
+        const warrior: Piece = {
+          id: 'w1',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        const state = createTestState([warrior]);
+
+        const result = calculateAttack(state, warrior, { q: 0, r: 0 }, 0, true);
+
+        expect(result.baseStrength).toBe(1);
+        expect(result.momentum).toBe(1);
+        expect(result.total).toBe(2);
+      });
+
+      it('should give Jarl total attack of 3 with momentum', () => {
+        // Jarl moves 2 hexes (draft movement) into enemy
+        // Base attack is 2, momentum adds +1, total is 3
+        const jarl: Piece = {
+          id: 'j1',
+          type: 'jarl',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        const state = createTestState([jarl]);
+
+        const result = calculateAttack(state, jarl, { q: 0, r: 0 }, 0, true);
+
+        expect(result.baseStrength).toBe(2);
+        expect(result.momentum).toBe(1);
+        expect(result.total).toBe(3);
+      });
+    });
+
+    describe('inline support', () => {
+      it('should add strength of friendly piece behind attacker', () => {
+        // Attacker at (0,0), attacking East (direction 0)
+        // Supporter at (-1,0) - directly behind (West)
+        const attacker: Piece = {
+          id: 'attacker',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        const supporter: Piece = {
+          id: 'supporter',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: -1, r: 0 },
+        };
+        const state = createTestState([attacker, supporter]);
+
+        const result = calculateAttack(state, attacker, { q: 0, r: 0 }, 0, false);
+
+        expect(result.baseStrength).toBe(1);
+        expect(result.support).toBe(1);
+        expect(result.total).toBe(2); // 1 + 1
+      });
+
+      it('should add Jarl support strength of 2', () => {
+        // Warrior attacks with Jarl directly behind
+        // Jarl adds +2 to attack
+        const attacker: Piece = {
+          id: 'attacker',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        const jarlSupporter: Piece = {
+          id: 'jarl',
+          type: 'jarl',
+          playerId: 'p1',
+          position: { q: -1, r: 0 },
+        };
+        const state = createTestState([attacker, jarlSupporter]);
+
+        const result = calculateAttack(state, attacker, { q: 0, r: 0 }, 0, false);
+
+        expect(result.baseStrength).toBe(1);
+        expect(result.support).toBe(2); // Jarl strength is 2
+        expect(result.total).toBe(3); // 1 + 2
+      });
+
+      it('should sum multiple pieces in support line', () => {
+        // Attacker at (0,0), attacking East (direction 0)
+        // Warrior at (-1,0) and another Warrior at (-2,0)
+        const attacker: Piece = {
+          id: 'attacker',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        const supporter1: Piece = {
+          id: 's1',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: -1, r: 0 },
+        };
+        const supporter2: Piece = {
+          id: 's2',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: -2, r: 0 },
+        };
+        const state = createTestState([attacker, supporter1, supporter2]);
+
+        const result = calculateAttack(state, attacker, { q: 0, r: 0 }, 0, false);
+
+        expect(result.support).toBe(2); // 1 + 1
+        expect(result.total).toBe(3); // 1 base + 2 support
+      });
+
+      it('should not count enemy pieces as support', () => {
+        // Attacker at (0,0), attacking East (direction 0)
+        // Enemy at (-1,0) - directly behind
+        const attacker: Piece = {
+          id: 'attacker',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        const enemy: Piece = {
+          id: 'enemy',
+          type: 'warrior',
+          playerId: 'p2',
+          position: { q: -1, r: 0 },
+        };
+        const state = createTestState([attacker, enemy]);
+
+        const result = calculateAttack(state, attacker, { q: 0, r: 0 }, 0, false);
+
+        expect(result.support).toBe(0);
+        expect(result.total).toBe(1); // Just base strength
+      });
+    });
+
+    describe('combined attack calculation', () => {
+      it('should calculate total with base + momentum + support', () => {
+        // Warrior attacking East with momentum, Jarl and Warrior behind
+        // Base: 1 + Momentum: 1 + Support: 3 (Jarl 2 + Warrior 1) = 5
+        const attacker: Piece = {
+          id: 'attacker',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        const jarlSupport: Piece = {
+          id: 'jarl',
+          type: 'jarl',
+          playerId: 'p1',
+          position: { q: -1, r: 0 },
+        };
+        const warriorSupport: Piece = {
+          id: 'warrior',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: -2, r: 0 },
+        };
+        const state = createTestState([attacker, jarlSupport, warriorSupport]);
+
+        const result = calculateAttack(state, attacker, { q: 0, r: 0 }, 0, true);
+
+        expect(result.baseStrength).toBe(1);
+        expect(result.momentum).toBe(1);
+        expect(result.support).toBe(3); // Jarl (2) + Warrior (1)
+        expect(result.total).toBe(5);
+      });
+
+      it('should return correct breakdown structure', () => {
+        const warrior: Piece = {
+          id: 'w1',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        const state = createTestState([warrior]);
+
+        const result = calculateAttack(state, warrior, { q: 0, r: 0 }, 0, false);
+
+        expect(result).toHaveProperty('baseStrength');
+        expect(result).toHaveProperty('momentum');
+        expect(result).toHaveProperty('support');
+        expect(result).toHaveProperty('total');
+        expect(typeof result.baseStrength).toBe('number');
+        expect(typeof result.momentum).toBe('number');
+        expect(typeof result.support).toBe('number');
+        expect(typeof result.total).toBe('number');
+      });
+
+      it('should handle Jarl attacking with full support and momentum', () => {
+        // Jarl attacks with momentum and 2 Warriors behind
+        // Base: 2 + Momentum: 1 + Support: 2 = 5
+        const attacker: Piece = {
+          id: 'jarl',
+          type: 'jarl',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        const support1: Piece = {
+          id: 's1',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: -1, r: 0 },
+        };
+        const support2: Piece = {
+          id: 's2',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: -2, r: 0 },
+        };
+        const state = createTestState([attacker, support1, support2]);
+
+        const result = calculateAttack(state, attacker, { q: 0, r: 0 }, 0, true);
+
+        expect(result.baseStrength).toBe(2);
+        expect(result.momentum).toBe(1);
+        expect(result.support).toBe(2);
+        expect(result.total).toBe(5);
+      });
+    });
+
+    describe('different attack directions', () => {
+      it('should calculate support for Northeast attack direction', () => {
+        // Attacker at (0,0), attacking Northeast (direction 1)
+        // Support comes from Southwest (direction 4)
+        const attacker: Piece = {
+          id: 'attacker',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        // Southwest of (0,0) is (-1, 1)
+        const supporter: Piece = {
+          id: 'supporter',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: -1, r: 1 },
+        };
+        const state = createTestState([attacker, supporter]);
+
+        const result = calculateAttack(state, attacker, { q: 0, r: 0 }, 1, false);
+
+        expect(result.support).toBe(1);
+        expect(result.total).toBe(2);
+      });
+
+      it('should calculate support for West attack direction', () => {
+        // Attacker at (0,0), attacking West (direction 3)
+        // Support comes from East (direction 0)
+        const attacker: Piece = {
+          id: 'attacker',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: 0, r: 0 },
+        };
+        // East of (0,0) is (1, 0)
+        const supporter: Piece = {
+          id: 'supporter',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: 1, r: 0 },
+        };
+        const state = createTestState([attacker, supporter]);
+
+        const result = calculateAttack(state, attacker, { q: 0, r: 0 }, 3, false);
+
+        expect(result.support).toBe(1);
+        expect(result.total).toBe(2);
+      });
+    });
+
+    describe('game scenarios', () => {
+      it('should work with actual initial game state', () => {
+        const state = createInitialState(['Player 1', 'Player 2']);
+        state.phase = 'playing';
+
+        // Find a warrior
+        const warrior = state.pieces.find(
+          (p) => p.type === 'warrior' && p.playerId === state.currentPlayerId
+        );
+        expect(warrior).toBeDefined();
+        if (!warrior) return;
+
+        // Calculate attack in all directions - should not crash
+        for (let d = 0; d < 6; d++) {
+          const result = calculateAttack(
+            state,
+            warrior,
+            warrior.position,
+            d as HexDirection,
+            false
+          );
+          expect(result.baseStrength).toBe(1);
+          expect(result.momentum).toBe(0);
+          expect(result.support).toBeGreaterThanOrEqual(0);
+          expect(result.total).toBeGreaterThanOrEqual(1);
+        }
+      });
+
+      it('should handle attacker position different from piece current position', () => {
+        // The attacker position passed represents where the attacker WILL BE when attacking
+        // This calculates support from that new position using the current game state snapshot
+        // Note: The attacker's old position is still in the game state as a piece
+        const attacker: Piece = {
+          id: 'attacker',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: -2, r: 0 }, // Current position (still in game state)
+        };
+        const supporter: Piece = {
+          id: 'supporter',
+          type: 'warrior',
+          playerId: 'p1',
+          position: { q: -1, r: 0 }, // Will be behind attacker at new position
+        };
+        const state = createTestState([attacker, supporter]);
+
+        // Attacker will be at (0,0) after moving, attacking East
+        // Support is calculated from the snapshot - both pieces at (-1,0) and (-2,0) are behind
+        const result = calculateAttack(
+          state,
+          attacker,
+          { q: 0, r: 0 }, // Where attacker will be
+          0, // Attacking East
+          true // 2-hex move = momentum
+        );
+
+        expect(result.baseStrength).toBe(1);
+        expect(result.momentum).toBe(1);
+        // Both supporter (-1,0) and attacker's old position (-2,0) are in the support line
+        // In the real game, the caller would update piece positions before calculating
+        // This test verifies the function uses the passed attackerPosition correctly
+        expect(result.support).toBe(2); // supporter (1) + attacker's old pos (1)
+        expect(result.total).toBe(4);
       });
     });
   });
