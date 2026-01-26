@@ -501,7 +501,7 @@
       "Removes all remaining Warriors",
       "Player cannot take further turns"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
