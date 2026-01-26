@@ -572,7 +572,7 @@
       "Includes hasMomentum flag",
       "Includes combat preview for attacks"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

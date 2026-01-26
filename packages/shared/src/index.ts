@@ -3036,3 +3036,71 @@ export function getReachableHexes(state: GameState, pieceId: string): ReachableH
 
   return results;
 }
+
+/**
+ * Get all valid moves for a piece with combat previews.
+ * This builds on getReachableHexes by adding combat result previews for attacks.
+ *
+ * Each ValidMove includes:
+ * - destination: The target hex position
+ * - moveType: 'move' for empty hex, 'attack' for enemy-occupied hex
+ * - hasMomentum: Whether moving to this hex grants +1 attack bonus
+ * - combatPreview: For attacks, the full CombatResult showing outcome
+ *
+ * @param state - The current game state
+ * @param pieceId - The ID of the piece to get valid moves for
+ * @returns Array of ValidMove objects with combat previews for attacks
+ */
+export function getValidMoves(state: GameState, pieceId: string): ValidMove[] {
+  const piece = getPieceById(state, pieceId);
+  if (!piece) {
+    return [];
+  }
+
+  // Get all reachable hexes
+  const reachableHexes = getReachableHexes(state, pieceId);
+
+  // Convert to ValidMove[] with combat previews
+  return reachableHexes.map((reachable) => {
+    let combatPreview: CombatResult | null = null;
+
+    if (reachable.moveType === 'attack') {
+      // Get the defender at the destination
+      const defender = getPieceAt(state, reachable.destination);
+      if (defender && piece.playerId) {
+        // Calculate combat preview
+        // The attacker position is adjacent to the defender (one hex before destination)
+        const attackerCombatPosition = getNeighborAxial(
+          reachable.destination,
+          getOppositeDirection(reachable.direction)
+        );
+
+        // Create a temporary state with the attacker at the combat position
+        // This ensures proper support calculation (attacker's original position is empty)
+        const tempState: GameState = {
+          ...state,
+          pieces: state.pieces.map((p) =>
+            p.id === piece.id ? { ...p, position: attackerCombatPosition } : p
+          ),
+        };
+
+        combatPreview = calculateCombat(
+          tempState,
+          { ...piece, position: attackerCombatPosition },
+          attackerCombatPosition,
+          defender,
+          reachable.destination,
+          reachable.direction,
+          reachable.hasMomentum
+        );
+      }
+    }
+
+    return {
+      destination: reachable.destination,
+      moveType: reachable.moveType,
+      hasMomentum: reachable.hasMomentum,
+      combatPreview,
+    };
+  });
+}

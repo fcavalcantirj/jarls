@@ -1553,3 +1553,44 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added ReachableHex interface and getReachableHexes function)
 - packages/shared/src/index.test.ts (added import for getReachableHexes, added unit tests)
+
+---
+
+### 2026-01-26: Core Logic - getValidMoves Function
+
+**Feature Completed**: "getValidMoves returns ValidMove array with previews"
+
+**Work Done**:
+- Implemented `getValidMoves(state, pieceId)` function:
+  - Returns all valid moves for a piece with combat previews
+  - Builds on `getReachableHexes` by adding combat result previews for attacks
+  - Each ValidMove includes:
+    - `destination`: The target hex position
+    - `moveType`: 'move' for empty hex, 'attack' for enemy-occupied hex
+    - `hasMomentum`: Whether moving to this hex grants +1 attack bonus
+    - `combatPreview`: For attacks, the full CombatResult showing outcome
+  - Creates temporary state with attacker at combat position for accurate support calculation
+  - Combat preview includes:
+    - Attack and defense breakdowns (baseStrength, momentum, support, total)
+    - Combat outcome ('push' or 'blocked')
+    - Push direction if successful
+- Added comprehensive unit tests (21 new tests) covering:
+  - Basic functionality: non-existent piece, shield pieces, same count as getReachableHexes
+  - Move type detection: 'move' for empty, 'attack' for enemy-occupied
+  - Combat preview for attacks: includes preview, null for regular moves, correct attack/defense values
+  - Momentum bonus: correctly included in attack calculation
+  - Support pieces: included in attack calculation
+  - Bracing pieces: included in defense calculation
+  - Push outcome determination: push vs blocked based on attack/defense comparison
+  - hasMomentum flag: true for 2-hex moves, false for 1-hex moves
+  - Jarl with draft formation: 2-hex moves with combat preview
+  - Result structure: all required fields present, full CombatResult structure
+  - Game scenarios: realistic initial state, Jarl vs Jarl combat
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (721 tests total, 21 new tests for getValidMoves)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added getValidMoves function)
+- packages/shared/src/index.test.ts (added import for getValidMoves, added unit tests)
