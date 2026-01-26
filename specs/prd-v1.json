@@ -215,7 +215,7 @@
       "getOppositeDirection(1) returns 4",
       "All 6 directions map to correct opposites"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

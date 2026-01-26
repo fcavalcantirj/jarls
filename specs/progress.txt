@@ -385,3 +385,29 @@
 **Files Modified**:
 - packages/shared/src/index.ts (added getNeighbor, getAllNeighbors, getNeighborAxial, getAllNeighborsAxial)
 - packages/shared/src/index.test.ts (added unit tests for neighbor functions)
+
+---
+
+### 2026-01-25: Core Logic - getOppositeDirection Function
+
+**Feature Completed**: "getOppositeDirection function returns correct opposite"
+
+**Work Done**:
+- Implemented `getOppositeDirection(direction: HexDirection): HexDirection` function
+  - Returns the opposite direction (180 degrees) for any given hex direction
+  - Uses formula `(direction + 3) % 6` since opposites are 3 apart in the array
+  - Direction mappings: 0↔3 (East↔West), 1↔4 (NE↔SW), 2↔5 (NW↔SE)
+- Added comprehensive unit tests (10 new tests) covering:
+  - All 6 individual direction-to-opposite mappings verified
+  - Self-inverse property (applying twice returns original)
+  - Opposite direction vectors sum to zero (0, 0, 0)
+  - Return value is valid HexDirection type (0-5)
+  - Round-trip navigation test (move in direction, then opposite returns to origin)
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (65 tests total, 10 new tests for getOppositeDirection)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added getOppositeDirection function)
+- packages/shared/src/index.test.ts (added unit tests for getOppositeDirection)

@@ -10,6 +10,7 @@ import {
   getAllNeighbors,
   getNeighborAxial,
   getAllNeighborsAxial,
+  getOppositeDirection,
   AxialCoord,
   CubeCoord,
 } from './index';
@@ -484,6 +485,72 @@ describe('@jarls/shared', () => {
 
       for (let i = 0; i < 6; i++) {
         expect(axialNeighbors[i]).toEqual(cubeToAxial(cubeNeighbors[i]));
+      }
+    });
+  });
+
+  describe('getOppositeDirection', () => {
+    it('should return 3 (West) for direction 0 (East)', () => {
+      expect(getOppositeDirection(0)).toBe(3);
+    });
+
+    it('should return 4 (Southwest) for direction 1 (Northeast)', () => {
+      expect(getOppositeDirection(1)).toBe(4);
+    });
+
+    it('should return 5 (Southeast) for direction 2 (Northwest)', () => {
+      expect(getOppositeDirection(2)).toBe(5);
+    });
+
+    it('should return 0 (East) for direction 3 (West)', () => {
+      expect(getOppositeDirection(3)).toBe(0);
+    });
+
+    it('should return 1 (Northeast) for direction 4 (Southwest)', () => {
+      expect(getOppositeDirection(4)).toBe(1);
+    });
+
+    it('should return 2 (Northwest) for direction 5 (Southeast)', () => {
+      expect(getOppositeDirection(5)).toBe(2);
+    });
+
+    it('should be self-inverse (applying twice returns original)', () => {
+      for (let dir = 0; dir < 6; dir++) {
+        const opposite = getOppositeDirection(dir as HexDirection);
+        const backToOriginal = getOppositeDirection(opposite);
+        expect(backToOriginal).toBe(dir);
+      }
+    });
+
+    it('should produce direction vectors that sum to zero', () => {
+      for (let dir = 0; dir < 6; dir++) {
+        const opposite = getOppositeDirection(dir as HexDirection);
+        const dirVector = DIRECTIONS[dir];
+        const oppVector = DIRECTIONS[opposite];
+
+        // Opposite direction vectors should sum to (0, 0, 0)
+        expect(dirVector.q + oppVector.q).toBe(0);
+        expect(dirVector.r + oppVector.r).toBe(0);
+        expect(dirVector.s + oppVector.s).toBe(0);
+      }
+    });
+
+    it('should return a valid HexDirection type', () => {
+      for (let dir = 0; dir < 6; dir++) {
+        const opposite = getOppositeDirection(dir as HexDirection);
+        expect(opposite).toBeGreaterThanOrEqual(0);
+        expect(opposite).toBeLessThanOrEqual(5);
+      }
+    });
+
+    it('should enable round-trip navigation back to origin', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+
+      for (let dir = 0; dir < 6; dir++) {
+        const neighbor = getNeighbor(origin, dir as HexDirection);
+        const opposite = getOppositeDirection(dir as HexDirection);
+        const backToOrigin = getNeighbor(neighbor, opposite);
+        expect(backToOrigin).toEqual(origin);
       }
     });
   });

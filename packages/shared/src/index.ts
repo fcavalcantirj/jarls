@@ -113,6 +113,17 @@ export function getAllNeighborsAxial(hex: AxialCoord): AxialCoord[] {
   return getAllNeighbors(axialToCube(hex)).map(cubeToAxial);
 }
 
+/**
+ * Get the opposite direction (180 degrees) of a given hex direction.
+ * Opposite directions are 3 apart in the direction array:
+ * 0 (East) ↔ 3 (West)
+ * 1 (Northeast) ↔ 4 (Southwest)
+ * 2 (Northwest) ↔ 5 (Southeast)
+ */
+export function getOppositeDirection(direction: HexDirection): HexDirection {
+  return ((direction + 3) % 6) as HexDirection;
+}
+
 // Piece types
 export type PieceType = 'jarl' | 'warrior' | 'shield';
 
