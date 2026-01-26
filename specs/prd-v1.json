@@ -144,7 +144,7 @@
       "Import types, hex, and combat functions as needed",
       "Update index.ts to re-export from move.ts"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

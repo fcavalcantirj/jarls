@@ -1872,3 +1872,50 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Modified**:
 - packages/shared/src/index.ts (added re-exports from combat.ts, removed combat function definitions, cleaned up unused imports)
+
+---
+
+### 2026-01-26: Infrastructure - Split shared/src/index.ts - extract move.ts
+
+**Feature Completed**: "Split shared/src/index.ts - extract move.ts"
+
+**Work Done**:
+- Created `packages/shared/src/move.ts` containing all move validation and execution functions
+- Moved 14 functions from index.ts to move.ts:
+  - isPathClear: checks if path between hexes is clear of pieces
+  - hasDraftFormationInDirection: checks draft formation in specific direction
+  - hasDraftFormation: checks all directions for draft formation
+  - getDirectionBetweenAdjacent: gets direction between adjacent hexes
+  - getLineDirection: checks if two hexes are in a straight line
+  - pathCrossesThrone: checks if 2-hex move crosses the Throne
+  - validateMove: main move validation function (all rules)
+  - checkThroneVictory: detects voluntary throne entry victory
+  - eliminatePlayer: removes player and their pieces
+  - checkLastStanding: detects sole survivor victory
+  - checkWinConditions: checks all win conditions with precedence
+  - getReachableHexes: returns all valid destinations for a piece
+  - getValidMoves: returns moves with combat previews
+  - applyMove: main entry point for executing moves
+- Updated `packages/shared/src/index.ts`:
+  - Added `export { ... } from './move.js'` to re-export all move functions
+  - Removed all move function definitions (~975 lines of code removed)
+  - Removed all internal type imports (no longer needed)
+  - Removed all internal function imports from other modules (no longer needed)
+- All functions remain accessible to consumers via `import { ... } from '@jarls/shared'`
+
+**Why This Matters**:
+- Reduces index.ts from ~1,123 lines to ~127 lines (re-exports only)
+- move.ts is ~740 lines - well within the 800-line guideline
+- Completes the source file splitting for shared package
+- Enables the "finalize and verify" step next
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (756 tests total)
+- Server and client can still import move functions from @jarls/shared
+
+**Files Created**:
+- packages/shared/src/move.ts
+
+**Files Modified**:
+- packages/shared/src/index.ts (now contains only re-exports from all module files)
