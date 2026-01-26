@@ -79,3 +79,30 @@
 - packages/shared/src/index.ts (added all core game types)
 - packages/server/src/index.ts (added GameState import and usage)
 - packages/client/src/App.tsx (added GameState import and usage)
+
+---
+
+### 2026-01-25: Infrastructure - ESLint Configuration
+
+**Feature Completed**: "ESLint configured with TypeScript rules"
+
+**Work Done**:
+- Installed ESLint 9.x with TypeScript ESLint dependencies at workspace root:
+  - eslint, @eslint/js, typescript-eslint
+  - @typescript-eslint/parser, @typescript-eslint/eslint-plugin
+- Created eslint.config.js using ESLint 9 flat config format
+- Configured TypeScript-ESLint with recommended rules
+- Added project service for type-aware linting
+- Configured ignores for dist, node_modules, and generated JS files
+- Updated root package.json:
+  - Added `"type": "module"` for ESM support
+  - Updated lint script to run ESLint on all package source files
+- Verified `pnpm lint` runs successfully with no errors
+- Verified `pnpm typecheck` still passes
+- Verified `pnpm test` still passes
+
+**Files Created**:
+- eslint.config.js
+
+**Files Modified**:
+- package.json (added type:module, ESLint dependencies, updated lint script)

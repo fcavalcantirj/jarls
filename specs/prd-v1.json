@@ -34,11 +34,11 @@
     "category": "infrastructure",
     "description": "ESLint configured with TypeScript rules",
     "steps": [
-      ".eslintrc.js at root with TypeScript plugin",
-      "npm run lint runs ESLint on all packages",
+      "eslint.config.js at root with TypeScript plugin (ESLint 9 flat config)",
+      "pnpm run lint runs ESLint on all packages",
       "Lint errors fail CI pipeline"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

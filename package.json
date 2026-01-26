@@ -2,6 +2,7 @@
   "name": "jarls",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@9.0.0",
   "workspaces": [
     "packages/*"
@@ -11,11 +12,16 @@
     "build": "pnpm run -r build",
     "test": "pnpm run -r test",
     "typecheck": "pnpm run -r typecheck",
-    "lint": "pnpm run -r lint",
+    "lint": "eslint packages/*/src/**/*.ts packages/*/src/**/*.tsx",
     "format": "prettier --write ."
   },
   "devDependencies": {
-    "typescript": "^5.3.0"
+    "@eslint/js": "^9.39.2",
+    "@typescript-eslint/eslint-plugin": "^8.53.1",
+    "@typescript-eslint/parser": "^8.53.1",
+    "eslint": "^9.39.2",
+    "typescript": "^5.3.0",
+    "typescript-eslint": "^8.53.1"
   },
   "engines": {
     "node": ">=20.0.0"
