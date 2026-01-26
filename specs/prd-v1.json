@@ -290,7 +290,7 @@
       "All Jarls same hex distance from center",
       "Unit tests verify equidistance"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

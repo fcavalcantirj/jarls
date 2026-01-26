@@ -515,3 +515,159 @@ export function getConfigForPlayerCount(
     turnTimerMs,
   };
 }
+
+/**
+ * Calculate the total number of hexes on a board with given radius.
+ * Formula: 3r² + 3r + 1
+ * - Radius 0: 1 hex (center only)
+ * - Radius 1: 7 hexes
+ * - Radius 2: 19 hexes
+ * - Radius 3: 37 hexes (2-player board)
+ *
+ * @param radius - The board radius (distance from center to edge)
+ * @returns The total number of hexes on the board
+ */
+export function getBoardHexCount(radius: number): number {
+  return 3 * radius * radius + 3 * radius + 1;
+}
+
+/**
+ * Generate all hexes on a board with the given radius.
+ * Returns an array of all valid hex positions in cube coordinates.
+ * The hexes are returned in a consistent order (by r, then by q).
+ *
+ * @param radius - The board radius (distance from center to edge)
+ * @returns Array of all hex positions on the board
+ */
+export function generateAllBoardHexes(radius: number): CubeCoord[] {
+  const hexes: CubeCoord[] = [];
+
+  // Iterate through all possible q and r values within the bounds
+  // For a hex grid with given radius, valid coordinates satisfy:
+  // -radius <= q <= radius
+  // -radius <= r <= radius
+  // -radius <= s <= radius (where s = -q - r)
+  for (let q = -radius; q <= radius; q++) {
+    // For each q, calculate the valid range of r
+    // r must satisfy both: -radius <= r <= radius AND -radius <= -q - r <= radius
+    // The second constraint simplifies to: -radius - q <= r <= radius - q
+    const r1 = Math.max(-radius, -q - radius);
+    const r2 = Math.min(radius, -q + radius);
+
+    for (let r = r1; r <= r2; r++) {
+      const s = -q - r;
+      // Normalize -0 to 0 to avoid equality issues
+      hexes.push({
+        q: q === 0 ? 0 : q,
+        r: r === 0 ? 0 : r,
+        s: s === 0 ? 0 : s,
+      });
+    }
+  }
+
+  return hexes;
+}
+
+/**
+ * Generate all hexes on a board with the given radius in axial coordinates.
+ *
+ * @param radius - The board radius (distance from center to edge)
+ * @returns Array of all hex positions on the board in axial coordinates
+ */
+export function generateAllBoardHexesAxial(radius: number): AxialCoord[] {
+  return generateAllBoardHexes(radius).map(cubeToAxial);
+}
+
+/**
+ * Convert axial hex coordinates to pixel coordinates for rendering.
+ * Uses pointy-top hex orientation.
+ * Returns the center point of the hex.
+ *
+ * @param hex - The hex coordinate
+ * @param size - The size of the hex (distance from center to corner)
+ * @returns Object with x and y pixel coordinates
+ */
+export function hexToPixel(hex: AxialCoord, size: number): { x: number; y: number } {
+  // Pointy-top orientation
+  const x = size * (Math.sqrt(3) * hex.q + (Math.sqrt(3) / 2) * hex.r);
+  const y = size * ((3 / 2) * hex.r);
+  return { x, y };
+}
+
+/**
+ * Calculate the angle (in radians) from the center of the board to a hex.
+ * Angle 0 is to the right (East), increasing counter-clockwise.
+ *
+ * @param hex - The hex coordinate
+ * @returns Angle in radians from -π to π
+ */
+export function hexToAngle(hex: AxialCoord): number {
+  const pixel = hexToPixel(hex, 1); // Size doesn't matter for angle calculation
+  return Math.atan2(pixel.y, pixel.x);
+}
+
+/**
+ * Calculate the starting positions for Jarls based on player count.
+ * All Jarls start on edge hexes, equidistantly spaced around the board.
+ * Since all edge hexes are at the same distance from center (= radius),
+ * all Jarls are automatically equidistant from the Throne.
+ *
+ * For N players, positions are at angles: 0, 2π/N, 4π/N, ..., (N-1)*2π/N
+ * For 2 players: directly opposite (0 and π radians = East and West)
+ *
+ * @param playerCount - Number of players (2-6)
+ * @param radius - Board radius
+ * @returns Array of starting positions in axial coordinates, one per player
+ * @throws Error if playerCount is outside valid range (2-6)
+ */
+export function calculateStartingPositions(playerCount: number, radius: number): AxialCoord[] {
+  if (playerCount < 2 || playerCount > 6) {
+    throw new Error(`Invalid player count: ${playerCount}. Must be between 2 and 6.`);
+  }
+
+  // Get all edge hexes
+  const allHexes = generateAllBoardHexesAxial(radius);
+  const edgeHexes = allHexes.filter((hex) => isOnEdgeAxial(hex, radius));
+
+  // Calculate target angles for each player (evenly spaced around the circle)
+  // Start at 0 radians (East direction) for player 1
+  const targetAngles: number[] = [];
+  for (let i = 0; i < playerCount; i++) {
+    // Angles go counter-clockwise from East (0 radians)
+    targetAngles.push((i * 2 * Math.PI) / playerCount);
+  }
+
+  // For each target angle, find the closest edge hex
+  const positions: AxialCoord[] = [];
+  const usedKeys = new Set<string>();
+
+  for (const targetAngle of targetAngles) {
+    let bestHex: AxialCoord | null = null;
+    let bestAngleDiff = Infinity;
+
+    for (const hex of edgeHexes) {
+      const key = hexToKey(hex);
+      if (usedKeys.has(key)) continue; // Don't reuse positions
+
+      const hexAngle = hexToAngle(hex);
+
+      // Calculate angular difference (handle wrap-around)
+      let angleDiff = Math.abs(hexAngle - targetAngle);
+      if (angleDiff > Math.PI) {
+        angleDiff = 2 * Math.PI - angleDiff;
+      }
+
+      if (angleDiff < bestAngleDiff) {
+        bestAngleDiff = angleDiff;
+        bestHex = hex;
+      }
+    }
+
+    if (bestHex) {
+      positions.push(bestHex);
+      usedKeys.add(hexToKey(bestHex));
+    }
+  }
+
+  return positions;
+}

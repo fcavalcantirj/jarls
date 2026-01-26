@@ -629,3 +629,40 @@
 **Files Verified** (already existed):
 - packages/shared/src/index.ts (getBoardHexCount, generateAllBoardHexes, generateAllBoardHexesAxial at lines 519-579)
 - packages/shared/src/index.test.ts (tests at lines 1483-1719)
+
+---
+
+### 2026-01-25: Core Logic - calculateStartingPositions Function
+
+**Feature Completed**: "calculateStartingPositions places Jarls equidistantly"
+
+**Work Done**:
+- Implemented `hexToPixel(hex, size)` helper function
+  - Converts axial hex coordinates to pixel coordinates for rendering
+  - Uses pointy-top hex orientation
+  - Returns center point of the hex as { x, y }
+- Implemented `hexToAngle(hex)` helper function
+  - Calculates angle (in radians) from board center to a hex
+  - Angle 0 is East, increasing counter-clockwise
+  - Used for angular positioning of starting positions
+- Implemented `calculateStartingPositions(playerCount, radius)` function
+  - Returns array of AxialCoord positions, one per player
+  - All Jarls start on edge hexes (distance from center = radius)
+  - Jarls are positioned at evenly-spaced angles around the board
+  - For N players: angles at 0, 2π/N, 4π/N, ..., (N-1)*2π/N radians
+  - For 2 players: directly opposite edges (East and West)
+  - Validates player count (2-6) and throws error for invalid values
+- Added comprehensive unit tests (34 new tests) covering:
+  - 2-player positions: exactly 2, opposite edges, equidistant from center
+  - 3-player positions: exactly 3, all on edge, equidistant, spread angularly
+  - All player counts (2-6): unique positions, all on edge, all equidistant from Throne
+  - Error handling: invalid player counts (0, 1, 7, negative)
+  - Position validity: all on board, none on Throne
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (217 tests total, 34 new tests for hexToPixel/hexToAngle/calculateStartingPositions)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added hexToPixel, hexToAngle, calculateStartingPositions functions)
+- packages/shared/src/index.test.ts (added unit tests for all new functions)
