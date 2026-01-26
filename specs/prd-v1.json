@@ -93,6 +93,135 @@
   },
   {
     "category": "infrastructure",
+    "description": "Split shared/src/index.ts - extract types.ts",
+    "steps": [
+      "Create packages/shared/src/types.ts",
+      "Move all type/interface definitions (CubeCoord, AxialCoord, Piece, GameState, etc.)",
+      "Export all types from types.ts",
+      "Update index.ts to import and re-export from types.ts"
+    ],
+    "passes": true
+  },
+  {
+    "category": "infrastructure",
+    "description": "Split shared/src/index.ts - extract hex.ts",
+    "steps": [
+      "Create packages/shared/src/hex.ts",
+      "Move hex coordinate functions (axialToCube, cubeToAxial, hexDistance, getNeighbor, etc.)",
+      "Import types from types.ts",
+      "Update index.ts to re-export from hex.ts"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Split shared/src/index.ts - extract board.ts",
+    "steps": [
+      "Create packages/shared/src/board.ts",
+      "Move board generation functions (generateAllBoardHexes, calculateStartingPositions, etc.)",
+      "Import types and hex functions as needed",
+      "Update index.ts to re-export from board.ts"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Split shared/src/index.ts - extract combat.ts",
+    "steps": [
+      "Create packages/shared/src/combat.ts",
+      "Move combat functions (calculateAttack, calculateDefense, calculateCombat, detectChain, resolvePush)",
+      "Import types and helpers as needed",
+      "Update index.ts to re-export from combat.ts"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Split shared/src/index.ts - extract move.ts",
+    "steps": [
+      "Create packages/shared/src/move.ts",
+      "Move move functions (validateMove, applyMove, getReachableHexes, getValidMoves)",
+      "Import types, hex, and combat functions as needed",
+      "Update index.ts to re-export from move.ts"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Split shared/src/index.ts - finalize and verify",
+    "steps": [
+      "Update index.ts to only contain re-exports",
+      "Run pnpm typecheck to verify all exports work",
+      "Verify server and client can still import from @jarls/shared"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Split shared/src/index.test.ts - create test directory",
+    "steps": [
+      "Create packages/shared/src/__tests__/ directory",
+      "Move types-related tests to __tests__/types.test.ts",
+      "Verify tests pass with pnpm test"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Split shared/src/index.test.ts - extract hex.test.ts",
+    "steps": [
+      "Create __tests__/hex.test.ts",
+      "Move all hex coordinate tests",
+      "Import from ../hex.ts",
+      "Verify tests pass"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Split shared/src/index.test.ts - extract board.test.ts",
+    "steps": [
+      "Create __tests__/board.test.ts",
+      "Move all board generation tests",
+      "Import from ../board.ts",
+      "Verify tests pass"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Split shared/src/index.test.ts - extract combat.test.ts",
+    "steps": [
+      "Create __tests__/combat.test.ts",
+      "Move all combat-related tests",
+      "Import from ../combat.ts",
+      "Verify tests pass"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Split shared/src/index.test.ts - extract move.test.ts",
+    "steps": [
+      "Create __tests__/move.test.ts",
+      "Move all move validation/execution tests",
+      "Import from ../move.ts",
+      "Verify tests pass"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Split shared/src/index.test.ts - finalize and cleanup",
+    "steps": [
+      "Remove or minimize index.test.ts (keep only integration tests if any)",
+      "Run full test suite: pnpm test",
+      "Verify all 756+ tests pass"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
     "description": "Docker Compose file with PostgreSQL 16 service",
     "steps": [
       "Create docker-compose.yml at project root",

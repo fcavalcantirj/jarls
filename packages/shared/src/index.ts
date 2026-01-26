@@ -1,22 +1,87 @@
 // @jarls/shared - Shared types and utilities
 
+// Re-export all types from types.ts
+export type {
+  AxialCoord,
+  CubeCoord,
+  HexDirection,
+  PieceType,
+  Piece,
+  Player,
+  GameConfig,
+  PlayerScaling,
+  GamePhase,
+  GameState,
+  MoveCommand,
+  CombatBreakdown,
+  CombatResult,
+  ValidMove,
+  MoveResult,
+  GameEvent,
+  MoveEvent,
+  PushEvent,
+  EliminatedEvent,
+  TurnEndedEvent,
+  GameEndedEvent,
+  StarvationTriggeredEvent,
+  StarvationResolvedEvent,
+  PlayerJoinedEvent,
+  PlayerLeftEvent,
+  MoveValidationError,
+  MoveValidation,
+  InlineSupportResult,
+  BracingResult,
+  SimplePushResult,
+  ChainTerminator,
+  ChainResult,
+  EdgePushResult,
+  CompressionResult,
+  PushResult,
+  ThroneVictoryResult,
+  EliminatePlayerResult,
+  LastStandingResult,
+  WinCondition,
+  WinConditionsResult,
+  ReachableHex,
+} from './types.js';
+
+// Import types for internal use
+import type {
+  AxialCoord,
+  CubeCoord,
+  HexDirection,
+  Piece,
+  Player,
+  GameConfig,
+  PlayerScaling,
+  GameState,
+  MoveCommand,
+  CombatBreakdown,
+  CombatResult,
+  ValidMove,
+  MoveResult,
+  GameEvent,
+  MoveEvent,
+  PushEvent,
+  EliminatedEvent,
+  TurnEndedEvent,
+  GameEndedEvent,
+  MoveValidation,
+  InlineSupportResult,
+  BracingResult,
+  SimplePushResult,
+  ChainResult,
+  EdgePushResult,
+  CompressionResult,
+  PushResult,
+  ThroneVictoryResult,
+  EliminatePlayerResult,
+  LastStandingResult,
+  WinConditionsResult,
+  ReachableHex,
+} from './types.js';
+
 export const VERSION = '0.1.0';
-
-// Hexagonal coordinate types
-export interface AxialCoord {
-  q: number;
-  r: number;
-}
-
-export interface CubeCoord {
-  q: number;
-  r: number;
-  s: number;
-}
-
-// Hex direction type (0-5 for 6 directions)
-// Direction 0 is East, then counter-clockwise: NE, NW, W, SW, SE
-export type HexDirection = 0 | 1 | 2 | 3 | 4 | 5;
 
 // Direction vectors in cube coordinates
 // Following pointy-top hex orientation with consistent ordering
@@ -28,8 +93,6 @@ export const DIRECTIONS: readonly CubeCoord[] = [
   { q: -1, r: 1, s: 0 }, // 4: Southwest
   { q: 0, r: 1, s: -1 }, // 5: Southeast
 ] as const;
-
-// Coordinate conversion functions
 
 /**
  * Convert axial coordinates (q, r) to cube coordinates (q, r, s).
@@ -304,164 +367,6 @@ export function keyToHexCube(key: string): CubeCoord | null {
   return axialToCube(axial);
 }
 
-// Piece types
-export type PieceType = 'jarl' | 'warrior' | 'shield';
-
-export interface Piece {
-  id: string;
-  type: PieceType;
-  playerId: string | null; // null for shields
-  position: AxialCoord;
-}
-
-// Player types
-export interface Player {
-  id: string;
-  name: string;
-  color: string;
-  isEliminated: boolean;
-}
-
-// Game configuration
-export interface GameConfig {
-  playerCount: number;
-  boardRadius: number;
-  shieldCount: number;
-  warriorCount: number;
-  turnTimerMs: number | null;
-}
-
-// Game phase
-export type GamePhase = 'lobby' | 'setup' | 'playing' | 'starvation' | 'ended';
-
-// Game state - the core shared type
-export interface GameState {
-  id: string;
-  phase: GamePhase;
-  config: GameConfig;
-  players: Player[];
-  pieces: Piece[];
-  currentPlayerId: string | null;
-  turnNumber: number;
-  roundNumber: number;
-  roundsSinceElimination: number;
-  winnerId: string | null;
-  winCondition: 'throne' | 'lastStanding' | null;
-}
-
-// Move command - what a player sends to make a move
-export interface MoveCommand {
-  pieceId: string;
-  destination: AxialCoord;
-}
-
-// Combat result breakdown for attack/defense calculations
-export interface CombatBreakdown {
-  baseStrength: number;
-  momentum: number;
-  support: number;
-  total: number;
-}
-
-// Combat result - preview of what will happen in an attack
-export interface CombatResult {
-  attackerId: string;
-  defenderId: string;
-  attack: CombatBreakdown;
-  defense: CombatBreakdown;
-  outcome: 'push' | 'blocked';
-  pushDirection: HexDirection | null;
-}
-
-// Valid move - a possible destination with combat preview if applicable
-export interface ValidMove {
-  destination: AxialCoord;
-  moveType: 'move' | 'attack';
-  hasMomentum: boolean;
-  combatPreview: CombatResult | null;
-}
-
-// Move result - the outcome of applying a move
-export interface MoveResult {
-  success: boolean;
-  error?: string;
-  newState: GameState;
-  events: GameEvent[];
-}
-
-// Game events - things that happen during the game for animation/logging
-export type GameEvent =
-  | MoveEvent
-  | PushEvent
-  | EliminatedEvent
-  | TurnEndedEvent
-  | GameEndedEvent
-  | StarvationTriggeredEvent
-  | StarvationResolvedEvent
-  | PlayerJoinedEvent
-  | PlayerLeftEvent;
-
-// Individual event types
-export interface MoveEvent {
-  type: 'MOVE';
-  pieceId: string;
-  from: AxialCoord;
-  to: AxialCoord;
-  hasMomentum: boolean;
-}
-
-export interface PushEvent {
-  type: 'PUSH';
-  pieceId: string;
-  from: AxialCoord;
-  to: AxialCoord;
-  pushDirection: HexDirection;
-  depth: number; // For staggered animation timing
-}
-
-export interface EliminatedEvent {
-  type: 'ELIMINATED';
-  pieceId: string;
-  playerId: string | null;
-  position: AxialCoord;
-  cause: 'edge' | 'starvation';
-}
-
-export interface TurnEndedEvent {
-  type: 'TURN_ENDED';
-  playerId: string;
-  nextPlayerId: string;
-  turnNumber: number;
-}
-
-export interface GameEndedEvent {
-  type: 'GAME_ENDED';
-  winnerId: string;
-  winCondition: 'throne' | 'lastStanding';
-}
-
-export interface StarvationTriggeredEvent {
-  type: 'STARVATION_TRIGGERED';
-  round: number;
-  candidates: Map<string, string[]>; // playerId -> pieceIds that can be sacrificed
-}
-
-export interface StarvationResolvedEvent {
-  type: 'STARVATION_RESOLVED';
-  sacrifices: Map<string, string>; // playerId -> sacrificed pieceId
-}
-
-export interface PlayerJoinedEvent {
-  type: 'PLAYER_JOINED';
-  playerId: string;
-  playerName: string;
-}
-
-export interface PlayerLeftEvent {
-  type: 'PLAYER_LEFT';
-  playerId: string;
-}
-
 // Board scaling configuration based on player count
 // From the ruleset scaling table:
 // | Players | Board Radius | Shields | Warriors/Player |
@@ -470,12 +375,6 @@ export interface PlayerLeftEvent {
 // | 4       | 6            | 4       | 4               |
 // | 5       | 7            | 3       | 4               |
 // | 6       | 8            | 3       | 4               |
-
-interface PlayerScaling {
-  boardRadius: number;
-  shieldCount: number;
-  warriorCount: number;
-}
 
 const PLAYER_SCALING: Record<number, PlayerScaling> = {
   2: { boardRadius: 3, shieldCount: 5, warriorCount: 5 },
@@ -1391,35 +1290,6 @@ export function hasDraftFormation(
 }
 
 /**
- * Error type returned when a move is invalid.
- */
-export type MoveValidationError =
-  | 'PIECE_NOT_FOUND'
-  | 'NOT_YOUR_PIECE'
-  | 'NOT_YOUR_TURN'
-  | 'GAME_NOT_PLAYING'
-  | 'DESTINATION_OFF_BOARD'
-  | 'DESTINATION_OCCUPIED_FRIENDLY'
-  | 'WARRIOR_CANNOT_ENTER_THRONE'
-  | 'INVALID_DISTANCE_WARRIOR'
-  | 'INVALID_DISTANCE_JARL'
-  | 'JARL_NEEDS_DRAFT_FOR_TWO_HEX'
-  | 'PATH_BLOCKED'
-  | 'MOVE_NOT_STRAIGHT_LINE'
-  | 'SHIELD_CANNOT_MOVE';
-
-/**
- * Result of validating a move.
- */
-export interface MoveValidation {
-  isValid: boolean;
-  error?: MoveValidationError;
-  hasMomentum?: boolean; // true if piece moved 2 hexes (grants +1 attack)
-  /** When a Jarl's 2-hex move crosses the Throne, this is the adjusted destination */
-  adjustedDestination?: AxialCoord;
-}
-
-/**
  * Get the direction from one hex to an adjacent hex.
  * Returns the HexDirection if the hexes are adjacent, null if not adjacent.
  *
@@ -1634,16 +1504,6 @@ export function validateMove(
 }
 
 /**
- * Result of finding inline support for an attacker.
- */
-export interface InlineSupportResult {
-  /** Array of pieces directly behind the attacker in the support line */
-  pieces: Piece[];
-  /** Total strength contributed by supporting pieces (sum of individual strengths) */
-  totalStrength: number;
-}
-
-/**
  * Get the base strength of a piece based on its type.
  * Warriors have strength 1, Jarls have strength 2.
  *
@@ -1725,16 +1585,6 @@ export function findInlineSupport(
   }
 
   return { pieces: supportPieces, totalStrength };
-}
-
-/**
- * Result of finding bracing support for a defender.
- */
-export interface BracingResult {
-  /** Array of pieces directly behind the defender in the bracing line */
-  pieces: Piece[];
-  /** Total strength contributed by bracing pieces (sum of individual strengths) */
-  totalStrength: number;
 }
 
 /**
@@ -1943,16 +1793,6 @@ export function calculateCombat(
 }
 
 /**
- * Result of resolving a simple push (defender pushed to empty hex).
- */
-export interface SimplePushResult {
-  /** The new game state after the push */
-  newState: GameState;
-  /** Events generated by the push (MOVE for attacker, PUSH for defender) */
-  events: GameEvent[];
-}
-
-/**
  * Resolve a simple push where the defender is pushed to an empty hex.
  * This is used when a push succeeds and the chain terminates at an empty hex.
  *
@@ -2035,19 +1875,6 @@ export function resolveSimplePush(
   return { newState, events };
 }
 
-// Chain terminator types
-export type ChainTerminator = 'edge' | 'shield' | 'throne' | 'empty';
-
-// Result of detecting a push chain
-export interface ChainResult {
-  /** Array of pieces in the chain, ordered from first pushed to last */
-  pieces: Piece[];
-  /** What terminates the chain */
-  terminator: ChainTerminator;
-  /** The position where the chain ends (empty hex, edge, shield, or throne) */
-  terminatorPosition: AxialCoord;
-}
-
 /**
  * Detect all pieces in a push chain starting from a defender.
  *
@@ -2120,18 +1947,6 @@ export function detectChain(
 
     currentPos = nextPos;
   }
-}
-
-/**
- * Result of resolving an edge push (pieces eliminated at board edge).
- */
-export interface EdgePushResult {
-  /** The new game state after the push (with eliminated pieces removed) */
-  newState: GameState;
-  /** Events generated (MOVE for attacker, PUSH for chain pieces, ELIMINATED for eliminated pieces) */
-  events: GameEvent[];
-  /** IDs of pieces that were eliminated */
-  eliminatedPieceIds: string[];
 }
 
 /**
@@ -2268,16 +2083,6 @@ export function resolveEdgePush(
   };
 
   return { newState, events, eliminatedPieceIds };
-}
-
-/**
- * Result of resolving a compression push (pieces compress against shield or throne).
- */
-export interface CompressionResult {
-  /** The new game state after the compression */
-  newState: GameState;
-  /** Events generated (MOVE for attacker, PUSH for chain pieces) */
-  events: GameEvent[];
 }
 
 /**
@@ -2495,18 +2300,6 @@ export function resolveCompression(
 }
 
 /**
- * Result of resolving a push using the main resolver.
- */
-export interface PushResult {
-  /** The new game state after the push */
-  newState: GameState;
-  /** Events generated by the push (MOVE for attacker, PUSH for chain pieces, ELIMINATED if any) */
-  events: GameEvent[];
-  /** IDs of pieces that were eliminated (empty if none) */
-  eliminatedPieceIds: string[];
-}
-
-/**
  * Main push resolver that handles all push scenarios.
  *
  * This function orchestrates push resolution by:
@@ -2669,16 +2462,6 @@ export function resolvePush(
 }
 
 /**
- * Result of checking for throne victory.
- */
-export interface ThroneVictoryResult {
-  /** Whether a throne victory occurred */
-  isVictory: boolean;
-  /** The player ID who won (if victory) */
-  winnerId: string | null;
-}
-
-/**
  * Check if a throne victory occurred.
  * Throne victory happens when a Jarl voluntarily moves onto the Throne (center hex).
  *
@@ -2727,18 +2510,6 @@ export function checkThroneVictory(
     isVictory: true,
     winnerId: movedPiece.playerId,
   };
-}
-
-/**
- * Result of eliminating a player.
- */
-export interface EliminatePlayerResult {
-  /** The updated game state with the player eliminated */
-  newState: GameState;
-  /** Array of game events generated by the elimination */
-  events: GameEvent[];
-  /** Array of piece IDs that were removed (Warriors) */
-  removedPieceIds: string[];
 }
 
 /**
@@ -2819,16 +2590,6 @@ export function eliminatePlayer(state: GameState, playerId: string): EliminatePl
 }
 
 /**
- * Result of checking for last-standing victory condition.
- */
-export interface LastStandingResult {
-  /** Whether a last-standing victory occurred */
-  isVictory: boolean;
-  /** The player ID who won (if victory) */
-  winnerId: string | null;
-}
-
-/**
  * Check if a last-standing victory has occurred.
  * A last-standing victory occurs when only one Jarl remains on the board.
  *
@@ -2859,23 +2620,6 @@ export function checkLastStanding(state: GameState): LastStandingResult {
   // If there are no Jarls (edge case - shouldn't happen in normal gameplay),
   // no victory can be determined
   return noVictory;
-}
-
-/**
- * Type representing the win condition that ended the game.
- */
-export type WinCondition = 'throne' | 'lastStanding';
-
-/**
- * Result of checking all win conditions.
- */
-export interface WinConditionsResult {
-  /** Whether any victory condition was met */
-  isVictory: boolean;
-  /** The player ID who won (if victory) */
-  winnerId: string | null;
-  /** The win condition that was met (if victory) */
-  condition: WinCondition | null;
 }
 
 /**
@@ -2921,20 +2665,6 @@ export function checkWinConditions(
 
   // No victory condition met
   return noVictory;
-}
-
-/**
- * Result of finding reachable hexes for a piece.
- */
-export interface ReachableHex {
-  /** The destination hex position */
-  destination: AxialCoord;
-  /** Whether this is a move or attack */
-  moveType: 'move' | 'attack';
-  /** Whether moving to this hex grants momentum bonus (+1 attack) */
-  hasMomentum: boolean;
-  /** The direction of movement (useful for attack calculations) */
-  direction: HexDirection;
 }
 
 /**

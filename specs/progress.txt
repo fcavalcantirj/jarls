@@ -1695,3 +1695,44 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 **Files Modified**:
 - packages/shared/src/index.ts (added pathCrossesThrone function, extended MoveValidation interface, modified validateMove and applyMove)
 - packages/shared/src/index.test.ts (added unit tests for pathCrossesThrone and Jarl 2-hex Throne crossing)
+
+---
+
+### 2026-01-26: Infrastructure - Split shared/src/index.ts - extract types.ts
+
+**Feature Completed**: "Split shared/src/index.ts - extract types.ts"
+
+**Work Done**:
+- Created `packages/shared/src/types.ts` containing all type and interface definitions
+- Extracted 40+ types/interfaces from index.ts to types.ts:
+  - Coordinate types: AxialCoord, CubeCoord, HexDirection
+  - Game piece types: PieceType, Piece, Player, GameConfig, PlayerScaling
+  - Game state types: GamePhase, GameState, MoveCommand
+  - Combat types: CombatBreakdown, CombatResult, ValidMove, MoveResult
+  - Event types: GameEvent, MoveEvent, PushEvent, EliminatedEvent, TurnEndedEvent, GameEndedEvent, etc.
+  - Validation types: MoveValidationError, MoveValidation
+  - Combat support types: InlineSupportResult, BracingResult
+  - Push resolution types: SimplePushResult, ChainTerminator, ChainResult, EdgePushResult, CompressionResult, PushResult
+  - Victory types: ThroneVictoryResult, EliminatePlayerResult, LastStandingResult, WinCondition, WinConditionsResult
+  - Move types: ReachableHex
+- Updated `packages/shared/src/index.ts`:
+  - Added `export type { ... } from './types.js'` to re-export all types
+  - Added `import type { ... } from './types.js'` for internal use
+  - Removed all inline type/interface definitions (keeping only functions and constants)
+- All types remain accessible to consumers via `import { ... } from '@jarls/shared'`
+
+**Why This Matters**:
+- Reduces context explosion when AI assistants work with the codebase
+- Follows file size guidelines (types.ts is ~320 lines vs 3,369 lines before split)
+- Enables incremental file splitting for hex, board, combat, and move modules
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (756 tests total)
+- Server and client can still import types from @jarls/shared
+
+**Files Created**:
+- packages/shared/src/types.ts
+
+**Files Modified**:
+- packages/shared/src/index.ts (added imports/re-exports, removed inline type definitions)
