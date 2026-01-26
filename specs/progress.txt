@@ -2063,3 +2063,58 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Modified**:
 - packages/shared/src/move.ts (added re-exports, removed function definitions)
+
+---
+
+### 2026-01-26: Infrastructure - Split shared/src/index.test.ts - extract hex.test.ts
+
+**Feature Completed**: "Split shared/src/index.test.ts - extract hex.test.ts"
+
+**Work Done**:
+- Created `packages/shared/src/__tests__/hex.test.ts` containing all hex coordinate tests
+- Moved 109 tests from index.test.ts to hex.test.ts:
+  - HexDirection and DIRECTIONS tests (6 tests)
+  - axialToCube tests (5 tests)
+  - cubeToAxial tests (4 tests)
+  - round-trip conversion tests (2 tests)
+  - hexDistance tests (7 tests)
+  - hexDistanceAxial tests (4 tests)
+  - getNeighbor tests (10 tests)
+  - getAllNeighbors tests (6 tests)
+  - getNeighborAxial tests (3 tests)
+  - getAllNeighborsAxial tests (6 tests)
+  - getOppositeDirection tests (10 tests)
+  - cubeRound tests (4 tests)
+  - hexLine tests (13 tests)
+  - hexLineAxial tests (4 tests)
+  - isOnBoard tests (8 tests)
+  - isOnBoardAxial tests (4 tests)
+  - isOnEdge tests (8 tests)
+  - isOnEdgeAxial tests (3 tests)
+  - isOnBoard and isOnEdge boundary cases tests (4 tests)
+  - hexToKey tests (7 tests)
+  - keyToHex tests (7 tests)
+  - keyToHexCube tests (4 tests)
+  - hexToKey and keyToHex round-trip tests (2 tests)
+  - hexToKey with Map storage tests (3 tests)
+- Updated `packages/shared/src/index.test.ts`:
+  - Removed all hex coordinate test describe blocks (lines 79-1324)
+  - Removed unused imports (DIRECTIONS, getAllNeighbors, getNeighborAxial, getAllNeighborsAxial, getOppositeDirection, cubeRound, hexLine, hexLineAxial, keyToHexCube)
+  - Added comment noting hex tests were moved
+  - File reduced from ~12,674 lines to ~11,429 lines (~1,245 lines removed)
+
+**Why This Matters**:
+- Continues critical file-splitting infrastructure work
+- Organizes tests to mirror source file structure (hex.ts -> hex.test.ts)
+- Improves maintainability and reduces context usage for AI assistants
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (756 tests total)
+- Tests now split across 3 files: index.test.ts, __tests__/types.test.ts, __tests__/hex.test.ts
+
+**Files Created**:
+- packages/shared/src/__tests__/hex.test.ts
+
+**Files Modified**:
+- packages/shared/src/index.test.ts (removed hex tests and unused imports)

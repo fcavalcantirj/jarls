@@ -197,7 +197,7 @@
       "Import from ../hex.ts",
       "Verify tests pass"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
