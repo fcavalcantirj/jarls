@@ -320,7 +320,7 @@
       "Warriors form initial formation",
       "Correct number of Warriors placed"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

@@ -911,3 +911,159 @@ export function validateShieldPlacement(
     blockedPlayers,
   };
 }
+
+/**
+ * Find the hex direction that most closely points from a starting position toward the Throne.
+ * This is used to determine which direction Warriors should be placed (in front of the Jarl).
+ *
+ * @param startPosition - The starting position (Jarl's hex)
+ * @returns The HexDirection that points most toward the center
+ */
+export function getDirectionTowardThrone(startPosition: AxialCoord): HexDirection {
+  const startCube = axialToCube(startPosition);
+  const throne: CubeCoord = { q: 0, r: 0, s: 0 };
+
+  // If at the throne, default to direction 0 (shouldn't happen in practice)
+  if (startCube.q === 0 && startCube.r === 0 && startCube.s === 0) {
+    return 0;
+  }
+
+  // Find the direction that minimizes distance to throne when we move from startPosition
+  let bestDirection: HexDirection = 0;
+  let bestDistance = Infinity;
+
+  for (let d = 0; d < 6; d++) {
+    const neighbor = getNeighbor(startCube, d as HexDirection);
+    const dist = hexDistance(neighbor, throne);
+    if (dist < bestDistance) {
+      bestDistance = dist;
+      bestDirection = d as HexDirection;
+    }
+  }
+
+  return bestDirection;
+}
+
+/**
+ * Place Warriors in front of the Jarl, between the Jarl and the Throne.
+ * Warriors are placed along the straight line from Jarl toward the Throne,
+ * starting from the hex adjacent to the Jarl and moving toward the center.
+ *
+ * Rules:
+ * - Warriors placed between Jarl and Throne (not behind the Jarl)
+ * - Warriors form a line formation toward the center
+ * - Warriors cannot occupy the Throne hex
+ * - Warriors cannot occupy hexes with shields
+ * - If a hex is blocked, skip to the next available hex toward the center
+ *
+ * @param jarlPosition - The Jarl's starting position
+ * @param warriorCount - Number of Warriors to place
+ * @param shieldPositions - Set of shield position keys to avoid
+ * @param radius - Board radius (for bounds checking)
+ * @returns Array of Warrior positions in axial coordinates
+ */
+export function placeWarriors(
+  jarlPosition: AxialCoord,
+  warriorCount: number,
+  shieldPositions: Set<string>,
+  radius: number
+): AxialCoord[] {
+  if (warriorCount <= 0) {
+    return [];
+  }
+
+  const warriors: AxialCoord[] = [];
+  const throne: AxialCoord = { q: 0, r: 0 };
+  const jarlKey = hexToKey(jarlPosition);
+  const throneKey = hexToKey(throne);
+
+  // Get all hexes on the line from Jarl to Throne
+  const pathToThrone = hexLineAxial(jarlPosition, throne);
+
+  // Use hexes on the path (excluding Jarl position and Throne)
+  // These are the primary placement positions
+  const usedKeys = new Set<string>();
+  usedKeys.add(jarlKey); // Don't place on Jarl
+
+  for (const hex of pathToThrone) {
+    if (warriors.length >= warriorCount) break;
+
+    const key = hexToKey(hex);
+
+    // Skip Jarl position, Throne, shields, and already used positions
+    if (key === jarlKey || key === throneKey || shieldPositions.has(key) || usedKeys.has(key)) {
+      continue;
+    }
+
+    // Skip if off board
+    if (!isOnBoardAxial(hex, radius)) {
+      continue;
+    }
+
+    warriors.push(hex);
+    usedKeys.add(key);
+  }
+
+  // If we couldn't place all warriors on the direct path (due to shields),
+  // try to place remaining warriors on adjacent hexes near the path
+  if (warriors.length < warriorCount) {
+    // Get the direction toward throne to prioritize "forward" hexes
+    const dirToThrone = getDirectionTowardThrone(jarlPosition);
+
+    // Start from Jarl and expand outward looking for available hexes
+    const jarlCube = axialToCube(jarlPosition);
+
+    // Check neighbors of the Jarl first, prioritizing the direction toward throne
+    const directionPriority = [
+      dirToThrone,
+      (dirToThrone + 1) % 6,
+      (dirToThrone + 5) % 6, // +5 is same as -1 mod 6
+      (dirToThrone + 2) % 6,
+      (dirToThrone + 4) % 6,
+      (dirToThrone + 3) % 6, // Opposite direction last
+    ] as HexDirection[];
+
+    // Try adjacent hexes to the Jarl
+    for (const dir of directionPriority) {
+      if (warriors.length >= warriorCount) break;
+
+      const neighborCube = getNeighbor(jarlCube, dir);
+      const neighborAxial = cubeToAxial(neighborCube);
+      const key = hexToKey(neighborAxial);
+
+      if (
+        !usedKeys.has(key) &&
+        !shieldPositions.has(key) &&
+        key !== throneKey &&
+        isOnBoardAxial(neighborAxial, radius)
+      ) {
+        warriors.push(neighborAxial);
+        usedKeys.add(key);
+      }
+    }
+
+    // If still not enough, try hexes at distance 2 from Jarl
+    if (warriors.length < warriorCount) {
+      for (const dir of directionPriority) {
+        if (warriors.length >= warriorCount) break;
+
+        const neighbor1 = getNeighbor(jarlCube, dir);
+        const neighbor2 = getNeighbor(neighbor1, dir);
+        const neighborAxial = cubeToAxial(neighbor2);
+        const key = hexToKey(neighborAxial);
+
+        if (
+          !usedKeys.has(key) &&
+          !shieldPositions.has(key) &&
+          key !== throneKey &&
+          isOnBoardAxial(neighborAxial, radius)
+        ) {
+          warriors.push(neighborAxial);
+          usedKeys.add(key);
+        }
+      }
+    }
+  }
+
+  return warriors;
+}

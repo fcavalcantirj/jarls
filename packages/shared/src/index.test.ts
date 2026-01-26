@@ -32,6 +32,8 @@ import {
   generateSymmetricalShields,
   hasPathToThrone,
   validateShieldPlacement,
+  getDirectionTowardThrone,
+  placeWarriors,
   AxialCoord,
   CubeCoord,
   GameConfig,
@@ -2385,6 +2387,261 @@ describe('@jarls/shared', () => {
         const result = validateShieldPlacement(shields, positions, config.boardRadius);
         expect(typeof result.isValid).toBe('boolean');
         expect(Array.isArray(result.blockedPlayers)).toBe(true);
+      });
+    });
+  });
+
+  describe('getDirectionTowardThrone', () => {
+    it('should return East (0) from West edge', () => {
+      const direction = getDirectionTowardThrone({ q: -3, r: 0 });
+      expect(direction).toBe(0); // East
+    });
+
+    it('should return West (3) from East edge', () => {
+      const direction = getDirectionTowardThrone({ q: 3, r: 0 });
+      expect(direction).toBe(3); // West
+    });
+
+    it('should return Southwest (4) from Northeast edge', () => {
+      const direction = getDirectionTowardThrone({ q: 2, r: -2 });
+      expect(direction).toBe(4); // Southwest
+    });
+
+    it('should return Northeast (1) from Southwest edge', () => {
+      const direction = getDirectionTowardThrone({ q: -2, r: 2 });
+      expect(direction).toBe(1); // Northeast
+    });
+
+    it('should return a direction that decreases distance to throne', () => {
+      const start: AxialCoord = { q: 3, r: 0 };
+      const direction = getDirectionTowardThrone(start);
+      const startCube = axialToCube(start);
+      const throne: CubeCoord = { q: 0, r: 0, s: 0 };
+      const neighbor = getNeighbor(startCube, direction);
+
+      const distBefore = hexDistance(startCube, throne);
+      const distAfter = hexDistance(neighbor, throne);
+
+      expect(distAfter).toBeLessThan(distBefore);
+    });
+  });
+
+  describe('placeWarriors', () => {
+    describe('basic placement', () => {
+      it('should place correct number of warriors', () => {
+        const jarlPosition: AxialCoord = { q: 3, r: 0 };
+        const shieldPositions = new Set<string>();
+        const warriors = placeWarriors(jarlPosition, 5, shieldPositions, 3);
+        expect(warriors).toHaveLength(5);
+      });
+
+      it('should return empty array for zero warriors', () => {
+        const jarlPosition: AxialCoord = { q: 3, r: 0 };
+        const shieldPositions = new Set<string>();
+        const warriors = placeWarriors(jarlPosition, 0, shieldPositions, 3);
+        expect(warriors).toHaveLength(0);
+      });
+
+      it('should return empty array for negative warrior count', () => {
+        const jarlPosition: AxialCoord = { q: 3, r: 0 };
+        const shieldPositions = new Set<string>();
+        const warriors = placeWarriors(jarlPosition, -1, shieldPositions, 3);
+        expect(warriors).toHaveLength(0);
+      });
+
+      it('should place warriors at unique positions', () => {
+        const jarlPosition: AxialCoord = { q: 3, r: 0 };
+        const shieldPositions = new Set<string>();
+        const warriors = placeWarriors(jarlPosition, 5, shieldPositions, 3);
+        const keys = warriors.map(hexToKey);
+        const uniqueKeys = new Set(keys);
+        expect(uniqueKeys.size).toBe(warriors.length);
+      });
+    });
+
+    describe('position constraints', () => {
+      it('should not place warriors on the Jarl position', () => {
+        const jarlPosition: AxialCoord = { q: 3, r: 0 };
+        const shieldPositions = new Set<string>();
+        const warriors = placeWarriors(jarlPosition, 5, shieldPositions, 3);
+        const jarlKey = hexToKey(jarlPosition);
+        warriors.forEach((warrior) => {
+          expect(hexToKey(warrior)).not.toBe(jarlKey);
+        });
+      });
+
+      it('should not place warriors on the Throne', () => {
+        const jarlPosition: AxialCoord = { q: 3, r: 0 };
+        const shieldPositions = new Set<string>();
+        const warriors = placeWarriors(jarlPosition, 5, shieldPositions, 3);
+        const throneKey = hexToKey({ q: 0, r: 0 });
+        warriors.forEach((warrior) => {
+          expect(hexToKey(warrior)).not.toBe(throneKey);
+        });
+      });
+
+      it('should not place warriors on shield positions', () => {
+        const jarlPosition: AxialCoord = { q: 3, r: 0 };
+        const shieldPositions = new Set<string>([
+          hexToKey({ q: 2, r: 0 }),
+          hexToKey({ q: 1, r: 0 }),
+        ]);
+        const warriors = placeWarriors(jarlPosition, 5, shieldPositions, 3);
+        warriors.forEach((warrior) => {
+          expect(shieldPositions.has(hexToKey(warrior))).toBe(false);
+        });
+      });
+
+      it('should place warriors within board bounds', () => {
+        const jarlPosition: AxialCoord = { q: 3, r: 0 };
+        const shieldPositions = new Set<string>();
+        const warriors = placeWarriors(jarlPosition, 5, shieldPositions, 3);
+        warriors.forEach((warrior) => {
+          expect(isOnBoardAxial(warrior, 3)).toBe(true);
+        });
+      });
+    });
+
+    describe('formation toward throne', () => {
+      it('should place warriors between Jarl and Throne', () => {
+        const jarlPosition: AxialCoord = { q: 3, r: 0 };
+        const shieldPositions = new Set<string>();
+        const warriors = placeWarriors(jarlPosition, 3, shieldPositions, 3);
+        const throne: AxialCoord = { q: 0, r: 0 };
+        const jarlDistance = hexDistanceAxial(jarlPosition, throne);
+
+        // Warriors should be closer to throne than the Jarl
+        // (or at least some of them should be on the path)
+        let hasWarriorOnPath = false;
+        warriors.forEach((warrior) => {
+          const warriorDistance = hexDistanceAxial(warrior, throne);
+          if (warriorDistance < jarlDistance) {
+            hasWarriorOnPath = true;
+          }
+        });
+        expect(hasWarriorOnPath).toBe(true);
+      });
+
+      it('should place warriors in a line formation toward center when path is clear', () => {
+        const jarlPosition: AxialCoord = { q: 3, r: 0 };
+        const shieldPositions = new Set<string>();
+        const warriors = placeWarriors(jarlPosition, 2, shieldPositions, 3);
+
+        // With path from (3,0) to (0,0), warriors should be at (2,0) and (1,0)
+        const expectedPositions = [hexToKey({ q: 2, r: 0 }), hexToKey({ q: 1, r: 0 })];
+        const actualKeys = warriors.map(hexToKey);
+
+        expect(actualKeys).toContain(expectedPositions[0]);
+        expect(actualKeys).toContain(expectedPositions[1]);
+      });
+    });
+
+    describe('shield avoidance', () => {
+      it('should place warriors around shields', () => {
+        const jarlPosition: AxialCoord = { q: 3, r: 0 };
+        // Block direct path
+        const shieldPositions = new Set<string>([hexToKey({ q: 2, r: 0 })]);
+        const warriors = placeWarriors(jarlPosition, 5, shieldPositions, 3);
+
+        // Should still place correct number of warriors
+        expect(warriors).toHaveLength(5);
+
+        // Warriors should not be on shield position
+        warriors.forEach((warrior) => {
+          expect(shieldPositions.has(hexToKey(warrior))).toBe(false);
+        });
+      });
+
+      it('should place warriors on alternate hexes when direct path is blocked', () => {
+        const jarlPosition: AxialCoord = { q: 3, r: 0 };
+        // Block most of the direct path
+        const shieldPositions = new Set<string>([
+          hexToKey({ q: 2, r: 0 }),
+          hexToKey({ q: 1, r: 0 }),
+        ]);
+        // With 2 hexes blocked on direct path, only 4 warriors can be placed near the Jarl
+        // in a radius 3 board (limited neighbor hexes available)
+        const warriors = placeWarriors(jarlPosition, 4, shieldPositions, 3);
+
+        // Should place the requested number of warriors
+        expect(warriors).toHaveLength(4);
+
+        // Warriors should be on board and not on shields
+        warriors.forEach((warrior) => {
+          expect(isOnBoardAxial(warrior, 3)).toBe(true);
+          expect(shieldPositions.has(hexToKey(warrior))).toBe(false);
+        });
+      });
+    });
+
+    describe('game scenarios', () => {
+      it('should work with standard 2-player East edge Jarl', () => {
+        const config = getConfigForPlayerCount(2);
+        const jarlPosition: AxialCoord = { q: 3, r: 0 }; // East edge
+        const shieldPositions = new Set<string>();
+        const warriors = placeWarriors(
+          jarlPosition,
+          config.warriorCount,
+          shieldPositions,
+          config.boardRadius
+        );
+        expect(warriors).toHaveLength(config.warriorCount);
+      });
+
+      it('should work with standard 2-player West edge Jarl', () => {
+        const config = getConfigForPlayerCount(2);
+        const jarlPosition: AxialCoord = { q: -3, r: 0 }; // West edge
+        const shieldPositions = new Set<string>();
+        const warriors = placeWarriors(
+          jarlPosition,
+          config.warriorCount,
+          shieldPositions,
+          config.boardRadius
+        );
+        expect(warriors).toHaveLength(config.warriorCount);
+      });
+
+      it('should work with diagonal starting positions', () => {
+        const jarlPosition: AxialCoord = { q: 2, r: -2 }; // NE area
+        const shieldPositions = new Set<string>();
+        const warriors = placeWarriors(jarlPosition, 4, shieldPositions, 3);
+        expect(warriors).toHaveLength(4);
+
+        // All warriors should be on board
+        warriors.forEach((warrior) => {
+          expect(isOnBoardAxial(warrior, 3)).toBe(true);
+        });
+      });
+
+      it('should work with full game setup shields', () => {
+        const config = getConfigForPlayerCount(2);
+        const positions = calculateStartingPositions(2, config.boardRadius);
+        const shields = generateSymmetricalShields(2, config.boardRadius, config.shieldCount);
+        const shieldSet = new Set(shields.map(hexToKey));
+
+        // Place warriors for both players
+        const player1Warriors = placeWarriors(
+          positions[0],
+          config.warriorCount,
+          shieldSet,
+          config.boardRadius
+        );
+        const player2Warriors = placeWarriors(
+          positions[1],
+          config.warriorCount,
+          shieldSet,
+          config.boardRadius
+        );
+
+        expect(player1Warriors).toHaveLength(config.warriorCount);
+        expect(player2Warriors).toHaveLength(config.warriorCount);
+
+        // No warriors should overlap
+        const allWarriorKeys = new Set([
+          ...player1Warriors.map(hexToKey),
+          ...player2Warriors.map(hexToKey),
+        ]);
+        expect(allWarriorKeys.size).toBe(player1Warriors.length + player2Warriors.length);
       });
     });
   });

@@ -742,3 +742,35 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added hasPathToThrone and validateShieldPlacement functions)
 - packages/shared/src/index.test.ts (added unit tests for new functions)
+
+---
+
+### 2026-01-25: Core Logic - placeWarriors Function
+
+**Feature Completed**: "placeWarriors positions Warriors in front of Jarl"
+
+**Work Done**:
+- Implemented `getDirectionTowardThrone(startPosition)` helper function:
+  - Finds the hex direction that most closely points from a starting position toward the Throne
+  - Used to determine which direction Warriors should be placed (in front of the Jarl)
+  - Returns the HexDirection (0-5) that minimizes distance to the Throne when moving from the start position
+- Implemented `placeWarriors(jarlPosition, warriorCount, shieldPositions, radius)` function:
+  - Places Warriors between the Jarl and the Throne in a line formation
+  - Uses `hexLineAxial` to get hexes on the direct path from Jarl to Throne
+  - Warriors are placed on available hexes along the path, skipping shields and the Throne
+  - If direct path is blocked by shields, falls back to adjacent hexes prioritizing the direction toward the Throne
+  - Respects all placement constraints: no overlap with Jarl, shields, or Throne
+- Added comprehensive unit tests (21 new tests) covering:
+  - Basic placement: correct count, zero/negative counts, unique positions
+  - Position constraints: not on Jarl, not on Throne, not on shields, within board bounds
+  - Formation toward throne: warriors placed between Jarl and Throne, line formation when path is clear
+  - Shield avoidance: places warriors around shields, finds alternate positions when path blocked
+  - Game scenarios: standard 2-player configurations, diagonal positions, full game setup with shields
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (284 tests total, 21 new tests for getDirectionTowardThrone/placeWarriors)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added getDirectionTowardThrone and placeWarriors functions)
+- packages/shared/src/index.test.ts (added unit tests for new functions)
