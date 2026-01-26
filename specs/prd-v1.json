@@ -481,7 +481,7 @@
       "Generates events with correct depth for animation",
       "Returns all state changes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
