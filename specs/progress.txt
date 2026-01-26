@@ -139,3 +139,28 @@
 **Files Modified**:
 - eslint.config.js (added eslint-config-prettier integration)
 - package.json (added prettier, eslint-config-prettier dependencies, format:check script)
+
+---
+
+### 2026-01-25: Infrastructure - Git Hooks Configuration
+
+**Feature Completed**: "Git hooks configured with Husky and lint-staged"
+
+**Work Done**:
+- Installed Husky 9.x and lint-staged 16.x at workspace root
+- Ran `npx husky init` to initialize Husky:
+  - Created .husky directory with pre-commit hook
+  - Added `prepare` script to package.json for automatic Husky setup
+- Configured pre-commit hook to run `npx lint-staged`
+- Added lint-staged configuration to package.json:
+  - TypeScript files (*.ts, *.tsx): runs ESLint with --fix, then Prettier
+  - Other files (*.js, *.jsx, *.json, *.md, *.yml, *.yaml): runs Prettier
+- Tested lint-staged directly with `npx lint-staged` - works correctly
+- Verified `pnpm typecheck` still passes
+- Verified `pnpm test` still passes
+
+**Files Created**:
+- .husky/pre-commit
+
+**Files Modified**:
+- package.json (added husky, lint-staged dependencies, prepare script, lint-staged config)

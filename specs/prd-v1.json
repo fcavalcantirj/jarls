@@ -58,7 +58,7 @@
       "Pre-commit hook runs lint-staged",
       "Staged files are linted and formatted before commit"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
