@@ -1264,3 +1264,31 @@ export function getPieceAt(state: GameState, position: AxialCoord): Piece | unde
 export function getPieceById(state: GameState, pieceId: string): Piece | undefined {
   return state.pieces.find((piece) => piece.id === pieceId);
 }
+
+/**
+ * Check if a path between two hexes is clear of pieces.
+ * A path is clear if no pieces exist on any hex between the start and end (exclusive).
+ * The start and end hexes themselves are not checked.
+ *
+ * This is used to validate moves - pieces cannot move through other pieces.
+ *
+ * @param state - The current game state
+ * @param start - Starting hex position (exclusive - not checked for pieces)
+ * @param end - Ending hex position (exclusive - not checked for pieces)
+ * @returns true if all hexes between start and end are empty, false if any are occupied
+ */
+export function isPathClear(state: GameState, start: AxialCoord, end: AxialCoord): boolean {
+  // Get all hexes along the line from start to end
+  const pathHexes = hexLineAxial(start, end);
+
+  // Check each hex between start and end (exclusive of both endpoints)
+  // pathHexes[0] is start, pathHexes[pathHexes.length - 1] is end
+  for (let i = 1; i < pathHexes.length - 1; i++) {
+    const hex = pathHexes[i];
+    if (getPieceAt(state, hex) !== undefined) {
+      return false; // Piece blocks the path
+    }
+  }
+
+  return true; // Path is clear
+}

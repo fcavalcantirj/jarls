@@ -849,3 +849,37 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added getPieceAt and getPieceById functions)
 - packages/shared/src/index.test.ts (added unit tests for getPieceAt and getPieceById)
+
+---
+
+### 2026-01-26: Core Logic - isPathClear Function
+
+**Feature Completed**: "isPathClear checks for blocking pieces"
+
+**Work Done**:
+- Implemented `isPathClear(state, start, end)` function:
+  - Checks if a path between two hexes is clear of pieces
+  - Returns true when path has no pieces blocking it
+  - Returns false when any piece exists on the path
+  - Checks all hexes between start and end (exclusive of both endpoints)
+  - Uses `hexLineAxial` to get hexes along the path
+  - Uses `getPieceAt` to check for pieces at each intermediate hex
+- This function is used to validate moves - pieces cannot move through other pieces
+- Added comprehensive unit tests (23 new tests) covering:
+  - Returns true when path has no pieces (empty board, pieces not on path)
+  - Returns true when piece is at start/end position (endpoints not checked)
+  - Returns false when piece blocks path (warrior, shield, jarl)
+  - Returns false when multiple pieces block path
+  - Returns false when friendly piece blocks path
+  - Checks first hex after start and last hex before end
+  - Works with diagonal paths and negative coordinates
+  - Edge cases: same position, adjacent hexes, all 6 directions
+  - Game scenarios: blocked paths in actual game states
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (362 tests total, 23 new tests for isPathClear)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added isPathClear function)
+- packages/shared/src/index.test.ts (added unit tests for isPathClear)

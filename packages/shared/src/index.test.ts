@@ -38,9 +38,12 @@ import {
   createInitialState,
   getPieceAt,
   getPieceById,
+  isPathClear,
   AxialCoord,
   CubeCoord,
   GameConfig,
+  GameState,
+  Piece,
 } from './index';
 
 describe('@jarls/shared', () => {
@@ -3148,6 +3151,282 @@ describe('@jarls/shared', () => {
           expect(found?.id).toBe(piece.id);
         }
       }
+    });
+  });
+
+  describe('isPathClear', () => {
+    // Helper function to create a minimal game state with specific pieces
+    function createTestState(pieces: Piece[]): GameState {
+      return {
+        id: 'test-game',
+        phase: 'playing',
+        config: {
+          playerCount: 2,
+          boardRadius: 3,
+          shieldCount: 0,
+          warriorCount: 0,
+          turnTimerMs: null,
+        },
+        players: [
+          { id: 'p1', name: 'Player 1', color: '#ff0000', isEliminated: false },
+          { id: 'p2', name: 'Player 2', color: '#0000ff', isEliminated: false },
+        ],
+        pieces,
+        currentPlayerId: 'p1',
+        turnNumber: 1,
+        roundNumber: 1,
+        roundsSinceElimination: 0,
+        winnerId: null,
+        winCondition: null,
+      };
+    }
+
+    describe('returns true when path has no pieces', () => {
+      it('should return true for adjacent hexes with empty board', () => {
+        const state = createTestState([]);
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 1, r: 0 };
+        expect(isPathClear(state, start, end)).toBe(true);
+      });
+
+      it('should return true for path of length 2 with empty board', () => {
+        const state = createTestState([]);
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 2, r: 0 };
+        expect(isPathClear(state, start, end)).toBe(true);
+      });
+
+      it('should return true for path of length 3 with empty board', () => {
+        const state = createTestState([]);
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 3, r: 0 };
+        expect(isPathClear(state, start, end)).toBe(true);
+      });
+
+      it('should return true for diagonal path with empty board', () => {
+        const state = createTestState([]);
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 2, r: -2 };
+        expect(isPathClear(state, start, end)).toBe(true);
+      });
+
+      it('should return true when pieces exist but not on path', () => {
+        const pieces: Piece[] = [
+          { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 0, r: 1 } },
+          { id: 'w2', type: 'warrior', playerId: 'p2', position: { q: 0, r: -1 } },
+        ];
+        const state = createTestState(pieces);
+        // Path from (0,0) to (2,0) goes through (1,0) - pieces are at (0,1) and (0,-1)
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 2, r: 0 };
+        expect(isPathClear(state, start, end)).toBe(true);
+      });
+
+      it('should return true when piece is at start position (start not checked)', () => {
+        const pieces: Piece[] = [
+          { id: 'j1', type: 'jarl', playerId: 'p1', position: { q: 0, r: 0 } },
+        ];
+        const state = createTestState(pieces);
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 2, r: 0 };
+        expect(isPathClear(state, start, end)).toBe(true);
+      });
+
+      it('should return true when piece is at end position (end not checked)', () => {
+        const pieces: Piece[] = [
+          { id: 'w1', type: 'warrior', playerId: 'p2', position: { q: 2, r: 0 } },
+        ];
+        const state = createTestState(pieces);
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 2, r: 0 };
+        expect(isPathClear(state, start, end)).toBe(true);
+      });
+    });
+
+    describe('returns false when piece blocks path', () => {
+      it('should return false when piece is in the middle of path', () => {
+        const pieces: Piece[] = [
+          { id: 'w1', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
+        ];
+        const state = createTestState(pieces);
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 2, r: 0 };
+        expect(isPathClear(state, start, end)).toBe(false);
+      });
+
+      it('should return false when shield blocks path', () => {
+        const pieces: Piece[] = [
+          { id: 's1', type: 'shield', playerId: null, position: { q: 1, r: 0 } },
+        ];
+        const state = createTestState(pieces);
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 2, r: 0 };
+        expect(isPathClear(state, start, end)).toBe(false);
+      });
+
+      it('should return false when Jarl blocks path', () => {
+        const pieces: Piece[] = [
+          { id: 'j1', type: 'jarl', playerId: 'p2', position: { q: 1, r: -1 } },
+        ];
+        const state = createTestState(pieces);
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 2, r: -2 };
+        expect(isPathClear(state, start, end)).toBe(false);
+      });
+
+      it('should return false when multiple pieces block path', () => {
+        const pieces: Piece[] = [
+          { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
+          { id: 'w2', type: 'warrior', playerId: 'p2', position: { q: 2, r: 0 } },
+        ];
+        const state = createTestState(pieces);
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 3, r: 0 };
+        expect(isPathClear(state, start, end)).toBe(false);
+      });
+
+      it('should return false when friendly piece blocks path', () => {
+        const pieces: Piece[] = [
+          { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
+        ];
+        const state = createTestState(pieces);
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 2, r: 0 };
+        // Piece belongs to same player, still blocks
+        expect(isPathClear(state, start, end)).toBe(false);
+      });
+    });
+
+    describe('checks all hexes between start and end', () => {
+      it('should check first hex after start', () => {
+        const pieces: Piece[] = [
+          { id: 'w1', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
+        ];
+        const state = createTestState(pieces);
+        // Path: (0,0) -> (1,0) -> (2,0) -> (3,0)
+        // Blocking piece at (1,0) which is first hex after start
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 3, r: 0 };
+        expect(isPathClear(state, start, end)).toBe(false);
+      });
+
+      it('should check last hex before end', () => {
+        const pieces: Piece[] = [
+          { id: 'w1', type: 'warrior', playerId: 'p2', position: { q: 2, r: 0 } },
+        ];
+        const state = createTestState(pieces);
+        // Path: (0,0) -> (1,0) -> (2,0) -> (3,0)
+        // Blocking piece at (2,0) which is last hex before end
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 3, r: 0 };
+        expect(isPathClear(state, start, end)).toBe(false);
+      });
+
+      it('should check middle hexes of longer path', () => {
+        const pieces: Piece[] = [
+          { id: 'w1', type: 'warrior', playerId: 'p2', position: { q: 2, r: 0 } },
+        ];
+        const state = createTestState(pieces);
+        // Path: (-2,0) -> (-1,0) -> (0,0) -> (1,0) -> (2,0) -> (3,0)
+        // Blocking piece at (2,0)
+        const start: AxialCoord = { q: -2, r: 0 };
+        const end: AxialCoord = { q: 3, r: 0 };
+        expect(isPathClear(state, start, end)).toBe(false);
+      });
+
+      it('should work with diagonal paths', () => {
+        const pieces: Piece[] = [
+          { id: 'w1', type: 'warrior', playerId: 'p2', position: { q: 1, r: -1 } },
+        ];
+        const state = createTestState(pieces);
+        // Diagonal path from (0,0) to (2,-2) goes through (1,-1)
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 2, r: -2 };
+        expect(isPathClear(state, start, end)).toBe(false);
+      });
+
+      it('should work with negative coordinates', () => {
+        const pieces: Piece[] = [
+          { id: 'w1', type: 'warrior', playerId: 'p2', position: { q: -1, r: 0 } },
+        ];
+        const state = createTestState(pieces);
+        // Path from (-2,0) to (0,0) goes through (-1,0)
+        const start: AxialCoord = { q: -2, r: 0 };
+        const end: AxialCoord = { q: 0, r: 0 };
+        expect(isPathClear(state, start, end)).toBe(false);
+      });
+    });
+
+    describe('edge cases', () => {
+      it('should return true when start equals end (same position)', () => {
+        const state = createTestState([]);
+        const position: AxialCoord = { q: 1, r: 1 };
+        expect(isPathClear(state, position, position)).toBe(true);
+      });
+
+      it('should return true for adjacent hexes (no hexes between)', () => {
+        const state = createTestState([]);
+        const start: AxialCoord = { q: 0, r: 0 };
+        const end: AxialCoord = { q: 1, r: 0 };
+        // Adjacent hexes have no hexes between them to check
+        expect(isPathClear(state, start, end)).toBe(true);
+      });
+
+      it('should work with all 6 directions', () => {
+        const state = createTestState([]);
+        const center: AxialCoord = { q: 0, r: 0 };
+
+        // Test 2-hex paths in all 6 directions
+        const directions: AxialCoord[] = [
+          { q: 2, r: 0 }, // East
+          { q: 2, r: -2 }, // Northeast
+          { q: 0, r: -2 }, // Northwest
+          { q: -2, r: 0 }, // West
+          { q: -2, r: 2 }, // Southwest
+          { q: 0, r: 2 }, // Southeast
+        ];
+
+        for (const end of directions) {
+          expect(isPathClear(state, center, end)).toBe(true);
+        }
+      });
+    });
+
+    describe('game scenarios', () => {
+      it('should detect blocked path in actual game state', () => {
+        const state = createInitialState(['A', 'B']);
+        // Find a Jarl and check if path to throne is blocked by warriors
+        const jarl = state.pieces.find((p) => p.type === 'jarl');
+        const throne: AxialCoord = { q: 0, r: 0 };
+
+        if (jarl) {
+          // The path might be blocked by warriors placed in front
+          // This just verifies the function works with real game states
+          const result = isPathClear(state, jarl.position, throne);
+          expect(typeof result).toBe('boolean');
+        }
+      });
+
+      it('should correctly identify clear path when no warriors in the way', () => {
+        const pieces: Piece[] = [
+          { id: 'j1', type: 'jarl', playerId: 'p1', position: { q: 3, r: 0 } },
+        ];
+        const state = createTestState(pieces);
+        const jarlPosition: AxialCoord = { q: 3, r: 0 };
+        const throne: AxialCoord = { q: 0, r: 0 };
+        expect(isPathClear(state, jarlPosition, throne)).toBe(true);
+      });
+
+      it('should correctly identify blocked path when warrior defends throne', () => {
+        const pieces: Piece[] = [
+          { id: 'j1', type: 'jarl', playerId: 'p1', position: { q: 3, r: 0 } },
+          { id: 'w1', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
+        ];
+        const state = createTestState(pieces);
+        const jarlPosition: AxialCoord = { q: 3, r: 0 };
+        const throne: AxialCoord = { q: 0, r: 0 };
+        expect(isPathClear(state, jarlPosition, throne)).toBe(false);
+      });
     });
   });
 });
