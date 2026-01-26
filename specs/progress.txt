@@ -349,3 +349,39 @@
 **Files Modified**:
 - packages/shared/src/index.ts (added hexDistance and hexDistanceAxial functions)
 - packages/shared/src/index.test.ts (added unit tests for hexDistance functions)
+
+---
+
+### 2026-01-25: Core Logic - Neighbor Functions
+
+**Feature Completed**: "getNeighbor and getAllNeighbors functions work"
+
+**Work Done**:
+- Implemented `getNeighbor(hex: CubeCoord, direction: HexDirection): CubeCoord` function
+  - Returns the adjacent hex in the specified direction
+  - Uses DIRECTIONS array for direction vectors
+- Implemented `getAllNeighbors(hex: CubeCoord): CubeCoord[]` function
+  - Returns all 6 neighboring hexes around a given hex
+  - Index corresponds to HexDirection (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE)
+- Implemented `getNeighborAxial(hex: AxialCoord, direction: HexDirection): AxialCoord` function
+  - Axial coordinate convenience wrapper
+- Implemented `getAllNeighborsAxial(hex: AxialCoord): AxialCoord[]` function
+  - Axial coordinate convenience wrapper
+- Added comprehensive unit tests (25 new tests) covering:
+  - All 6 directions individually verified
+  - Cube coordinate constraint (q + r + s = 0) satisfied
+  - All neighbors at distance 1
+  - Negative coordinate handling
+  - Inverse direction property (going East then West returns to origin)
+  - Exactly 6 unique neighbors returned
+  - Correct order matching DIRECTIONS array
+  - Consistency between individual and batch calls
+  - Consistency between cube and axial versions
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (55 tests total, 25 new tests for neighbor functions)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added getNeighbor, getAllNeighbors, getNeighborAxial, getAllNeighborsAxial)
+- packages/shared/src/index.test.ts (added unit tests for neighbor functions)

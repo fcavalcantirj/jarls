@@ -73,6 +73,46 @@ export function hexDistanceAxial(a: AxialCoord, b: AxialCoord): number {
   return hexDistance(axialToCube(a), axialToCube(b));
 }
 
+/**
+ * Get the neighboring hex in a specific direction.
+ * Uses cube coordinates for calculation.
+ */
+export function getNeighbor(hex: CubeCoord, direction: HexDirection): CubeCoord {
+  const dir = DIRECTIONS[direction];
+  return {
+    q: hex.q + dir.q,
+    r: hex.r + dir.r,
+    s: hex.s + dir.s,
+  };
+}
+
+/**
+ * Get all 6 neighboring hexes around a given hex.
+ * Returns an array of 6 CubeCoord objects, one for each direction.
+ * Index corresponds to HexDirection (0=East, 1=NE, 2=NW, 3=West, 4=SW, 5=SE).
+ */
+export function getAllNeighbors(hex: CubeCoord): CubeCoord[] {
+  return DIRECTIONS.map((dir) => ({
+    q: hex.q + dir.q,
+    r: hex.r + dir.r,
+    s: hex.s + dir.s,
+  }));
+}
+
+/**
+ * Get the neighboring hex in a specific direction using axial coordinates.
+ */
+export function getNeighborAxial(hex: AxialCoord, direction: HexDirection): AxialCoord {
+  return cubeToAxial(getNeighbor(axialToCube(hex), direction));
+}
+
+/**
+ * Get all 6 neighboring hexes around a given hex using axial coordinates.
+ */
+export function getAllNeighborsAxial(hex: AxialCoord): AxialCoord[] {
+  return getAllNeighbors(axialToCube(hex)).map(cubeToAxial);
+}
+
 // Piece types
 export type PieceType = 'jarl' | 'warrior' | 'shield';
 

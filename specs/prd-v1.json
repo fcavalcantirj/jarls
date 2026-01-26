@@ -205,7 +205,7 @@
       "getAllNeighbors(hex) returns all 6 neighbors",
       "Unit tests verify correct neighbor positions"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

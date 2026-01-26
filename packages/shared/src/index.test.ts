@@ -6,6 +6,10 @@ import {
   cubeToAxial,
   hexDistance,
   hexDistanceAxial,
+  getNeighbor,
+  getAllNeighbors,
+  getNeighborAxial,
+  getAllNeighborsAxial,
   AxialCoord,
   CubeCoord,
 } from './index';
@@ -274,6 +278,213 @@ describe('@jarls/shared', () => {
       const eastEdge: AxialCoord = { q: 3, r: 0 };
       const westEdge: AxialCoord = { q: -3, r: 0 };
       expect(hexDistanceAxial(eastEdge, westEdge)).toBe(6);
+    });
+  });
+
+  describe('getNeighbor', () => {
+    it('should return correct neighbor to the East (direction 0)', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+      const neighbor = getNeighbor(origin, 0);
+      expect(neighbor).toEqual({ q: 1, r: 0, s: -1 });
+    });
+
+    it('should return correct neighbor to the Northeast (direction 1)', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+      const neighbor = getNeighbor(origin, 1);
+      expect(neighbor).toEqual({ q: 1, r: -1, s: 0 });
+    });
+
+    it('should return correct neighbor to the Northwest (direction 2)', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+      const neighbor = getNeighbor(origin, 2);
+      expect(neighbor).toEqual({ q: 0, r: -1, s: 1 });
+    });
+
+    it('should return correct neighbor to the West (direction 3)', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+      const neighbor = getNeighbor(origin, 3);
+      expect(neighbor).toEqual({ q: -1, r: 0, s: 1 });
+    });
+
+    it('should return correct neighbor to the Southwest (direction 4)', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+      const neighbor = getNeighbor(origin, 4);
+      expect(neighbor).toEqual({ q: -1, r: 1, s: 0 });
+    });
+
+    it('should return correct neighbor to the Southeast (direction 5)', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+      const neighbor = getNeighbor(origin, 5);
+      expect(neighbor).toEqual({ q: 0, r: 1, s: -1 });
+    });
+
+    it('should return neighbors that satisfy cube coordinate constraint', () => {
+      const hex: CubeCoord = { q: 2, r: -1, s: -1 };
+      for (let dir = 0; dir < 6; dir++) {
+        const neighbor = getNeighbor(hex, dir as HexDirection);
+        expect(neighbor.q + neighbor.r + neighbor.s).toBe(0);
+      }
+    });
+
+    it('should return neighbors at distance 1', () => {
+      const hex: CubeCoord = { q: 2, r: -1, s: -1 };
+      for (let dir = 0; dir < 6; dir++) {
+        const neighbor = getNeighbor(hex, dir as HexDirection);
+        expect(hexDistance(hex, neighbor)).toBe(1);
+      }
+    });
+
+    it('should work with negative coordinates', () => {
+      const hex: CubeCoord = { q: -2, r: 3, s: -1 };
+      const neighbor = getNeighbor(hex, 0); // East
+      expect(neighbor).toEqual({ q: -1, r: 3, s: -2 });
+    });
+
+    it('should be inverse of opposite direction', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+      // Going East then West should return to origin
+      const east = getNeighbor(origin, 0);
+      const backToOrigin = getNeighbor(east, 3);
+      expect(backToOrigin).toEqual(origin);
+    });
+  });
+
+  describe('getAllNeighbors', () => {
+    it('should return exactly 6 neighbors', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+      const neighbors = getAllNeighbors(origin);
+      expect(neighbors).toHaveLength(6);
+    });
+
+    it('should return neighbors in correct order (matching DIRECTIONS)', () => {
+      const origin: CubeCoord = { q: 0, r: 0, s: 0 };
+      const neighbors = getAllNeighbors(origin);
+
+      expect(neighbors[0]).toEqual({ q: 1, r: 0, s: -1 }); // East
+      expect(neighbors[1]).toEqual({ q: 1, r: -1, s: 0 }); // Northeast
+      expect(neighbors[2]).toEqual({ q: 0, r: -1, s: 1 }); // Northwest
+      expect(neighbors[3]).toEqual({ q: -1, r: 0, s: 1 }); // West
+      expect(neighbors[4]).toEqual({ q: -1, r: 1, s: 0 }); // Southwest
+      expect(neighbors[5]).toEqual({ q: 0, r: 1, s: -1 }); // Southeast
+    });
+
+    it('should return all unique neighbors', () => {
+      const hex: CubeCoord = { q: 2, r: -1, s: -1 };
+      const neighbors = getAllNeighbors(hex);
+      const keys = neighbors.map((n) => `${n.q},${n.r},${n.s}`);
+      const uniqueKeys = new Set(keys);
+      expect(uniqueKeys.size).toBe(6);
+    });
+
+    it('should return neighbors that all satisfy cube coordinate constraint', () => {
+      const hex: CubeCoord = { q: 2, r: -1, s: -1 };
+      const neighbors = getAllNeighbors(hex);
+      for (const neighbor of neighbors) {
+        expect(neighbor.q + neighbor.r + neighbor.s).toBe(0);
+      }
+    });
+
+    it('should return neighbors that are all at distance 1', () => {
+      const hex: CubeCoord = { q: 2, r: -1, s: -1 };
+      const neighbors = getAllNeighbors(hex);
+      for (const neighbor of neighbors) {
+        expect(hexDistance(hex, neighbor)).toBe(1);
+      }
+    });
+
+    it('should match individual getNeighbor calls', () => {
+      const hex: CubeCoord = { q: 1, r: 2, s: -3 };
+      const allNeighbors = getAllNeighbors(hex);
+
+      for (let dir = 0; dir < 6; dir++) {
+        const singleNeighbor = getNeighbor(hex, dir as HexDirection);
+        expect(allNeighbors[dir]).toEqual(singleNeighbor);
+      }
+    });
+  });
+
+  describe('getNeighborAxial', () => {
+    it('should return correct neighbor using axial coordinates', () => {
+      const origin: AxialCoord = { q: 0, r: 0 };
+      const neighbor = getNeighborAxial(origin, 0); // East
+      expect(neighbor).toEqual({ q: 1, r: 0 });
+    });
+
+    it('should return neighbor at distance 1', () => {
+      const hex: AxialCoord = { q: 2, r: -1 };
+      for (let dir = 0; dir < 6; dir++) {
+        const neighbor = getNeighborAxial(hex, dir as HexDirection);
+        expect(hexDistanceAxial(hex, neighbor)).toBe(1);
+      }
+    });
+
+    it('should be consistent with cube coordinate version', () => {
+      const axial: AxialCoord = { q: 3, r: -2 };
+      const cube = axialToCube(axial);
+
+      for (let dir = 0; dir < 6; dir++) {
+        const axialNeighbor = getNeighborAxial(axial, dir as HexDirection);
+        const cubeNeighbor = getNeighbor(cube, dir as HexDirection);
+        expect(axialNeighbor).toEqual(cubeToAxial(cubeNeighbor));
+      }
+    });
+  });
+
+  describe('getAllNeighborsAxial', () => {
+    it('should return exactly 6 neighbors', () => {
+      const origin: AxialCoord = { q: 0, r: 0 };
+      const neighbors = getAllNeighborsAxial(origin);
+      expect(neighbors).toHaveLength(6);
+    });
+
+    it('should return neighbors in correct order', () => {
+      const origin: AxialCoord = { q: 0, r: 0 };
+      const neighbors = getAllNeighborsAxial(origin);
+
+      expect(neighbors[0]).toEqual({ q: 1, r: 0 }); // East
+      expect(neighbors[1]).toEqual({ q: 1, r: -1 }); // Northeast
+      expect(neighbors[2]).toEqual({ q: 0, r: -1 }); // Northwest
+      expect(neighbors[3]).toEqual({ q: -1, r: 0 }); // West
+      expect(neighbors[4]).toEqual({ q: -1, r: 1 }); // Southwest
+      expect(neighbors[5]).toEqual({ q: 0, r: 1 }); // Southeast
+    });
+
+    it('should return all unique neighbors', () => {
+      const hex: AxialCoord = { q: 2, r: -1 };
+      const neighbors = getAllNeighborsAxial(hex);
+      const keys = neighbors.map((n) => `${n.q},${n.r}`);
+      const uniqueKeys = new Set(keys);
+      expect(uniqueKeys.size).toBe(6);
+    });
+
+    it('should return neighbors that are all at distance 1', () => {
+      const hex: AxialCoord = { q: 2, r: -1 };
+      const neighbors = getAllNeighborsAxial(hex);
+      for (const neighbor of neighbors) {
+        expect(hexDistanceAxial(hex, neighbor)).toBe(1);
+      }
+    });
+
+    it('should match individual getNeighborAxial calls', () => {
+      const hex: AxialCoord = { q: 1, r: 2 };
+      const allNeighbors = getAllNeighborsAxial(hex);
+
+      for (let dir = 0; dir < 6; dir++) {
+        const singleNeighbor = getNeighborAxial(hex, dir as HexDirection);
+        expect(allNeighbors[dir]).toEqual(singleNeighbor);
+      }
+    });
+
+    it('should be consistent with cube coordinate version', () => {
+      const axial: AxialCoord = { q: 3, r: -2 };
+      const cube = axialToCube(axial);
+
+      const axialNeighbors = getAllNeighborsAxial(axial);
+      const cubeNeighbors = getAllNeighbors(cube);
+
+      for (let i = 0; i < 6; i++) {
+        expect(axialNeighbors[i]).toEqual(cubeToAxial(cubeNeighbors[i]));
+      }
     });
   });
 });
