@@ -1982,3 +1982,44 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Modified**:
 - packages/shared/src/index.test.ts (removed VERSION tests and unused import)
+
+---
+
+### 2026-01-26: Infrastructure - Split combat.ts - extract combat-core.ts
+
+**Feature Completed**: "Split combat.ts - extract combat-core.ts"
+
+**Work Done**:
+- Created `packages/shared/src/combat-core.ts` containing core combat calculation functions
+- Moved 8 functions from combat.ts to combat-core.ts:
+  - getPieceAt: finds piece at a specific position
+  - getPieceById: finds piece by unique ID
+  - getPieceStrength: returns strength value (Jarl=2, Warrior=1, Shield=0)
+  - findInlineSupport: finds friendly pieces behind attacker in support line
+  - findBracing: finds friendly pieces behind defender in bracing line
+  - calculateAttack: computes total attack power (base + momentum + support)
+  - calculateDefense: computes total defense power (base + bracing)
+  - calculateCombat: returns full CombatResult with outcome prediction
+- Updated `packages/shared/src/combat.ts`:
+  - Added re-exports from combat-core.ts for all moved functions
+  - Added internal imports from combat-core.ts for functions used by push resolution
+  - Removed all core combat function definitions (~310 lines of code removed)
+  - combat.ts now focuses purely on push resolution functions
+
+**Why This Matters**:
+- combat.ts reduced from 925 lines to 615 lines (under 800-line guideline)
+- combat-core.ts is 338 lines (well under limit)
+- Continues the critical file-splitting infrastructure work
+- Improves code organization: core calculations vs push resolution
+- All functions remain accessible via `import { ... } from '@jarls/shared'`
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (756 tests total)
+- Server and client can still import combat functions from @jarls/shared
+
+**Files Created**:
+- packages/shared/src/combat-core.ts
+
+**Files Modified**:
+- packages/shared/src/combat.ts (added re-exports, removed function definitions)

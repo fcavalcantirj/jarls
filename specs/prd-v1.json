@@ -158,6 +158,28 @@
   },
   {
     "category": "infrastructure",
+    "description": "Split combat.ts - extract combat-core.ts",
+    "steps": [
+      "Create combat-core.ts with calculateAttack, calculateDefense, calculateCombat",
+      "Update combat.ts to import from combat-core.ts",
+      "Update index.ts re-exports if needed",
+      "Verify tests pass"
+    ],
+    "passes": true
+  },
+  {
+    "category": "infrastructure",
+    "description": "Split move.ts - extract move-validation.ts",
+    "steps": [
+      "Create move-validation.ts with isPathClear, hasDraftFormation, pathCrossesThrone, validateMove",
+      "Update move.ts to import from move-validation.ts",
+      "Update index.ts re-exports if needed",
+      "Verify tests pass"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
     "description": "Split shared/src/index.test.ts - create test directory",
     "steps": [
       "Create packages/shared/src/__tests__/ directory",
