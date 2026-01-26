@@ -54,3 +54,28 @@
 - packages/shared/tsconfig.json
 - packages/server/tsconfig.json
 - packages/client/tsconfig.json
+
+---
+
+### 2026-01-25: Infrastructure - Shared Types Importable
+
+**Feature Completed**: "Shared types importable from @jarls/shared"
+
+**Work Done**:
+- Added core game types to packages/shared/src/index.ts:
+  - AxialCoord, CubeCoord interfaces for hexagonal coordinates
+  - PieceType type and Piece interface
+  - Player interface
+  - GameConfig interface
+  - GamePhase type
+  - GameState interface (the main shared type)
+- Updated server to import GameState: `import { GameState } from '@jarls/shared'`
+- Updated client to import GameState: `import { GameState } from '@jarls/shared'`
+- Built shared package to generate dist folder with type declarations
+- Verified `pnpm typecheck` passes for all packages
+- Verified `pnpm test` passes for all packages
+
+**Files Modified**:
+- packages/shared/src/index.ts (added all core game types)
+- packages/server/src/index.ts (added GameState import and usage)
+- packages/client/src/App.tsx (added GameState import and usage)

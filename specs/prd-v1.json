@@ -28,7 +28,7 @@
       "Client can import types: import { GameState } from '@jarls/shared'",
       "TypeScript compiles without errors"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
