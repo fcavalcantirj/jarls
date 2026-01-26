@@ -1,0 +1,2676 @@
+[
+  {
+    "category": "infrastructure",
+    "description": "Monorepo initialized with npm workspaces",
+    "steps": [
+      "Root package.json has workspaces configuration",
+      "packages/shared, packages/server, packages/client directories exist",
+      "npm install from root installs all package dependencies"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "TypeScript configured for all packages",
+    "steps": [
+      "Root tsconfig.base.json with shared compiler options",
+      "Each package has tsconfig.json extending base",
+      "TypeScript project references configured between packages",
+      "Strict mode enabled in all packages"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Shared types importable from @jarls/shared",
+    "steps": [
+      "Server can import types: import { GameState } from '@jarls/shared'",
+      "Client can import types: import { GameState } from '@jarls/shared'",
+      "TypeScript compiles without errors"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "ESLint configured with TypeScript rules",
+    "steps": [
+      ".eslintrc.js at root with TypeScript plugin",
+      "npm run lint runs ESLint on all packages",
+      "Lint errors fail CI pipeline"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Prettier configured for code formatting",
+    "steps": [
+      ".prettierrc at root with formatting rules",
+      "npm run format runs Prettier on all packages",
+      "Consistent code style across codebase"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Git hooks configured with Husky and lint-staged",
+    "steps": [
+      "Husky installed and configured",
+      "Pre-commit hook runs lint-staged",
+      "Staged files are linted and formatted before commit"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Jest configured for testing",
+    "steps": [
+      "jest.config.js at root with project references",
+      "ts-jest configured for TypeScript tests",
+      "npm test runs all tests",
+      "Test files use *.test.ts naming convention"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Docker Compose sets up PostgreSQL and Redis",
+    "steps": [
+      "docker-compose.yml exists with postgres and redis services",
+      "docker-compose up -d starts both services",
+      "Services accessible on standard ports (5432, 6379)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "PostgreSQL database schema created via migrations",
+    "steps": [
+      "node-pg-migrate installed and configured",
+      "Migration creates game_snapshots table",
+      "Migration creates game_events table",
+      "Migration creates player_sessions table",
+      "Indexes created for all foreign keys"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Database connection pool configured",
+    "steps": [
+      "pg package installed in server",
+      "Connection pool module created",
+      "Pool settings tuned for development/production",
+      "Connection errors handled gracefully"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Redis connection configured",
+    "steps": [
+      "ioredis installed in server package",
+      "Redis client module created",
+      "Connection handles reconnection automatically"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Environment variables documented in .env.example",
+    "steps": [
+      ".env.example exists with all required variables",
+      "DATABASE_URL configured",
+      "REDIS_URL configured",
+      "PORT and NODE_ENV documented"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Server hot-reload configured with nodemon",
+    "steps": [
+      "nodemon installed in server package",
+      "npm run dev starts server with hot-reload",
+      "Code changes trigger automatic restart"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Client hot-reload configured with Vite",
+    "steps": [
+      "Vite configured in client package",
+      "npm run dev:client starts Vite dev server",
+      "HMR works for instant updates"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Vite proxy configured for API and WebSocket",
+    "steps": [
+      "vite.config.ts has proxy configuration",
+      "/api requests proxied to server",
+      "WebSocket upgrade handled correctly"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "CubeCoord and AxialCoord interfaces defined",
+    "steps": [
+      "CubeCoord interface with q, r, s properties",
+      "AxialCoord interface with q, r properties",
+      "Exported from @jarls/shared"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "HexDirection type and DIRECTIONS constant defined",
+    "steps": [
+      "HexDirection type is 0-5 for 6 directions",
+      "DIRECTIONS array has all 6 direction vectors",
+      "Directions follow consistent hexagonal ordering"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "axialToCube and cubeToAxial conversion functions work",
+    "steps": [
+      "axialToCube converts (q,r) to (q,r,s)",
+      "cubeToAxial converts (q,r,s) to (q,r)",
+      "Round-trip conversion preserves values",
+      "Unit tests pass for conversion functions"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "hexDistance function calculates correct distance",
+    "steps": [
+      "hexDistance(a, b) returns shortest path length",
+      "Distance from hex to itself is 0",
+      "Adjacent hexes have distance 1",
+      "Unit tests cover edge cases"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "getNeighbor and getAllNeighbors functions work",
+    "steps": [
+      "getNeighbor(hex, direction) returns adjacent hex",
+      "getAllNeighbors(hex) returns all 6 neighbors",
+      "Unit tests verify correct neighbor positions"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "getOppositeDirection function returns correct opposite",
+    "steps": [
+      "getOppositeDirection(0) returns 3",
+      "getOppositeDirection(1) returns 4",
+      "All 6 directions map to correct opposites"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "hexLine function draws line between two hexes",
+    "steps": [
+      "hexLine(a, b) returns array of hexes on line",
+      "Line includes start and end hexes",
+      "Proper rounding handles edge cases",
+      "Unit tests verify line drawing"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "isOnBoard and isOnEdge functions validate positions",
+    "steps": [
+      "isOnBoard(hex, radius) returns true for valid hexes",
+      "isOnBoard returns false for out-of-bounds hexes",
+      "isOnEdge(hex, radius) returns true for edge hexes",
+      "Unit tests cover boundary cases"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "hexToKey and keyToHex enable Map storage",
+    "steps": [
+      "hexToKey(hex) returns unique string key",
+      "keyToHex(key) reconstructs original hex",
+      "Keys work correctly as Map keys"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "Game state types fully defined",
+    "steps": [
+      "PieceType, Piece, Player interfaces defined",
+      "GameConfig interface with scaling values",
+      "GamePhase, GameState interfaces defined",
+      "MoveCommand, MoveResult interfaces defined",
+      "GameEvent union type defined",
+      "All types exported from @jarls/shared"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "getConfigForPlayerCount returns correct scaling",
+    "steps": [
+      "2 players: radius 3, 5 shields, 5 warriors",
+      "Returns correct values from scaling table",
+      "Config includes all necessary parameters"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "generateAllBoardHexes creates correct hex count",
+    "steps": [
+      "Radius 3 generates 37 hexes",
+      "Formula 3r² + 3r + 1 verified",
+      "All hexes satisfy cube coordinate constraint"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "calculateStartingPositions places Jarls equidistantly",
+    "steps": [
+      "2-player positions are opposite edges",
+      "All Jarls same hex distance from center",
+      "Unit tests verify equidistance"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "generateSymmetricalShields places shields fairly",
+    "steps": [
+      "Shields have rotational symmetry",
+      "Shields equidistant from starting positions",
+      "No shield on Throne or edge hexes"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "validateShieldPlacement ensures path to Throne",
+    "steps": [
+      "At least one unobstructed path exists per player",
+      "Invalid placements are rejected",
+      "Re-generation requested for invalid placements"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "placeWarriors positions Warriors in front of Jarl",
+    "steps": [
+      "Warriors placed between Jarl and Throne",
+      "Warriors form initial formation",
+      "Correct number of Warriors placed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "createInitialState generates complete game state",
+    "steps": [
+      "Full GameState object created",
+      "All pieces positioned correctly",
+      "Players initialized with IDs",
+      "Game phase set to 'setup'"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "getPieceAt and getPieceById helpers work",
+    "steps": [
+      "getPieceAt(state, position) returns piece or undefined",
+      "getPieceById(state, pieceId) returns piece or undefined",
+      "Both handle missing pieces gracefully"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "isPathClear checks for blocking pieces",
+    "steps": [
+      "Returns true when path has no pieces",
+      "Returns false when piece blocks path",
+      "Checks all hexes between start and end"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "hasDraftFormation detects 2+ Warriors behind Jarl",
+    "steps": [
+      "Returns true with 2 consecutive Warriors behind",
+      "Returns true with 2 non-consecutive Warriors in line",
+      "Returns false with only 1 Warrior behind",
+      "Unit tests cover gap scenarios"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "validateMove checks all move rules",
+    "steps": [
+      "Validates piece exists and belongs to player",
+      "Validates it's player's turn",
+      "Validates game is in playing phase",
+      "Validates destination distance for piece type",
+      "Validates path is clear",
+      "Validates Jarl draft for 2-hex move",
+      "Validates Warriors cannot enter Throne",
+      "Validates cannot land on friendly piece"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "findInlineSupport finds pieces behind attacker",
+    "steps": [
+      "Returns array of pieces directly behind in line",
+      "Sums strength of all supporting pieces",
+      "Stops at empty hex or enemy piece"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "findBracing finds pieces behind defender",
+    "steps": [
+      "Returns array of pieces directly behind defender",
+      "Opposite direction from push",
+      "Sums strength of all bracing pieces"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "calculateAttack computes total attack power",
+    "steps": [
+      "Adds base strength (1 Warrior, 2 Jarl)",
+      "Adds +1 momentum if moved 2 hexes",
+      "Adds inline support strength",
+      "Returns total attack value"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "calculateDefense computes total defense power",
+    "steps": [
+      "Adds base strength (1 Warrior, 2 Jarl)",
+      "Adds bracing support strength",
+      "Returns total defense value"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "calculateCombat returns full CombatResult",
+    "steps": [
+      "Returns attack and defense values",
+      "Returns attack/defense breakdowns",
+      "Returns outcome (push or blocked)",
+      "Used for combat preview"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "detectChain identifies all pieces in push chain",
+    "steps": [
+      "Returns array of pieces that will move",
+      "Identifies chain terminator (edge, shield, throne, empty)",
+      "Handles mixed allegiance chains"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "resolveSimplePush moves piece to empty hex",
+    "steps": [
+      "Defender moves one hex in push direction",
+      "Attacker takes defender's original position",
+      "Generates MOVE and PUSH events"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "resolveEdgePush eliminates pieces at edge",
+    "steps": [
+      "Piece at edge is removed from game",
+      "Chain compresses toward edge",
+      "Multiple eliminations handled",
+      "Generates ELIMINATED events"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "resolveCompression handles shield and throne blocking",
+    "steps": [
+      "Pieces compress against blocker",
+      "No pieces eliminated in compression",
+      "Attacker takes first defender's position"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "resolvePush main resolver handles all scenarios",
+    "steps": [
+      "Detects chain and terminator",
+      "Routes to correct resolution function",
+      "Generates events with correct depth for animation",
+      "Returns all state changes"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "checkThroneVictory detects voluntary throne entry",
+    "steps": [
+      "Returns true when Jarl voluntarily moves to Throne",
+      "Returns false for pushed Jarl (compression blocks)",
+      "Only player's own turn counts"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "eliminatePlayer removes all player's pieces",
+    "steps": [
+      "Marks player as eliminated",
+      "Removes all remaining Warriors",
+      "Player cannot take further turns"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "checkLastStanding detects sole survivor",
+    "steps": [
+      "Returns winner ID when only one Jarl remains",
+      "Returns null if multiple Jarls exist",
+      "Triggers immediately on last elimination"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "checkWinConditions checks both conditions with precedence",
+    "steps": [
+      "Checks throne victory first",
+      "Checks last standing second",
+      "Returns correct winner and condition"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "checkStarvationTrigger detects 10 rounds without elimination",
+    "steps": [
+      "Tracks rounds since last elimination",
+      "Returns true at 10 rounds",
+      "Repeats every 5 rounds after initial"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "calculateStarvationCandidates finds furthest Warriors",
+    "steps": [
+      "Calculates hex distance from Throne for each Warrior",
+      "Returns furthest Warrior per player",
+      "Returns multiple candidates when tied"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "resolveStarvation applies player choices",
+    "steps": [
+      "Removes selected Warriors",
+      "Handles Jarl elimination when no Warriors",
+      "Resets starvation counter"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "getReachableHexes returns all valid destinations",
+    "steps": [
+      "Warriors: 1-2 hexes in straight lines",
+      "Jarl: 1 hex, or 2 with draft",
+      "Excludes blocked paths and friendly pieces"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "getValidMoves returns ValidMove array with previews",
+    "steps": [
+      "Each ValidMove includes destination",
+      "Includes move type (move vs attack)",
+      "Includes hasMomentum flag",
+      "Includes combat preview for attacks"
+    ],
+    "passes": false
+  },
+  {
+    "category": "core-logic",
+    "description": "applyMove executes move and returns result",
+    "steps": [
+      "Handles simple move (no combat)",
+      "Handles attack with push",
+      "Handles blocked attack",
+      "Generates all animation events",
+      "Checks win conditions after move",
+      "Returns MoveResult with new state"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "XState v5 game machine defined",
+    "steps": [
+      "XState v5 installed in server package",
+      "Machine input and event types defined",
+      "Machine exported from state module"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Lobby state handles player joining and leaving",
+    "steps": [
+      "PLAYER_JOINED event adds player to game",
+      "PLAYER_LEFT event removes player from game",
+      "START_GAME transition requires 2+ players",
+      "Guard prevents start with insufficient players"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Setup state initializes game board",
+    "steps": [
+      "Automatically transitions from lobby on START_GAME",
+      "Board generation runs in entry action",
+      "Transitions to playing when complete"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Playing state handles moves with substates",
+    "steps": [
+      "awaitingMove substate waits for player action",
+      "MAKE_MOVE event validates and applies move",
+      "turnEnding substate advances turn",
+      "Transitions to starvation or ended as needed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Turn timer implemented with XState after transition",
+    "steps": [
+      "Timer starts when awaitingMove entered",
+      "after(turnTimerMs) triggers timeout",
+      "Timeout auto-skips turn",
+      "Turn advances to next player"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Starvation state handles warrior selection",
+    "steps": [
+      "STARVATION_CHOICE event records player selection",
+      "Waits for all players to choose",
+      "Resolves starvation when all chosen",
+      "Returns to playing or ends game"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "Ended state is final with winner recorded",
+    "steps": [
+      "Final state cannot be exited",
+      "Winner ID and condition stored in context",
+      "Triggers gameEnded broadcast"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "GamePersistence saves state to PostgreSQL",
+    "steps": [
+      "save(gameId, actor) writes snapshot to database",
+      "Version number incremented atomically",
+      "Optimistic locking prevents conflicts"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "GamePersistence restores state from database",
+    "steps": [
+      "restore(gameId) retrieves snapshot",
+      "Recreates XState actor with state",
+      "Actor continues from saved state"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "GamePersistence can replay from events",
+    "steps": [
+      "replayFromEvents(gameId) reconstructs state",
+      "Replays all events in order",
+      "Final state matches snapshot (debugging)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "GameManager creates and manages games",
+    "steps": [
+      "create(config) creates new game actor",
+      "join(gameId, name) adds player",
+      "start(gameId) transitions to playing",
+      "makeMove(gameId, playerId, command) executes move",
+      "getState(gameId) returns current state",
+      "listGames(filter) returns joinable games"
+    ],
+    "passes": false
+  },
+  {
+    "category": "state-machine",
+    "description": "GameManager recovers active games on startup",
+    "steps": [
+      "recover() called on server start",
+      "Active games loaded from database",
+      "Actors recreated for each game",
+      "Players can reconnect to ongoing games"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can create a new game with default settings",
+    "steps": [
+      "User navigates to lobby",
+      "User clicks 'Create Game' button",
+      "Game is created with default 2-player settings",
+      "User is redirected to game lobby as host"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can select vs Human or vs AI when creating a game",
+    "steps": [
+      "User opens create game form",
+      "User selects 'vs Human' or 'vs AI' option",
+      "Selection is reflected in game configuration"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can select AI difficulty level (Easy, Medium, Hard)",
+    "steps": [
+      "User selects 'vs AI' mode",
+      "Difficulty dropdown becomes visible",
+      "User selects Easy, Medium, or Hard",
+      "AI difficulty is saved to game configuration"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can configure turn timer (None, 30s, 60s, 120s)",
+    "steps": [
+      "User opens create game form",
+      "User selects turn timer option",
+      "Timer setting is saved to game configuration"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can view list of joinable games",
+    "steps": [
+      "User navigates to lobby",
+      "API fetches list of games with 'lobby' status",
+      "Games are displayed with player count and creation time"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can join a game in lobby status",
+    "steps": [
+      "User views game list",
+      "User clicks 'Join' on a game with available slot",
+      "User receives session token",
+      "User is added to game and redirected to game lobby"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Game lobby shows connected players",
+    "steps": [
+      "User enters game lobby",
+      "All connected players are displayed",
+      "Player names and ready status are visible"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Host can start game when 2 players are present",
+    "steps": [
+      "Host is in game lobby",
+      "Second player joins",
+      "Start button becomes enabled for host",
+      "Host clicks Start",
+      "Game transitions to playing state"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Players can leave the game lobby",
+    "steps": [
+      "Player is in game lobby",
+      "Player clicks 'Leave' button",
+      "Player is removed from game",
+      "Player is redirected to main lobby"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Turn order rotates between players",
+    "steps": [
+      "Game starts with Player 1's turn",
+      "Player 1 makes a move",
+      "Turn passes to Player 2",
+      "Player 2 makes a move",
+      "Turn passes back to Player 1"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Only one piece can be moved per turn",
+    "steps": [
+      "Player selects a piece",
+      "Player moves the piece to valid destination",
+      "Turn ends immediately after move",
+      "Player cannot move another piece"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Turn timer counts down and auto-skips on expiration",
+    "steps": [
+      "Turn begins with timer at configured value",
+      "Timer counts down each second",
+      "Timer reaches zero",
+      "Turn is auto-skipped",
+      "Next player's turn begins"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Players cannot voluntarily pass if legal moves exist",
+    "steps": [
+      "Player has at least one legal move",
+      "No pass button is available",
+      "Player must select and execute a move"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Warrior can move 1 hex in a straight line",
+    "steps": [
+      "Player selects a Warrior",
+      "Adjacent hexes in 6 directions are highlighted",
+      "Player clicks adjacent hex",
+      "Warrior moves to that hex"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Warrior can move 2 hexes in a straight line",
+    "steps": [
+      "Player selects a Warrior",
+      "Hexes 2 away in straight lines are highlighted",
+      "Path to destination is clear",
+      "Player clicks 2-hex destination",
+      "Warrior moves to that hex"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Jarl can move 1 hex in any direction",
+    "steps": [
+      "Player selects their Jarl",
+      "Adjacent hexes in 6 directions are highlighted",
+      "Player clicks adjacent hex",
+      "Jarl moves to that hex"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Jarl can move 2 hexes with draft formation (2+ Warriors behind)",
+    "steps": [
+      "Jarl has 2 or more Warriors directly behind in movement direction",
+      "Player selects Jarl",
+      "2-hex destinations in draft direction are highlighted",
+      "Player clicks 2-hex destination",
+      "Jarl moves with momentum"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Draft formation works with non-consecutive Warriors",
+    "steps": [
+      "Jarl has 2 Warriors behind with gap between them",
+      "Warriors are in same straight line",
+      "Draft movement is enabled",
+      "Jarl can move 2 hexes"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Pieces cannot move through other pieces",
+    "steps": [
+      "Player selects a piece",
+      "Another piece blocks the path to a destination",
+      "Blocked destination is not highlighted as valid",
+      "Player cannot move through the blocking piece"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Pieces cannot land on friendly pieces",
+    "steps": [
+      "Player selects a piece",
+      "Hex occupied by friendly piece is not highlighted",
+      "Player cannot select occupied hex as destination"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Warriors cannot enter the Throne hex",
+    "steps": [
+      "Player selects a Warrior",
+      "Throne hex is not highlighted as valid move",
+      "Warrior cannot move onto Throne"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Attack power equals Base Strength plus Momentum plus Inline Support",
+    "steps": [
+      "Attacker has base strength (1 for Warrior, 2 for Jarl)",
+      "Add +1 if attacker moved 2 hexes",
+      "Add strength of each friendly piece directly behind attacker",
+      "Total equals Attack power"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Defense power equals Base Strength plus Bracing",
+    "steps": [
+      "Defender has base strength (1 for Warrior, 2 for Jarl)",
+      "Add strength of each friendly piece directly behind defender",
+      "Total equals Defense power"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Push succeeds when Attack is greater than Defense",
+    "steps": [
+      "Attacker moves into enemy hex",
+      "Attack power is calculated",
+      "Defense power is calculated",
+      "Attack > Defense",
+      "Defender is pushed one hex in attack direction"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Attack is blocked when Attack is less than or equal to Defense",
+    "steps": [
+      "Attacker moves into enemy hex",
+      "Attack power is calculated",
+      "Defense power is calculated",
+      "Attack <= Defense",
+      "Attacker stops adjacent to defender",
+      "Defender does not move"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Momentum grants +1 attack when moving 2 hexes before attacking",
+    "steps": [
+      "Warrior moves 2 hexes into enemy",
+      "Base attack is 1",
+      "Momentum adds +1",
+      "Total attack is 2"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Inline support adds friendly piece strengths to attack",
+    "steps": [
+      "Attacker has friendly piece directly behind",
+      "Friendly piece strength is added to attack",
+      "Multiple pieces in line all contribute"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Bracing adds friendly piece strengths to defense",
+    "steps": [
+      "Defender has friendly piece directly behind",
+      "Friendly piece strength is added to defense",
+      "Multiple pieces in line all contribute"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Jarl provides +2 support when behind attacking piece",
+    "steps": [
+      "Warrior attacks with Jarl directly behind",
+      "Jarl adds +2 to attack (Jarl strength is 2)",
+      "Total attack includes Jarl support"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Push chains move all pieces in the push direction",
+    "steps": [
+      "Push succeeds against defender",
+      "Defender has piece behind them",
+      "All pieces in chain move one hex",
+      "Pieces move in same direction as push"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Chains can contain both friendly and enemy pieces",
+    "steps": [
+      "Push chain includes mixed allegiance pieces",
+      "All pieces in chain move regardless of owner",
+      "Chain continues until empty hex or blocker"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Pieces pushed off board edge are eliminated",
+    "steps": [
+      "Push chain reaches board edge",
+      "Piece at edge is pushed off",
+      "Piece is permanently removed from game",
+      "Elimination event is triggered"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Multiple pieces can be eliminated in one chain push",
+    "steps": [
+      "Push chain has multiple pieces against edge",
+      "First piece is pushed off",
+      "Second piece is pushed to edge",
+      "Third piece takes second's position",
+      "All eliminated pieces are removed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Shields stop push chains with compression",
+    "steps": [
+      "Push chain reaches Shield",
+      "Pieces compress against Shield",
+      "No pieces are eliminated",
+      "Attacker takes first defender's position"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Warriors compress at Throne and cannot enter",
+    "steps": [
+      "Push chain pushes Warrior toward Throne",
+      "Warrior stops adjacent to Throne",
+      "Warrior does not enter Throne hex",
+      "Chain compresses"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Jarls cannot be pushed onto the Throne",
+    "steps": [
+      "Push chain pushes Jarl toward Throne",
+      "Jarl stops adjacent to Throne",
+      "Jarl does not enter Throne hex",
+      "Victory is not triggered"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Throne Victory occurs when Jarl voluntarily moves onto Throne",
+    "steps": [
+      "Player's Jarl is adjacent to Throne",
+      "Player selects Jarl",
+      "Throne is highlighted as valid destination",
+      "Player moves Jarl onto Throne",
+      "Game ends immediately with player winning"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Jarl pushed onto Throne does not win (blocked by compression)",
+    "steps": [
+      "Enemy Jarl is pushed toward Throne",
+      "Jarl compresses at Throne edge",
+      "Jarl does not enter Throne",
+      "No victory is triggered"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Last Standing Victory when only one Jarl remains",
+    "steps": [
+      "One player's Jarl is eliminated",
+      "Only one Jarl remains on board",
+      "Game ends immediately",
+      "Remaining Jarl's player wins"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Throne Victory takes precedence over Last Standing",
+    "steps": [
+      "Simultaneous conditions could trigger both wins",
+      "Throne victory is checked first",
+      "Throne victory wins over elimination"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Losing Jarl eliminates player from game",
+    "steps": [
+      "Player's Jarl is pushed off board",
+      "Player is marked as eliminated",
+      "All player's remaining Warriors are removed",
+      "Player cannot take further turns"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Starvation triggers after 10 rounds with no elimination",
+    "steps": [
+      "10 complete rounds pass",
+      "No piece has been eliminated",
+      "Starvation mechanic activates",
+      "Players must sacrifice Warriors"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Starvation removes furthest Warrior from Throne for each player",
+    "steps": [
+      "Starvation triggers",
+      "Hex distance from Throne calculated for each Warrior",
+      "Furthest Warrior identified",
+      "Warrior is removed from game"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Player chooses which Warrior to sacrifice when tied for furthest",
+    "steps": [
+      "Starvation triggers",
+      "Multiple Warriors are equidistant from Throne",
+      "Selection UI appears for player",
+      "Player selects which Warrior to sacrifice"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Starvation repeats every 5 rounds until resolution",
+    "steps": [
+      "Initial starvation occurs at round 10",
+      "No elimination for 5 more rounds",
+      "Starvation triggers again at round 15",
+      "Pattern continues every 5 rounds"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Jarl is eliminated if player has no Warriors during starvation",
+    "steps": [
+      "Starvation triggers",
+      "Player has no Warriors remaining",
+      "Grace period of 5 rounds passes",
+      "Jarl is eliminated",
+      "Player loses game"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Starvation counter resets when any piece is eliminated",
+    "steps": [
+      "Starvation counter is at 8 rounds",
+      "A piece is eliminated in combat",
+      "Counter resets to 0",
+      "New 10-round countdown begins"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Disconnected player has 2-minute reconnection window",
+    "steps": [
+      "Player disconnects during game",
+      "2-minute timer starts",
+      "Game waits during window",
+      "Turn timer is paused"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AI takes over after reconnection window expires",
+    "steps": [
+      "Player disconnects",
+      "2-minute window expires",
+      "AI begins controlling player's pieces",
+      "Game continues normally"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Player can reconnect and resume control after AI takeover",
+    "steps": [
+      "Player reconnects to game",
+      "Player is authenticated with session token",
+      "Control returns to player from AI",
+      "Player continues playing"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Unlimited spectators can join a game",
+    "steps": [
+      "Game is in progress",
+      "Spectator clicks Watch button",
+      "Spectator joins game room",
+      "Spectator receives game state"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Spectators receive real-time state updates",
+    "steps": [
+      "Spectator is watching game",
+      "Player makes a move",
+      "Spectator receives turnPlayed event",
+      "Spectator's view updates"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Spectators cannot affect gameplay",
+    "steps": [
+      "Spectator is watching game",
+      "Spectator cannot select pieces",
+      "Spectator cannot send move commands",
+      "Game state is read-only for spectator"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Easy AI makes random valid moves",
+    "steps": [
+      "AI turn begins",
+      "AI calculates all valid moves",
+      "AI randomly selects one move",
+      "Move is executed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Medium AI prioritizes winning moves",
+    "steps": [
+      "AI turn begins",
+      "AI evaluates all valid moves",
+      "Throne-capturing moves scored highest",
+      "Elimination moves scored high",
+      "Best scoring move selected"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Medium AI avoids moving Jarl to edge",
+    "steps": [
+      "AI evaluates moves",
+      "Moves placing Jarl on edge hex penalized",
+      "AI prefers safer positions for Jarl"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AI has thinking delay of 500-1500ms for UX",
+    "steps": [
+      "AI turn begins",
+      "Random delay between 500-1500ms applied",
+      "Move is executed after delay",
+      "Feels natural to human player"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AI move generation times out after 2 seconds",
+    "steps": [
+      "AI begins calculating move",
+      "2-second timeout is set",
+      "If timeout reached, best current move used",
+      "Move is always made within time limit"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "AI generates Norse-themed names",
+    "steps": [
+      "AI player joins game",
+      "Name generator produces Norse name",
+      "Name displayed in player list"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Hexagonal grid is rendered on canvas",
+    "steps": [
+      "Game board component mounts",
+      "Canvas element is initialized",
+      "Hex grid is drawn with correct radius",
+      "All hexes are visible"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Jarls are visually distinct from Warriors",
+    "steps": [
+      "Pieces are rendered on board",
+      "Jarls are larger than Warriors",
+      "Jarls have crown indicator",
+      "Player can easily distinguish piece types"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Each player has distinct color",
+    "steps": [
+      "Game starts with 2 players",
+      "Player 1 pieces are one color",
+      "Player 2 pieces are different color",
+      "Colors are clearly distinguishable"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Throne is highlighted at center of board",
+    "steps": [
+      "Board is rendered",
+      "Center hex has special throne styling",
+      "Crown icon is displayed",
+      "Throne is visually prominent"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Shields are visually distinct from player pieces",
+    "steps": [
+      "Shields are rendered on board",
+      "Shields have neutral gray color",
+      "Shield icon is displayed",
+      "Shields are clearly obstacles"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Click or tap selects own piece",
+    "steps": [
+      "Player clicks on own piece",
+      "Piece is highlighted as selected",
+      "Valid moves are calculated",
+      "Selection state is updated"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Valid move destinations are highlighted in green",
+    "steps": [
+      "Player selects a piece",
+      "Empty destination hexes turn green",
+      "Green indicates safe move",
+      "Highlights are clearly visible"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Attack destinations are highlighted in red",
+    "steps": [
+      "Player selects a piece",
+      "Hexes with enemy pieces turn red",
+      "Red indicates attack move",
+      "Player understands attack vs move"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Momentum indicator shown on 2-hex moves",
+    "steps": [
+      "Player selects piece that can move 2 hexes",
+      "2-hex destinations show momentum icon",
+      "Icon indicates +1 attack bonus",
+      "Player understands momentum benefit"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Combat preview tooltip shown on hover over attack destination",
+    "steps": [
+      "Player selects a piece",
+      "Player hovers over enemy piece hex",
+      "Tooltip appears with Attack and Defense values",
+      "Outcome (PUSH or BLOCKED) is shown"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Combat preview shows attack breakdown",
+    "steps": [
+      "Combat preview tooltip is shown",
+      "Base strength is displayed",
+      "Momentum bonus is displayed if applicable",
+      "Support bonus is displayed if applicable"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Combat preview shows defense breakdown",
+    "steps": [
+      "Combat preview tooltip is shown",
+      "Defender base strength is displayed",
+      "Bracing bonus is displayed if applicable"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Click on valid destination executes move",
+    "steps": [
+      "Player has piece selected",
+      "Player clicks highlighted destination",
+      "Move command sent to server",
+      "Piece moves to destination"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Current player indicator shows whose turn",
+    "steps": [
+      "Turn indicator component is visible",
+      "Current player name is displayed",
+      "Player color is shown",
+      "Indicator updates on turn change"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Your-turn badge displayed when it is player's turn",
+    "steps": [
+      "Player's turn begins",
+      "Your Turn badge becomes visible",
+      "Badge is prominent and clear",
+      "Badge hides when turn ends"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Turn timer displays remaining time",
+    "steps": [
+      "Game has turn timer enabled",
+      "Timer shows seconds remaining",
+      "Timer counts down in real-time",
+      "Timer styling indicates urgency when low"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Player list shows all players with piece counts",
+    "steps": [
+      "Player list component is visible",
+      "Each player name is displayed",
+      "Warrior count shown for each player",
+      "Jarl status indicated (has Jarl or eliminated)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Eliminated players marked in player list",
+    "steps": [
+      "Player's Jarl is eliminated",
+      "Player row shows eliminated badge",
+      "Visual styling indicates player is out",
+      "Remaining players clearly active"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Piece movement animates smoothly over 200ms",
+    "steps": [
+      "Move is executed",
+      "Piece begins animation",
+      "Piece travels to destination over 200ms",
+      "Animation uses easing function"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Chain push animations stagger with 80ms delay per link",
+    "steps": [
+      "Push chain involves multiple pieces",
+      "First piece begins moving",
+      "Second piece starts 80ms later",
+      "Chain creates domino effect"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Eliminated pieces fly off board dramatically",
+    "steps": [
+      "Piece is pushed off edge",
+      "Piece animates flying off screen",
+      "Animation takes ~400ms",
+      "Piece is then removed from render"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Animations maintain 60fps",
+    "steps": [
+      "Animation begins",
+      "Frame rate is measured",
+      "Consistent 60fps maintained",
+      "No visible stuttering or lag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Victory modal appears when player wins",
+    "steps": [
+      "Player achieves victory condition",
+      "Modal overlay appears",
+      "Victory message displayed",
+      "Win condition explained"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Defeat modal appears when player loses",
+    "steps": [
+      "Player's Jarl is eliminated",
+      "Modal overlay appears",
+      "Defeat message displayed",
+      "Winner is shown"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Game end modal shows Play Again and Leave options",
+    "steps": [
+      "Game end modal is displayed",
+      "Play Again button is visible",
+      "Leave button is visible",
+      "Buttons are functional"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Starvation selection modal appears when choice needed",
+    "steps": [
+      "Starvation triggers with tied Warriors",
+      "Modal overlay appears",
+      "Candidate Warriors listed",
+      "Player can select one to sacrifice"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Board scales responsively to viewport",
+    "steps": [
+      "Window is resized",
+      "Board recalculates dimensions",
+      "Hexes scale proportionally",
+      "Board remains centered"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Touch input works on mobile devices",
+    "steps": [
+      "User touches piece on mobile",
+      "Piece is selected",
+      "User touches destination",
+      "Move is executed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "UI adapts to mobile viewport size",
+    "steps": [
+      "Game viewed on mobile device",
+      "Layout adjusts to narrow viewport",
+      "All UI elements remain accessible",
+      "No horizontal scrolling required"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Cannot interact with board when not your turn",
+    "steps": [
+      "It is opponent's turn",
+      "Player clicks on own piece",
+      "No selection occurs",
+      "No valid moves shown"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "Connection status indicator shows connection state",
+    "steps": [
+      "Player is connected",
+      "Indicator shows green/connected",
+      "Connection drops",
+      "Indicator shows red/disconnected"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui",
+    "description": "In-app help screen explains game rules",
+    "steps": [
+      "Help button visible in UI",
+      "Clicking opens help screen",
+      "Rules and controls explained",
+      "User can close and return to game"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "POST /api/games creates new game",
+    "steps": [
+      "Client sends POST request with game config",
+      "Server creates game record",
+      "Server returns game ID",
+      "Game is in lobby status"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "GET /api/games returns list of joinable games",
+    "steps": [
+      "Client sends GET request",
+      "Server queries games in lobby status",
+      "Server returns array of game summaries",
+      "Response includes player counts"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "GET /api/games/:id returns game state",
+    "steps": [
+      "Client sends GET request with game ID",
+      "Server retrieves game snapshot",
+      "Server returns full game state",
+      "State includes pieces, players, phase"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "POST /api/games/:id/join adds player to game",
+    "steps": [
+      "Client sends POST with player name",
+      "Server validates game has open slot",
+      "Server adds player to game",
+      "Server returns session token"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "POST /api/games/:id/start initiates game (host only)",
+    "steps": [
+      "Host sends POST request",
+      "Server validates sender is host",
+      "Server validates 2 players present",
+      "Game transitions to playing phase"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "GET /api/games/:id/valid-moves/:pieceId returns valid moves",
+    "steps": [
+      "Client sends GET with piece ID",
+      "Server calculates all valid moves",
+      "Server returns array of ValidMove objects",
+      "Each move includes combat preview if attack"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "GET /health returns server health status",
+    "steps": [
+      "Client sends GET to /health",
+      "Server checks database connection",
+      "Server checks Redis connection",
+      "Server returns status JSON"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "API error handling middleware works",
+    "steps": [
+      "Invalid request sent to API",
+      "Error middleware catches error",
+      "User-friendly error response returned",
+      "Stack trace hidden in production"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "Zod validation rejects invalid input",
+    "steps": [
+      "Request with invalid body sent",
+      "Zod schema validation fails",
+      "400 Bad Request returned",
+      "Error message explains validation failure"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "WebSocket joinGame connects client to game room",
+    "steps": [
+      "Client emits joinGame with token",
+      "Server validates token",
+      "Client joins Socket.IO room",
+      "Client receives current gameState"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "WebSocket playTurn executes move and broadcasts result",
+    "steps": [
+      "Client emits playTurn with MoveCommand",
+      "Server validates move",
+      "Server applies move to state",
+      "Server broadcasts turnPlayed to room"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "WebSocket startGame begins game for room",
+    "steps": [
+      "Host emits startGame",
+      "Server validates host and player count",
+      "Server initializes board",
+      "Server broadcasts gameState to room"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "WebSocket getValidMoves returns moves for piece",
+    "steps": [
+      "Client emits getValidMoves with pieceId",
+      "Server calculates valid moves",
+      "Server returns moves in acknowledgement",
+      "Client receives ValidMove array"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "WebSocket starvationChoice submits player selection",
+    "steps": [
+      "Client emits starvationChoice with pieceId",
+      "Server records player's choice",
+      "When all choices received, starvation resolves",
+      "Server broadcasts updated state"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "WebSocket spectate joins client as spectator",
+    "steps": [
+      "Client emits spectate with gameId",
+      "Server adds client to spectator list",
+      "Client joins game room",
+      "Client receives gameState (read-only)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "Server broadcasts gameEnded when game concludes",
+    "steps": [
+      "Win condition is met",
+      "Server creates gameEnded event",
+      "Event includes winner and condition",
+      "All room members receive event"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "Server broadcasts playerJoined when player joins",
+    "steps": [
+      "New player joins game lobby",
+      "Server creates playerJoined event",
+      "Event includes player info",
+      "All room members receive event"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "Server broadcasts playerLeft when player disconnects",
+    "steps": [
+      "Player disconnects",
+      "Server creates playerLeft event",
+      "Event includes player ID",
+      "All room members receive event"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "Socket.IO Connection State Recovery handles reconnection",
+    "steps": [
+      "Client temporarily disconnects",
+      "Client reconnects within 2 minutes",
+      "Session restored automatically",
+      "No re-authentication required"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "Session service creates secure tokens",
+    "steps": [
+      "create() generates 64-character secure token",
+      "Token stored in player_sessions table",
+      "Expiration time set to 24 hours"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "Session service validates tokens",
+    "steps": [
+      "validate(token) checks token exists",
+      "Returns player/game info if valid",
+      "Rejects expired or invalid tokens"
+    ],
+    "passes": false
+  },
+  {
+    "category": "api",
+    "description": "authenticateSession middleware protects endpoints",
+    "steps": [
+      "Request without token returns 401",
+      "Request with invalid token returns 401",
+      "Request with valid token proceeds",
+      "Player info attached to request"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Unit tests cover hex coordinate functions",
+    "steps": [
+      "axialToCube and cubeToAxial tests pass",
+      "hexDistance tests cover all cases",
+      "getNeighbor tests verify all 6 directions",
+      "hexLine tests cover edge cases"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Unit tests cover combat resolution",
+    "steps": [
+      "calculateAttack tests with all modifiers",
+      "calculateDefense tests with bracing",
+      "Push vs blocked scenarios tested",
+      "All combat examples from ruleset verified"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Unit tests cover push chain resolution",
+    "steps": [
+      "Simple push into empty hex tested",
+      "Edge elimination tested",
+      "Multi-piece elimination tested",
+      "Shield compression tested",
+      "Throne compression for Warriors tested",
+      "Throne compression for Jarls tested"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Unit tests cover win condition detection",
+    "steps": [
+      "Throne victory on voluntary entry",
+      "No victory on pushed Jarl (compression)",
+      "Last standing detection",
+      "Win precedence (throne > elimination)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Unit tests cover starvation mechanic",
+    "steps": [
+      "Trigger timing verified",
+      "Furthest warrior selection verified",
+      "Tie-breaker scenarios covered",
+      "Counter reset on elimination verified"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Unit tests cover move validation",
+    "steps": [
+      "Piece ownership validated",
+      "Turn order validated",
+      "Movement range validated",
+      "Path blocking validated",
+      "Draft formation validated"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Unit tests for valid moves calculator",
+    "steps": [
+      "Warrior movement range tested",
+      "Jarl movement range tested",
+      "Draft movement tested",
+      "Performance under 10ms verified"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Unit tests cover XState machine transitions",
+    "steps": [
+      "Lobby state transitions tested",
+      "Playing state move handling tested",
+      "Turn timeout tested",
+      "Starvation flow tested",
+      "End state transitions tested"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Integration tests cover API endpoints",
+    "steps": [
+      "POST /api/games creates game",
+      "GET /api/games lists games",
+      "POST /api/games/:id/join adds player",
+      "POST /api/games/:id/start works",
+      "Error cases handled correctly"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Integration tests cover Socket.IO events",
+    "steps": [
+      "joinGame connects client to room",
+      "playTurn executes and broadcasts",
+      "Disconnection/reconnection works",
+      "Spectate mode works"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Integration tests cover database operations",
+    "steps": [
+      "Game persistence save works",
+      "Game persistence restore works",
+      "Version conflict detected",
+      "Event replay matches snapshot"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "E2E test: Complete 2-player game with throne victory",
+    "steps": [
+      "Playwright launches browser",
+      "Player 1 creates game",
+      "Player 2 joins game",
+      "Players take turns moving pieces",
+      "Player moves Jarl onto Throne",
+      "Victory modal appears for winner",
+      "Defeat modal appears for loser"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "E2E test: Complete 2-player game with elimination victory",
+    "steps": [
+      "Playwright launches browser",
+      "Game set up with 2 players",
+      "Players take turns moving pieces",
+      "One player's Jarl pushed off edge",
+      "Last standing victory declared",
+      "Game end modals appear correctly"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "E2E test: Push chain with multi-elimination",
+    "steps": [
+      "Game state arranged with pieces near edge",
+      "Player executes push that chains",
+      "Multiple pieces eliminated",
+      "Animations play correctly",
+      "State updates reflect eliminations"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "E2E test: Starvation trigger and resolution",
+    "steps": [
+      "Game fast-forwarded to round 10 with no eliminations",
+      "Starvation UI appears",
+      "Players select warriors to sacrifice",
+      "Warriors removed from board",
+      "Game continues"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "E2E test: Human vs AI game",
+    "steps": [
+      "Player creates game vs AI",
+      "Game starts immediately",
+      "AI makes moves on its turn",
+      "AI responds within 2 seconds",
+      "Game plays to completion"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "E2E test: Disconnection and AI takeover",
+    "steps": [
+      "Two-player game in progress",
+      "One player disconnects",
+      "2-minute window passes",
+      "AI takes over disconnected player",
+      "Game continues",
+      "Original player reconnects and resumes"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "E2E test: Turn timeout auto-skip",
+    "steps": [
+      "Game with 30-second timer",
+      "Player does not move",
+      "Timer reaches zero",
+      "Turn is skipped",
+      "Next player's turn begins"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "E2E test: Mobile touch interactions",
+    "steps": [
+      "Playwright emulates mobile device",
+      "Touch to select piece works",
+      "Touch to move works",
+      "UI responsive to mobile viewport"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Visual regression tests for board rendering",
+    "steps": [
+      "2-player board screenshot matches baseline",
+      "Pieces render correctly",
+      "Highlights render correctly",
+      "No visual regressions detected"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Valid moves calculation completes in under 10ms",
+    "steps": [
+      "getValidMoves is called",
+      "Calculation begins",
+      "All valid moves computed",
+      "Result returned within 10ms"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "API response time is under 100ms",
+    "steps": [
+      "Client sends API request",
+      "Server processes request",
+      "Response sent back",
+      "Total time under 100ms"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "WebSocket latency is under 50ms",
+    "steps": [
+      "Client emits event",
+      "Server receives and processes",
+      "Server emits response",
+      "Client receives within 50ms"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "AI move generation completes in under 2 seconds",
+    "steps": [
+      "AI turn begins",
+      "AI calculates best move",
+      "Decision made within 2 seconds",
+      "Move executed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Server design is stateless for horizontal scaling",
+    "steps": [
+      "Game state stored in PostgreSQL",
+      "Sessions stored in Redis",
+      "Any server instance can handle requests",
+      "Multiple instances can run simultaneously"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Session tokens are cryptographically secure",
+    "steps": [
+      "Session is created",
+      "Token generated using secure random",
+      "Token has sufficient entropy",
+      "Token cannot be guessed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "All moves are validated on server",
+    "steps": [
+      "Client sends move command",
+      "Server validates piece ownership",
+      "Server validates move legality",
+      "Invalid moves are rejected"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Input is sanitized using Zod schemas",
+    "steps": [
+      "Request received by API",
+      "Request body parsed through Zod schema",
+      "Invalid data rejected with error",
+      "Valid data passed to handler"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Client does not trust game state (server authoritative)",
+    "steps": [
+      "Client receives game state from server",
+      "Client cannot modify authoritative state",
+      "All state changes come from server",
+      "Client only sends commands"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Sessions expire after 24 hours",
+    "steps": [
+      "Session is created with expiry time",
+      "24 hours pass",
+      "Session becomes invalid",
+      "User must re-authenticate"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Game state persists across server restarts",
+    "steps": [
+      "Game is in progress",
+      "Server restarts",
+      "Server recovers active games from database",
+      "Players can continue playing"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Optimistic locking prevents concurrent update conflicts",
+    "steps": [
+      "Game state has version number",
+      "Update includes expected version",
+      "Conflicting update detected",
+      "Retry with fresh state"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Application works in Chrome latest 2 versions",
+    "steps": [
+      "Application loaded in Chrome",
+      "All features functional",
+      "No console errors",
+      "Rendering correct"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Application works in Firefox latest 2 versions",
+    "steps": [
+      "Application loaded in Firefox",
+      "All features functional",
+      "No console errors",
+      "Rendering correct"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Application works in Safari latest 2 versions",
+    "steps": [
+      "Application loaded in Safari",
+      "All features functional",
+      "No console errors",
+      "Rendering correct"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Application works in Edge latest 2 versions",
+    "steps": [
+      "Application loaded in Edge",
+      "All features functional",
+      "No console errors",
+      "Rendering correct"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Application works on iOS Safari mobile",
+    "steps": [
+      "Application loaded on iPhone",
+      "Touch interactions work",
+      "Layout is responsive",
+      "All features accessible"
+    ],
+    "passes": false
+  },
+  {
+    "category": "non-functional",
+    "description": "Application works on Chrome Android mobile",
+    "steps": [
+      "Application loaded on Android phone",
+      "Touch interactions work",
+      "Layout is responsive",
+      "All features accessible"
+    ],
+    "passes": false
+  },
+  {
+    "category": "board-setup",
+    "description": "2-player board has radius 3 with 37 hexes",
+    "steps": [
+      "2-player game created",
+      "Board generated with radius 3",
+      "Total hex count is 37",
+      "Formula: 3(3)² + 3(3) + 1 = 37"
+    ],
+    "passes": false
+  },
+  {
+    "category": "board-setup",
+    "description": "5 shields placed symmetrically for 2-player game",
+    "steps": [
+      "Board setup begins",
+      "5 shield positions calculated",
+      "Shields placed with rotational symmetry",
+      "Both players have equal defensive advantage"
+    ],
+    "passes": false
+  },
+  {
+    "category": "board-setup",
+    "description": "Each player starts with 5 Warriors",
+    "steps": [
+      "Board setup completes",
+      "Player 1 has 5 Warriors",
+      "Player 2 has 5 Warriors",
+      "Warriors placed in starting zone"
+    ],
+    "passes": false
+  },
+  {
+    "category": "board-setup",
+    "description": "Jarls start at opposite edges equidistant from Throne",
+    "steps": [
+      "Starting positions calculated",
+      "Jarl 1 placed at edge",
+      "Jarl 2 placed at opposite edge",
+      "Both Jarls same hex distance from center"
+    ],
+    "passes": false
+  },
+  {
+    "category": "board-setup",
+    "description": "Warriors placed in front of Jarl toward center",
+    "steps": [
+      "Jarl position determined",
+      "Warriors placed between Jarl and Throne",
+      "Warriors form initial formation",
+      "Warriors protect Jarl's advance"
+    ],
+    "passes": false
+  },
+  {
+    "category": "board-setup",
+    "description": "Shields never block all straight paths to Throne",
+    "steps": [
+      "Shield positions validated",
+      "At least one unobstructed path exists for each player",
+      "Invalid placements regenerated",
+      "Fair game guaranteed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "board-setup",
+    "description": "Shields never placed on Throne or edge hexes",
+    "steps": [
+      "Shield placement algorithm runs",
+      "Center hex excluded",
+      "Edge hexes excluded",
+      "Shields only in interior"
+    ],
+    "passes": false
+  },
+  {
+    "category": "board-setup",
+    "description": "Throne marker placed at center hex (0,0)",
+    "steps": [
+      "Board initialized",
+      "Center hex identified at coordinates (0,0)",
+      "Throne marker assigned to center",
+      "Throne rendered distinctly"
+    ],
+    "passes": false
+  },
+  {
+    "category": "error-handling",
+    "description": "Custom error classes defined for common errors",
+    "steps": [
+      "GameNotFoundError for missing games",
+      "InvalidMoveError for illegal moves",
+      "SessionExpiredError for expired tokens",
+      "Errors have descriptive messages"
+    ],
+    "passes": false
+  },
+  {
+    "category": "error-handling",
+    "description": "Express error middleware handles all errors",
+    "steps": [
+      "Catches synchronous errors",
+      "Catches async errors",
+      "Formats error response consistently",
+      "Logs errors for debugging"
+    ],
+    "passes": false
+  },
+  {
+    "category": "error-handling",
+    "description": "Client-side error boundary catches React errors",
+    "steps": [
+      "Component error caught by boundary",
+      "Fallback UI displayed",
+      "Error logged to console",
+      "User can retry or navigate away"
+    ],
+    "passes": false
+  },
+  {
+    "category": "error-handling",
+    "description": "Reconnection retry logic with exponential backoff",
+    "steps": [
+      "Connection lost",
+      "First retry after 1 second",
+      "Subsequent retries with increasing delay",
+      "Max retries limit enforced"
+    ],
+    "passes": false
+  },
+  {
+    "category": "error-handling",
+    "description": "User-friendly error messages displayed",
+    "steps": [
+      "Error occurs during gameplay",
+      "Technical error message not shown to user",
+      "Friendly message explains what went wrong",
+      "Suggested action provided if applicable"
+    ],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "Dockerfile builds production image",
+    "steps": [
+      "Dockerfile exists in project root",
+      "Multi-stage build for optimization",
+      "docker build completes successfully",
+      "Image runs correctly"
+    ],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "docker-compose.prod.yml for production deployment",
+    "steps": [
+      "Production compose file exists",
+      "PostgreSQL, Redis, and app services defined",
+      "Environment variables configured",
+      "Volumes configured for persistence"
+    ],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "GitHub Actions CI workflow runs tests",
+    "steps": [
+      "Workflow triggered on push/PR",
+      "npm install runs",
+      "npm test runs all tests",
+      "npm run lint passes",
+      "Build succeeds"
+    ],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "GitHub Actions CD workflow deploys to production",
+    "steps": [
+      "Triggered on main branch push",
+      "Docker image built and pushed",
+      "Deployment to production environment",
+      "Health check verifies deployment"
+    ],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "Health checks configured for all services",
+    "steps": [
+      "/health endpoint responds correctly",
+      "Docker health check configured",
+      "Orchestrator uses health checks",
+      "Unhealthy containers restarted"
+    ],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "Load tests verify performance under load",
+    "steps": [
+      "Load test scripts created",
+      "Simulate concurrent users",
+      "Performance metrics collected",
+      "Bottlenecks identified and addressed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "No memory leaks detected",
+    "steps": [
+      "Server runs for extended period",
+      "Memory usage monitored",
+      "No continuous memory growth",
+      "Garbage collection working correctly"
+    ],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "Database indexes optimized for queries",
+    "steps": [
+      "Indexes exist for foreign keys",
+      "Query performance analyzed",
+      "Slow queries identified and optimized",
+      "EXPLAIN plans reviewed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "Client bundle optimized for production",
+    "steps": [
+      "Tree shaking removes unused code",
+      "Code splitting for lazy loading",
+      "Assets minified",
+      "Bundle size within acceptable limits"
+    ],
+    "passes": false
+  },
+  {
+    "category": "deployment",
+    "description": "Rollback procedure documented and tested",
+    "steps": [
+      "Rollback steps documented",
+      "Previous version can be restored",
+      "Database migrations reversible",
+      "Rollback tested in staging"
+    ],
+    "passes": false
+  },
+  {
+    "category": "documentation",
+    "description": "README with quick start instructions",
+    "steps": [
+      "README.md exists in project root",
+      "Prerequisites listed",
+      "Installation steps provided",
+      "npm run dev starts application"
+    ],
+    "passes": false
+  },
+  {
+    "category": "documentation",
+    "description": "API documentation generated",
+    "steps": [
+      "All endpoints documented",
+      "Request/response schemas included",
+      "WebSocket events documented",
+      "Examples provided"
+    ],
+    "passes": false
+  },
+  {
+    "category": "documentation",
+    "description": "Architecture documentation explains system design",
+    "steps": [
+      "System overview diagram",
+      "Component responsibilities explained",
+      "Data flow documented",
+      "Technology choices justified"
+    ],
+    "passes": false
+  }
+]
