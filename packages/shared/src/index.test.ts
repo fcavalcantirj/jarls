@@ -1,5 +1,4 @@
 import {
-  VERSION,
   DIRECTIONS,
   HexDirection,
   axialToCube,
@@ -75,15 +74,7 @@ import {
 } from './index';
 
 describe('@jarls/shared', () => {
-  describe('VERSION', () => {
-    it('should be defined', () => {
-      expect(VERSION).toBeDefined();
-    });
-
-    it('should be a valid semver string', () => {
-      expect(VERSION).toMatch(/^\d+\.\d+\.\d+$/);
-    });
-  });
+  // VERSION tests moved to __tests__/types.test.ts
 
   describe('HexDirection and DIRECTIONS', () => {
     it('should have exactly 6 directions', () => {

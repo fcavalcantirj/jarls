@@ -164,7 +164,7 @@
       "Move types-related tests to __tests__/types.test.ts",
       "Verify tests pass with pnpm test"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

@@ -1951,3 +1951,34 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - packages/shared/src/board.ts
 - packages/shared/src/combat.ts
 - packages/shared/src/move.ts
+
+---
+
+### 2026-01-26: Infrastructure - Split shared/src/index.test.ts - create test directory
+
+**Feature Completed**: "Split shared/src/index.test.ts - create test directory"
+
+**Work Done**:
+- Created `packages/shared/src/__tests__/` directory for organized test files
+- Created `packages/shared/src/__tests__/types.test.ts` with types-related tests:
+  - VERSION test: should be defined
+  - VERSION test: should be a valid semver string
+- Removed VERSION tests from `packages/shared/src/index.test.ts` to avoid duplicates
+- Removed unused `VERSION` import from index.test.ts
+
+**Why This Matters**:
+- Establishes the test directory structure for further test file splitting
+- Reduces the size of index.test.ts (currently ~12,683 lines)
+- Follows the same module organization as the source files (types, hex, board, combat, move)
+- Part of the critical file-splitting infrastructure work to reduce context explosion
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (756 tests total)
+- Tests now split across 2 files: index.test.ts and __tests__/types.test.ts
+
+**Files Created**:
+- packages/shared/src/__tests__/types.test.ts
+
+**Files Modified**:
+- packages/shared/src/index.test.ts (removed VERSION tests and unused import)
