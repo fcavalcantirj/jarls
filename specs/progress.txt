@@ -815,3 +815,37 @@ when needed.
 **Files Modified**:
 - packages/shared/src/index.ts (added PLAYER_COLORS, generateId, createInitialState; enhanced generateSymmetricalShields)
 - packages/shared/src/index.test.ts (added unit tests for generateId and createInitialState)
+
+---
+
+### 2026-01-25: Core Logic - getPieceAt and getPieceById Helper Functions
+
+**Feature Completed**: "getPieceAt and getPieceById helpers work"
+
+**Work Done**:
+- Implemented `getPieceAt(state, position)` function:
+  - Returns the piece at a specific position on the board
+  - Returns undefined if no piece exists at the given position
+  - Uses `hexToKey` for efficient position comparison
+- Implemented `getPieceById(state, pieceId)` function:
+  - Returns the piece with the specified unique ID
+  - Returns undefined if no piece with the given ID exists
+- Both functions handle edge cases gracefully:
+  - Empty pieces array returns undefined
+  - Off-board positions return undefined
+  - Non-existent IDs return undefined
+- Added comprehensive unit tests (19 new tests) covering:
+  - Basic piece retrieval by position and ID
+  - Finding Jarls, Warriors, and Shields correctly
+  - Handling missing pieces (undefined return)
+  - Empty state handling
+  - Verifying correct piece object reference is returned
+  - Testing across different player counts (2-6)
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (339 tests total, 19 new tests for getPieceAt/getPieceById)
+
+**Files Modified**:
+- packages/shared/src/index.ts (added getPieceAt and getPieceById functions)
+- packages/shared/src/index.test.ts (added unit tests for getPieceAt and getPieceById)

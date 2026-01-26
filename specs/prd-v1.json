@@ -341,7 +341,7 @@
       "getPieceById(state, pieceId) returns piece or undefined",
       "Both handle missing pieces gracefully"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

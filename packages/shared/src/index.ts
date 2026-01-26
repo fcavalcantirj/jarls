@@ -1239,3 +1239,28 @@ export function createInitialState(
 
   return gameState;
 }
+
+/**
+ * Get the piece at a specific position on the board.
+ * Returns undefined if no piece is at the given position.
+ *
+ * @param state - The current game state
+ * @param position - The position to check (axial coordinates)
+ * @returns The piece at the position, or undefined if empty
+ */
+export function getPieceAt(state: GameState, position: AxialCoord): Piece | undefined {
+  const targetKey = hexToKey(position);
+  return state.pieces.find((piece) => hexToKey(piece.position) === targetKey);
+}
+
+/**
+ * Get a piece by its unique ID.
+ * Returns undefined if no piece with the given ID exists.
+ *
+ * @param state - The current game state
+ * @param pieceId - The unique ID of the piece to find
+ * @returns The piece with the given ID, or undefined if not found
+ */
+export function getPieceById(state: GameState, pieceId: string): Piece | undefined {
+  return state.pieces.find((piece) => piece.id === pieceId);
+}
