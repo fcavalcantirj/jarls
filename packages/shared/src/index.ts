@@ -841,3 +841,73 @@ export function generateSymmetricalShields(
 
   return selectedShields;
 }
+
+/**
+ * Check if there exists an unobstructed straight-line path from a starting position
+ * to the Throne (center hex) that doesn't pass through any shield.
+ *
+ * A "straight-line path" means the hexes that form a line drawn from the starting
+ * position through the center. Uses the hexLine function to get the exact hexes.
+ * The path is "unobstructed" if no shields are on any hex along the path.
+ *
+ * @param startPosition - The starting position (typically a Jarl's starting hex)
+ * @param shieldPositions - Set of shield position keys for quick lookup
+ * @param radius - Board radius (unused but kept for API consistency)
+ * @returns true if the straight-line path to the Throne has no shields
+ */
+export function hasPathToThrone(
+  startPosition: AxialCoord,
+  shieldPositions: Set<string>,
+  _radius: number
+): boolean {
+  const throne: AxialCoord = { q: 0, r: 0 };
+
+  // Get all hexes on the straight line from start to throne
+  const pathHexes = hexLineAxial(startPosition, throne);
+
+  // Check if any hex on the path (excluding start and end) has a shield
+  for (let i = 1; i < pathHexes.length - 1; i++) {
+    const hex = pathHexes[i];
+    if (shieldPositions.has(hexToKey(hex))) {
+      return false; // Shield blocks this path
+    }
+  }
+
+  return true; // Path is clear
+}
+
+/**
+ * Validate that a shield placement allows at least one unobstructed straight-line
+ * path to the Throne for each player's starting position.
+ *
+ * This ensures fair gameplay where no player is completely blocked from reaching
+ * the Throne by shields.
+ *
+ * @param shieldPositions - Array of shield positions in axial coordinates
+ * @param startingPositions - Array of player starting positions (Jarl positions)
+ * @param radius - Board radius
+ * @returns Object with isValid boolean and optional error message
+ */
+export function validateShieldPlacement(
+  shieldPositions: AxialCoord[],
+  startingPositions: AxialCoord[],
+  radius: number
+): { isValid: boolean; blockedPlayers: number[] } {
+  // Create a Set of shield position keys for O(1) lookup
+  const shieldSet = new Set(shieldPositions.map(hexToKey));
+
+  const blockedPlayers: number[] = [];
+
+  // Check each starting position has at least one path to the Throne
+  for (let i = 0; i < startingPositions.length; i++) {
+    const startPos = startingPositions[i];
+    if (!hasPathToThrone(startPos, shieldSet, radius)) {
+      blockedPlayers.push(i);
+    }
+  }
+
+  return {
+    isValid: blockedPlayers.length === 0,
+    blockedPlayers,
+  };
+}

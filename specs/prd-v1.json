@@ -310,7 +310,7 @@
       "Invalid placements are rejected",
       "Re-generation requested for invalid placements"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

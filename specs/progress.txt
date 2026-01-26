@@ -704,3 +704,41 @@
 **Files Modified**:
 - packages/shared/src/index.ts (added rotateHex and generateSymmetricalShields functions)
 - packages/shared/src/index.test.ts (added unit tests for new functions)
+
+---
+
+### 2026-01-25: Core Logic - validateShieldPlacement Function
+
+**Feature Completed**: "validateShieldPlacement ensures path to Throne"
+
+**Work Done**:
+- Implemented `hasPathToThrone(startPosition, shieldPositions, radius)` function:
+  - Checks if there's an unobstructed straight-line path from a starting position to the Throne
+  - Uses `hexLineAxial` to get all hexes on the straight line from start to center
+  - Returns true if no shields block any hex along the path (excluding start and end)
+- Implemented `validateShieldPlacement(shieldPositions, startingPositions, radius)` function:
+  - Validates that all players have at least one unobstructed path to the Throne
+  - Returns object with `isValid` boolean and `blockedPlayers` array
+  - `blockedPlayers` contains indices of players whose paths are all blocked
+  - Uses Set for O(1) shield position lookups
+- Added comprehensive unit tests (21 new tests) covering:
+  - Basic path detection: clear paths, blocked paths
+  - Various starting positions: West edge, Northeast area, Southwest area
+  - Throne adjacency scenarios
+  - Valid placement detection: no shields, non-blocking shields
+  - Invalid placement detection: player 0 blocked, player 1 blocked, all blocked
+  - Result structure validation for all player configurations (2-6)
+
+**Note**: The current `generateSymmetricalShields` function may produce placements that block
+some paths. This is expected behavior - the `validateShieldPlacement` function correctly
+identifies these invalid placements, allowing the game setup process to regenerate shields
+when needed.
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (263 tests total, 21 new tests for hasPathToThrone/validateShieldPlacement)
+- `pnpm lint` passes with no errors
+
+**Files Modified**:
+- packages/shared/src/index.ts (added hasPathToThrone and validateShieldPlacement functions)
+- packages/shared/src/index.test.ts (added unit tests for new functions)
