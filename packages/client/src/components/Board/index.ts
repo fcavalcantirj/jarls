@@ -5,4 +5,10 @@ export type { BoardDimensions } from './BoardRenderer';
 export { CombatPreview } from './CombatPreview';
 export type { CombatPreviewProps } from './CombatPreview';
 export { AnimationSystem } from './AnimationSystem';
-export type { Animation, AnimationType } from './AnimationSystem';
+export type {
+  Animation,
+  AnimationType,
+  AnimatedPiece,
+  PixelCoord,
+  HexToPixelFn,
+} from './AnimationSystem';

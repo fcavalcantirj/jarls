@@ -2136,7 +2136,7 @@
       "Stagger push chain: 80ms delay per depth level",
       "Animate eliminations: piece flies off canvas edge (400ms)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

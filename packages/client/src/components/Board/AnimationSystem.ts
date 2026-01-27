@@ -1,5 +1,26 @@
 import type { AxialCoord, GameEvent, MoveEvent, PushEvent, EliminatedEvent } from '@jarls/shared';
 
+/** Pixel coordinate */
+export interface PixelCoord {
+  x: number;
+  y: number;
+}
+
+/** Converts a hex coordinate to pixel coordinates */
+export type HexToPixelFn = (hex: AxialCoord) => PixelCoord;
+
+/** An animated piece's interpolated rendering state */
+export interface AnimatedPiece {
+  /** Piece ID */
+  pieceId: string;
+  /** Current pixel X position */
+  x: number;
+  /** Current pixel Y position */
+  y: number;
+  /** Current opacity (0-1), used for elimination fade-out */
+  opacity: number;
+}
+
 /** Types of animations that can be played */
 export type AnimationType = 'move' | 'push' | 'elimination';
 
@@ -121,5 +142,105 @@ export class AnimationSystem {
    */
   isComplete(animations: Animation[], elapsedMs: number): boolean {
     return elapsedMs >= this.getTotalDuration(animations);
+  }
+
+  /**
+   * Run an animation sequence using requestAnimationFrame.
+   *
+   * On each frame, computes the interpolated position/opacity of every
+   * active animation and calls `renderFrame` with the results. The caller
+   * is responsible for redrawing the board using the provided overrides.
+   *
+   * @param animations - The animation sequence (from parseEvents)
+   * @param hexToPixel - Converts hex coords to canvas pixel coords
+   * @param renderFrame - Called each frame with currently-animating pieces
+   * @returns Promise that resolves when all animations are complete
+   */
+  animate(
+    animations: Animation[],
+    hexToPixel: HexToPixelFn,
+    renderFrame: (animatedPieces: AnimatedPiece[]) => void
+  ): Promise<void> {
+    if (animations.length === 0) return Promise.resolve();
+
+    const totalDuration = this.getTotalDuration(animations);
+
+    return new Promise<void>((resolve) => {
+      let startTime: number | null = null;
+
+      const tick = (timestamp: number) => {
+        if (startTime === null) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+
+        const animatedPieces: AnimatedPiece[] = [];
+
+        for (const anim of animations) {
+          const progress = this.getAnimationProgress(anim, elapsed);
+
+          // Piece hasn't started yet — render at fromHex (waiting position)
+          if (progress === null && elapsed < anim.delay) {
+            const from = hexToPixel(anim.fromHex);
+            animatedPieces.push({
+              pieceId: anim.pieceId,
+              x: from.x,
+              y: from.y,
+              opacity: 1,
+            });
+            continue;
+          }
+
+          // Piece has completed — skip (final state handled by caller)
+          if (progress === null) continue;
+
+          if (anim.type === 'elimination') {
+            // Elimination: fly outward from position toward board edge, fading out
+            const from = hexToPixel(anim.fromHex);
+            const dir = this.getEliminationDirection(anim.fromHex);
+            // Fly 300px in the outward direction over the animation
+            const flyDistance = 300;
+            animatedPieces.push({
+              pieceId: anim.pieceId,
+              x: from.x + dir.x * flyDistance * progress,
+              y: from.y + dir.y * flyDistance * progress,
+              opacity: 1 - progress,
+            });
+          } else {
+            // Move or push: interpolate from fromHex to toHex
+            const from = hexToPixel(anim.fromHex);
+            const to = anim.toHex ? hexToPixel(anim.toHex) : from;
+            animatedPieces.push({
+              pieceId: anim.pieceId,
+              x: from.x + (to.x - from.x) * progress,
+              y: from.y + (to.y - from.y) * progress,
+              opacity: 1,
+            });
+          }
+        }
+
+        renderFrame(animatedPieces);
+
+        if (elapsed < totalDuration) {
+          requestAnimationFrame(tick);
+        } else {
+          resolve();
+        }
+      };
+
+      requestAnimationFrame(tick);
+    });
+  }
+
+  /**
+   * Compute a normalized direction vector pointing outward from the board center
+   * for elimination fly-off animations. If the piece is at the center, defaults
+   * to pointing upward.
+   */
+  private getEliminationDirection(hex: AxialCoord): PixelCoord {
+    // Use axial coords as a rough direction from center (0,0)
+    const dx = hex.q + hex.r * 0.5;
+    const dy = hex.r * 0.866; // sqrt(3)/2
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 0.001) return { x: 0, y: -1 }; // center piece goes up
+    return { x: dx / len, y: dy / len };
   }
 }

@@ -1,5 +1,28 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Implement animation rendering
+
+**Features Completed**: "Implement animation rendering"
+
+**Work Done**:
+- Added `animate(animations, hexToPixel, renderFrame)` method to AnimationSystem class
+- Method returns a Promise and drives the animation loop via requestAnimationFrame
+- Moves and pushes interpolate pixel positions between fromHex and toHex using ease-out timing
+- Push chains are automatically staggered by 80ms per depth level (from existing parseEvents logic)
+- Elimination animations fly the piece outward from its position toward the board edge (300px) with fade-out
+- Added `getEliminationDirection()` private helper that computes a normalized outward vector from board center
+- Added exported types: `AnimatedPiece` (pieceId, x, y, opacity), `PixelCoord`, `HexToPixelFn`
+- Updated barrel export in index.ts with new types
+
+**Files Modified**:
+- packages/client/src/components/Board/AnimationSystem.ts (126 -> 246 lines)
+- packages/client/src/components/Board/index.ts (updated exports)
+- specs/prd-v1.json (marked 1 task as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (25 failed, 1168 passed).
+
+---
+
 ### 2026-01-27: Frontend - Create AnimationSystem class
 
 **Features Completed**: "Create AnimationSystem class"
