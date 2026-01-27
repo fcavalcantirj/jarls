@@ -5,7 +5,7 @@
  * for rendering the game board.
  */
 
-import type { AxialCoord, Piece } from '@jarls/shared';
+import type { AxialCoord, Piece, GameState } from '@jarls/shared';
 import { generateAllBoardHexesAxial } from '@jarls/shared';
 import { hexToPixel, getHexCorners } from '../../utils/hexMath';
 
@@ -278,5 +278,53 @@ export class BoardRenderer {
       ctx.closePath();
       ctx.fill();
     }
+  }
+
+  /**
+   * Draw all pieces on the board.
+   * Shields are drawn first (as hex overlays), then warriors, then jarls on top.
+   */
+  drawPieces(pieces: Piece[]): void {
+    const shields: Piece[] = [];
+    const warriors: Piece[] = [];
+    const jarls: Piece[] = [];
+
+    for (const piece of pieces) {
+      if (piece.type === 'shield') shields.push(piece);
+      else if (piece.type === 'warrior') warriors.push(piece);
+      else if (piece.type === 'jarl') jarls.push(piece);
+    }
+
+    for (const piece of shields) {
+      this.drawShield(piece.position);
+    }
+    for (const piece of warriors) {
+      this.drawWarrior(piece);
+    }
+    for (const piece of jarls) {
+      this.drawJarl(piece);
+    }
+  }
+
+  /**
+   * Full render pass: clear the canvas, draw the hex grid, then draw all pieces.
+   */
+  render(state: GameState): void {
+    const dims = this.dimensions;
+    const canvas = this.ctx.canvas;
+
+    // Ensure dimensions are calculated
+    if (!dims) {
+      this.calculateDimensions(state.config.boardRadius, canvas.width, canvas.height);
+    }
+
+    // Clear entire canvas
+    this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw hex grid
+    this.drawGrid(state.config.boardRadius);
+
+    // Draw all pieces
+    this.drawPieces(state.pieces);
   }
 }

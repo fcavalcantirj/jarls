@@ -2010,7 +2010,7 @@
       "Implement render(state): clear canvas, draw grid, draw pieces",
       "Add piece shadows for visual depth"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

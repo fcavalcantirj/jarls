@@ -1,5 +1,23 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Implement piece rendering
+
+**Features Completed**: "Implement piece rendering"
+
+**Work Done**:
+- Added `drawPieces(pieces)` method: sorts pieces into shields/warriors/jarls and draws them in correct z-order (shields first as hex overlays, warriors second, jarls on top)
+- Added `render(state: GameState)` method: full render pass that clears canvas, draws hex grid, and draws all pieces
+- Render auto-calculates dimensions from GameState config if not yet initialized
+- Imported `GameState` type from `@jarls/shared`
+- Piece shadows were already implemented in drawWarrior/drawJarl from previous task
+
+**Files Modified**:
+- packages/client/src/components/Board/BoardRenderer.ts (282 -> 330 lines)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (15 failed, 1178 passed).
+
+---
+
 ### 2026-01-27: Frontend - Implement piece drawing functions
 
 **Features Completed**: "Implement piece drawing functions"
