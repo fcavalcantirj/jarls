@@ -1,5 +1,29 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Create CombatPreview component
+
+**Features Completed**: "Create CombatPreview component"
+
+**Work Done**:
+- Created CombatPreview.tsx React component in packages/client/src/components/Board/
+- Displays attack value with breakdown (base + momentum + support)
+- Displays defense value with breakdown (base + bracing)
+- Displays outcome as 'PUSH' (green) or 'BLOCKED' (orange)
+- Positioned as an absolute tooltip with viewport boundary clamping
+- Styled with dark translucent background and monospace font
+- Updated barrel export in index.ts to export CombatPreview and CombatPreviewProps
+
+**Files Created**:
+- packages/client/src/components/Board/CombatPreview.tsx (96 lines)
+
+**Files Modified**:
+- packages/client/src/components/Board/index.ts (5 -> 7 lines)
+- specs/prd-v1.json (marked 1 task as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (21 failed, 1172 passed).
+
+---
+
 ### 2026-01-27: Frontend - Add move execution error handling and touch
 
 **Features Completed**: "Add move execution error handling and touch"

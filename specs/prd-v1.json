@@ -2104,7 +2104,7 @@
       "Display defense value with breakdown (base + bracing)",
       "Display outcome: 'PUSH' or 'BLOCKED'"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
