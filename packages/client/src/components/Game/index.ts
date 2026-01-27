@@ -1,1 +1,1 @@
-// Game component barrel export
+export { default as TurnIndicator } from './TurnIndicator';

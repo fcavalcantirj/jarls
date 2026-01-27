@@ -1,5 +1,26 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Create TurnIndicator component
+
+**Features Completed**: "Create TurnIndicator component"
+
+**Work Done**:
+- Created TurnIndicator React component in src/components/Game/TurnIndicator.tsx
+- Displays current player name with their color (colored dot + bold name)
+- Shows green "Your Turn" badge when it's the local player's turn
+- Uses gameStore selectors (selectIsMyTurn, selectCurrentPlayer)
+- Styled with inline styles matching dark game UI theme
+- Updated Game barrel export (index.ts)
+
+**Files Modified**:
+- packages/client/src/components/Game/TurnIndicator.tsx (new, 51 lines)
+- packages/client/src/components/Game/index.ts (updated barrel export)
+- specs/prd-v1.json (marked 1 task as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (21 failed, 1172 passed).
+
+---
+
 ### 2026-01-27: Frontend - Integrate animations with Board
 
 **Features Completed**: "Integrate animations with Board"

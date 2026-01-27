@@ -2152,7 +2152,7 @@
       "Display current player name and color",
       "Show 'Your Turn' badge when applicable"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
