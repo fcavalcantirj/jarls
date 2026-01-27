@@ -1328,7 +1328,7 @@
       "On PLAYER_DISCONNECTED: start 2-minute timer, mark player as disconnected",
       "If in 'awaitingMove' and disconnected player's turn: transition to 'paused'"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

@@ -111,10 +111,24 @@ export const gameMachine = setup({
       // Use turn timer if configured, otherwise default to 30 seconds
       return context.turnTimerMs ?? 30_000;
     },
+    disconnectTimer: () => {
+      // 2-minute timeout for disconnected players
+      return 120_000;
+    },
   },
   guards: {
     isTurnTimerEnabled: ({ context }: { context: GameMachineContext }) => {
       return context.turnTimerMs !== null;
+    },
+    isCurrentPlayerDisconnecting: ({
+      context,
+      event,
+    }: {
+      context: GameMachineContext;
+      event: GameMachineEvent;
+    }) => {
+      if (event.type !== 'PLAYER_DISCONNECTED') return false;
+      return context.currentPlayerId === event.playerId;
     },
     allStarvationChoicesMade: ({ context }: { context: GameMachineContext }) => {
       // Check if all players who have candidates have submitted a choice
@@ -127,6 +141,18 @@ export const gameMachine = setup({
     },
   },
   actions: {
+    markPlayerDisconnected: assign(({ context, event }) => {
+      if (event.type !== 'PLAYER_DISCONNECTED') return {};
+      const newDisconnected = new Set(context.disconnectedPlayers);
+      newDisconnected.add(event.playerId);
+      return { disconnectedPlayers: newDisconnected };
+    }),
+    markPlayerReconnected: assign(({ context, event }) => {
+      if (event.type !== 'PLAYER_RECONNECTED') return {};
+      const newDisconnected = new Set(context.disconnectedPlayers);
+      newDisconnected.delete(event.playerId);
+      return { disconnectedPlayers: newDisconnected };
+    }),
     autoSkipTurn: assign(({ context }) => {
       return advanceTurnSkip(context);
     }),
@@ -310,6 +336,16 @@ export const gameMachine = setup({
                 target: 'checkingGameEnd',
               },
             ],
+            PLAYER_DISCONNECTED: [
+              {
+                guard: 'isCurrentPlayerDisconnecting',
+                actions: 'markPlayerDisconnected',
+                target: '#game.paused',
+              },
+              {
+                actions: 'markPlayerDisconnected',
+              },
+            ],
           },
         },
         checkingGameEnd: {
@@ -368,7 +404,22 @@ export const gameMachine = setup({
         },
       },
     },
-    paused: {},
+    paused: {
+      after: {
+        disconnectTimer: {
+          // After 2 minutes, remain paused (future: configurable behavior)
+        },
+      },
+      on: {
+        PLAYER_RECONNECTED: {
+          actions: 'markPlayerReconnected',
+          target: '#game.playing.awaitingMove',
+        },
+        PLAYER_DISCONNECTED: {
+          actions: 'markPlayerDisconnected',
+        },
+      },
+    },
     ended: {
       type: 'final' as const,
     },

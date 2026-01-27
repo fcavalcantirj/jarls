@@ -1,5 +1,29 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Add paused state structure
+
+**Feature Completed**: "Add paused state structure"
+
+**Work Done**:
+- Added `disconnectTimer` delay (2 minutes / 120,000ms) to the game machine
+- Added `isCurrentPlayerDisconnecting` guard that checks if the disconnecting player is the current turn player
+- Added `markPlayerDisconnected` action that adds a player to the disconnectedPlayers set
+- Added `markPlayerReconnected` action that removes a player from the disconnectedPlayers set
+- Added `PLAYER_DISCONNECTED` event handler to `awaitingMove` state:
+  - If the disconnecting player is the current turn player, transitions to `paused` state
+  - Otherwise, just marks the player as disconnected without pausing
+- Fleshed out the `paused` state with:
+  - 2-minute `disconnectTimer` (stays paused after expiry - future: configurable)
+  - `PLAYER_RECONNECTED` handler that marks player reconnected and returns to `playing.awaitingMove`
+  - `PLAYER_DISCONNECTED` handler for additional disconnections while paused
+
+**Files Modified**:
+- packages/server/src/game/machine.ts (added disconnectTimer delay, guards, actions, paused state structure, PLAYER_DISCONNECTED handling in awaitingMove)
+
+**Verification**: pnpm typecheck passes, all 904 tests pass. All files under 800 lines (machine.ts is 428 lines).
+
+---
+
 ### 2026-01-27: State Machine - Implement starvation auto-timeout + Unit tests for starvation state
 
 **Features Completed**: "Implement starvation auto-timeout" and "Unit tests for starvation state"
