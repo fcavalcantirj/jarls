@@ -3885,3 +3885,26 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - specs/progress.txt (this entry)
 
 **Verification**: pnpm typecheck passes. 1033 tests total (1028 passing, 5 pre-existing integration test failures from database state issues). All files under 800 lines.
+
+---
+
+### 2026-01-27: Network - Implement session service additional methods
+
+**Feature Completed**: "Implement session service additional methods"
+
+**Work Done**:
+- Added `invalidateSession(token)` to `packages/server/src/services/session.ts`: deletes session key from Redis
+- Added `extendSession(token)` to `packages/server/src/services/session.ts`: refreshes TTL to 24h, returns true if session exists, false otherwise
+- Added 4 new tests to `packages/server/src/services/__tests__/session.test.ts`:
+  - invalidateSession deletes the session key from Redis
+  - invalidateSession does not throw for a non-existent token
+  - extendSession refreshes TTL to 24 hours for an existing session
+  - extendSession returns false for a non-existent token
+
+**Files Modified**:
+- packages/server/src/services/session.ts (55 lines, was 39 lines)
+- packages/server/src/services/__tests__/session.test.ts (113 lines, was 81 lines)
+- specs/prd-v1.json (marked task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. 1042 tests total (1035 passing, 7 pre-existing integration test failures from database state issues). All files under 800 lines.

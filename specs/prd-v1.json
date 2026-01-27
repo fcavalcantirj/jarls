@@ -1566,7 +1566,7 @@
       "Implement invalidateSession(token): delete from Redis",
       "Implement extendSession(token): refresh TTL to 24h"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",

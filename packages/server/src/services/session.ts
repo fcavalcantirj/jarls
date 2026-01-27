@@ -36,3 +36,19 @@ export async function validateSession(token: string): Promise<SessionData | null
 
   return JSON.parse(raw) as SessionData;
 }
+
+/**
+ * Invalidate a session by deleting it from Redis.
+ */
+export async function invalidateSession(token: string): Promise<void> {
+  await redis.del(`${SESSION_PREFIX}${token}`);
+}
+
+/**
+ * Extend a session's TTL to 24 hours from now.
+ * Returns true if the session exists and was extended, false otherwise.
+ */
+export async function extendSession(token: string): Promise<boolean> {
+  const result = await redis.expire(`${SESSION_PREFIX}${token}`, SESSION_TTL_SECONDS);
+  return result === 1;
+}

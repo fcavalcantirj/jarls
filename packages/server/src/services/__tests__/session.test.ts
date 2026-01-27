@@ -2,15 +2,20 @@ import { jest } from '@jest/globals';
 
 const mockSet = jest.fn<(...args: unknown[]) => Promise<string | null>>();
 const mockGet = jest.fn<(key: string) => Promise<string | null>>();
+const mockDel = jest.fn<(key: string) => Promise<number>>();
+const mockExpire = jest.fn<(key: string, seconds: number) => Promise<number>>();
 
 jest.unstable_mockModule('../../redis/client', () => ({
   redis: {
     set: mockSet,
     get: mockGet,
+    del: mockDel,
+    expire: mockExpire,
   },
 }));
 
-const { createSession, validateSession } = await import('../session');
+const { createSession, validateSession, invalidateSession, extendSession } =
+  await import('../session');
 
 describe('Session service', () => {
   beforeEach(() => {
@@ -75,6 +80,41 @@ describe('Session service', () => {
       const result = await validateSession('nonexistent');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('invalidateSession', () => {
+    it('deletes the session key from Redis', async () => {
+      mockDel.mockResolvedValueOnce(1);
+
+      await invalidateSession('abc123');
+
+      expect(mockDel).toHaveBeenCalledWith('session:abc123');
+    });
+
+    it('does not throw for a non-existent token', async () => {
+      mockDel.mockResolvedValueOnce(0);
+
+      await expect(invalidateSession('nonexistent')).resolves.toBeUndefined();
+    });
+  });
+
+  describe('extendSession', () => {
+    it('refreshes TTL to 24 hours for an existing session', async () => {
+      mockExpire.mockResolvedValueOnce(1);
+
+      const result = await extendSession('abc123');
+
+      expect(result).toBe(true);
+      expect(mockExpire).toHaveBeenCalledWith('session:abc123', 86400);
+    });
+
+    it('returns false for a non-existent token', async () => {
+      mockExpire.mockResolvedValueOnce(0);
+
+      const result = await extendSession('nonexistent');
+
+      expect(result).toBe(false);
     });
   });
 });
