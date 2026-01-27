@@ -3817,3 +3817,22 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - packages/server/src/game/__tests__/lobby.test.ts (updated test expectation for auto-transition)
 - specs/prd-v1.json (marked 3 tasks as passes: true)
 - specs/progress.txt (this entry)
+
+---
+
+### 2026-01-27: Network - Create additional error classes
+
+**Feature Completed**: "Create additional error classes"
+
+**Work Done**:
+- Added three new error classes to `packages/server/src/errors/index.ts`:
+  - `NotYourTurnError` (400) - no parameters needed
+  - `UnauthorizedError` (401) - optional custom message, defaults to "Unauthorized"
+  - `ValidationError` (400) - takes a message parameter
+
+**Files Modified**:
+- packages/server/src/errors/index.ts (43 lines, was 25 lines)
+- specs/prd-v1.json (marked task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. 1033 tests total (1028 passing, 5 pre-existing integration test failures from database state issues). All files under 800 lines.

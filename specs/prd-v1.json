@@ -1536,7 +1536,7 @@
       "Create UnauthorizedError (401)",
       "Create ValidationError (400)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",

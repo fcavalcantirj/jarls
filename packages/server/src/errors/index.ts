@@ -22,3 +22,24 @@ export class InvalidMoveError extends GameError {
     this.name = 'InvalidMoveError';
   }
 }
+
+export class NotYourTurnError extends GameError {
+  constructor() {
+    super('NOT_YOUR_TURN', 'It is not your turn', 400);
+    this.name = 'NotYourTurnError';
+  }
+}
+
+export class UnauthorizedError extends GameError {
+  constructor(message = 'Unauthorized') {
+    super('UNAUTHORIZED', message, 401);
+    this.name = 'UnauthorizedError';
+  }
+}
+
+export class ValidationError extends GameError {
+  constructor(message: string) {
+    super('VALIDATION_ERROR', message, 400);
+    this.name = 'ValidationError';
+  }
+}
