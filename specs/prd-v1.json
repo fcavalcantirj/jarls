@@ -1289,7 +1289,7 @@
       "If starvation triggered: transition to 'starvation' state",
       "In 'starvation' entry: call calculateStarvationCandidates(), store in context"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

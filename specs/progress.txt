@@ -1,5 +1,35 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Add starvation state structure
+
+**Feature Completed**: "Add starvation state structure"
+
+**Work Done**:
+- Added `starvationCandidates` field (type `StarvationCandidates`) to `GameMachineContext` in types.ts
+- Added `contextToGameState` helper in machine.ts to extract `GameState` from `GameMachineContext` for use with shared functions
+- Added `enterStarvation` action to the game machine: calls `calculateStarvationCandidates()` and resets `starvationChoices`
+- Updated `checkingGameEnd` substate to check `checkStarvationTrigger()` before returning to `awaitingMove`
+  - If starvation triggered, transitions to `#game.starvation`
+  - Victory check still takes priority over starvation check
+- Fleshed out `starvation` compound state with `entry: 'enterStarvation'` and `awaitingChoices` initial substate
+- Initialized `starvationCandidates: []` in context factory
+- Created `starvation-state.test.ts` with 6 tests:
+  - Transitions to starvation.awaitingChoices when triggered (roundsSinceElimination = 10)
+  - Calculates starvation candidates on entering starvation state
+  - Clears starvation choices on entering starvation state
+  - Does NOT transition when roundsSinceElimination < 10
+  - Transitions at recurring interval (15 rounds)
+  - Does NOT transition at non-trigger round (12)
+
+**Files Modified**:
+- packages/server/src/game/types.ts (added starvationCandidates field, updated import)
+- packages/server/src/game/machine.ts (added contextToGameState, enterStarvation action, starvation guard in checkingGameEnd, starvation state structure)
+- packages/server/src/game/__tests__/starvation-state.test.ts (new, 6 tests)
+
+**Verification**: pnpm typecheck passes, all 893 tests pass (6 new). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Turn timer, autoSkipTurn, and unit tests
 
 **Features Completed**: "Implement turn timer delayed transition", "Implement autoSkipTurn action", and "Unit tests for turn timer"

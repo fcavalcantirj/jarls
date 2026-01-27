@@ -1,7 +1,32 @@
 import { setup, assign } from 'xstate';
 import type { GameMachineContext, GameMachineEvent, GameMachineInput } from './types';
-import type { Piece, Player } from '@jarls/shared';
-import { createInitialState, applyMove } from '@jarls/shared';
+import type { GameState, Piece, Player } from '@jarls/shared';
+import {
+  createInitialState,
+  applyMove,
+  checkStarvationTrigger,
+  calculateStarvationCandidates,
+} from '@jarls/shared';
+
+/**
+ * Extract a GameState from GameMachineContext for use with shared functions.
+ */
+function contextToGameState(context: GameMachineContext): GameState {
+  return {
+    id: context.id,
+    phase: context.phase,
+    config: context.config,
+    players: context.players,
+    pieces: context.pieces,
+    currentPlayerId: context.currentPlayerId,
+    turnNumber: context.turnNumber,
+    roundNumber: context.roundNumber,
+    firstPlayerIndex: context.firstPlayerIndex,
+    roundsSinceElimination: context.roundsSinceElimination,
+    winnerId: context.winnerId,
+    winCondition: context.winCondition,
+  };
+}
 
 /**
  * Get the next active (non-eliminated) player ID after the current player.
@@ -91,6 +116,14 @@ export const gameMachine = setup({
     autoSkipTurn: assign(({ context }) => {
       return advanceTurnSkip(context);
     }),
+    enterStarvation: assign(({ context }) => {
+      const gameState = contextToGameState(context);
+      const candidates = calculateStarvationCandidates(gameState);
+      return {
+        starvationCandidates: candidates,
+        starvationChoices: [],
+      };
+    }),
     initializeBoard: assign(({ context }) => {
       // Generate board using shared logic
       const playerNames = context.players.map((p) => p.name);
@@ -136,6 +169,7 @@ export const gameMachine = setup({
     turnTimerMs: input.config.turnTimerMs ?? null,
     disconnectedPlayers: new Set<string>(),
     starvationChoices: [],
+    starvationCandidates: [],
   }),
   states: {
     lobby: {
@@ -224,13 +258,27 @@ export const gameMachine = setup({
               target: '#game.ended',
             },
             {
+              guard: ({ context }) => {
+                const gameState = contextToGameState(context);
+                const result = checkStarvationTrigger(gameState);
+                return result.triggered;
+              },
+              target: '#game.starvation',
+            },
+            {
               target: 'awaitingMove',
             },
           ],
         },
       },
     },
-    starvation: {},
+    starvation: {
+      entry: 'enterStarvation',
+      initial: 'awaitingChoices',
+      states: {
+        awaitingChoices: {},
+      },
+    },
     paused: {},
     ended: {
       type: 'final' as const,

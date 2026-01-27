@@ -1,4 +1,10 @@
-import type { GameConfig, GameState, MoveCommand, StarvationChoice } from '@jarls/shared';
+import type {
+  GameConfig,
+  GameState,
+  MoveCommand,
+  StarvationChoice,
+  StarvationCandidates,
+} from '@jarls/shared';
 
 /**
  * Input required to create a game machine actor.
@@ -22,6 +28,8 @@ export interface GameMachineContext extends GameState {
   disconnectedPlayers: Set<string>;
   /** Starvation choices collected from players during a starvation phase */
   starvationChoices: StarvationChoice[];
+  /** Starvation candidates calculated when entering starvation state */
+  starvationCandidates: StarvationCandidates;
 }
 
 // ============================================================================
