@@ -2265,3 +2265,38 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Modified**:
 - specs/prd-v1.json (marked feature as complete)
+
+---
+
+### 2026-01-26: Infrastructure - Extract combat-strength.test.ts from index.test.ts
+
+**Feature Completed**: "Extract combat-strength.test.ts from index.test.ts (max 800 lines)"
+
+**Work Done**:
+- Created packages/shared/src/__tests__/combat-strength.test.ts (746 lines)
+- Extracted the following test describe blocks from index.test.ts:
+  - getPieceStrength (tests for piece strength calculation)
+  - findInlineSupport (tests for finding support pieces behind attacker)
+  - findBracing (tests for finding bracing pieces behind defender)
+- Removed extracted tests from index.test.ts (reduced from ~9747 to ~9012 lines)
+- Cleaned up unused imports (getPieceStrength, findInlineSupport, findBracing) from index.test.ts
+- Added comment in index.test.ts indicating where tests were moved
+
+**Why This Matters**:
+- New file is under 800 lines (746 lines)
+- Follows the CLAUDE.md golden rule: no single code file should exceed ~800 lines
+- Improves maintainability by organizing tests by logical function
+- Reduces context usage for AI assistants
+- Part of blocking infrastructure tasks that must be completed before other work
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (752 tests total)
+- Tests now split across 7 files: index.test.ts, types.test.ts, hex-coordinates.test.ts, hex-directions.test.ts, board-generation.test.ts, board-validation.test.ts, combat-strength.test.ts
+
+**Files Created**:
+- packages/shared/src/__tests__/combat-strength.test.ts (746 lines)
+
+**Files Modified**:
+- packages/shared/src/index.test.ts (removed extracted tests, now ~9012 lines)
+- specs/prd-v1.json (marked feature as complete)
