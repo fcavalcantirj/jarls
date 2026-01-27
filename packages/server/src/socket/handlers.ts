@@ -237,20 +237,23 @@ function handleStarvationChoice(
 
         console.log(`Player ${playerId} submitted starvation choice in game ${gameId}`);
 
-        // After submitting, check if starvation resolved (all choices made)
-        // The state machine may have transitioned back to playing or ended
+        // After submitting, check if starvation resolved (all choices made).
+        // The state machine may have transitioned back to playing or ended.
         const snapshot = gameManager.getState(gameId);
         if (!snapshot) return;
 
+        const stateValue = snapshot.value;
+        const postStateName =
+          typeof stateValue === 'string' ? stateValue : Object.keys(stateValue)[0];
         const context = snapshot.context as GameMachineContext;
 
-        if (context.phase === 'ended' && context.winnerId) {
+        if (postStateName === 'ended' && context.winnerId) {
           io.to(gameId).emit('gameEnded', {
             winnerId: context.winnerId,
             winCondition: context.winCondition as 'throne' | 'lastStanding',
             finalState: context,
           });
-        } else if (context.phase === 'playing') {
+        } else if (postStateName === 'playing') {
           // Starvation resolved, game continues - broadcast updated state
           io.to(gameId).emit('gameState', context);
         }
@@ -276,8 +279,12 @@ function checkAndBroadcastStarvation(
   const snapshot = gameManager.getState(gameId);
   if (!snapshot) return;
 
+  // Check the actual machine state, not context.phase (which may not be updated)
+  const stateValue = snapshot.value;
+  const stateName = typeof stateValue === 'string' ? stateValue : Object.keys(stateValue)[0];
+  if (stateName !== 'starvation') return;
+
   const context = snapshot.context as GameMachineContext;
-  if (context.phase !== 'starvation') return;
 
   // Starvation was triggered - broadcast candidates to all players
   io.to(gameId).emit('starvationRequired', {

@@ -1,5 +1,35 @@
 ## Progress Log
 
+### 2026-01-27: Network - Integration tests for starvation handler
+
+**Feature Completed**: "Integration tests for starvation handler"
+
+**Work Done**:
+- Created `packages/server/src/socket/__tests__/starvation.integration.test.ts` (542 lines)
+- Uses same test infrastructure pattern as other integration tests (real PostgreSQL + Redis, mocked modules, typed Socket.IO clients)
+- Added `playToStarvation()` helper that plays 20 alternating moves to naturally trigger starvation (roundsSinceElimination reaches 10)
+- **Bug discovered and fixed**: `checkAndBroadcastStarvation` in handlers.ts was checking `context.phase` instead of the actual XState machine state value. The `enterStarvation` action doesn't set `context.phase = 'starvation'`, so the broadcast never fired. Fixed to use `snapshot.value` (the machine state). Same fix applied to `handleStarvationChoice` post-submission checks.
+
+**Starvation integration tests (8 tests)**:
+- Broadcasts `starvationRequired` to both players when starvation triggers after a round
+- Successfully submits a starvation choice and returns success
+- Resolves starvation and broadcasts `gameState` when all choices made (phase returns to 'playing', roundsSinceElimination resets to 0)
+- Returns error when socket has not joined a game
+- Returns error for game ID mismatch
+- Returns error when game is not in starvation state
+- Returns error for invalid candidate piece
+- Returns error for duplicate submission from same player
+
+**Files Modified**:
+- packages/server/src/socket/handlers.ts (322 → 329 lines, fixed starvation state detection bug)
+
+**Files Created**:
+- packages/server/src/socket/__tests__/starvation.integration.test.ts (542 lines)
+
+**Verification**: pnpm typecheck passes. All starvation tests pass (25 total: 17 unit + 8 integration). playTurn integration tests still pass. Pre-existing integration test failures unchanged. All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Implement Socket.IO starvation handler
 
 **Feature Completed**: "Implement Socket.IO starvation handler"

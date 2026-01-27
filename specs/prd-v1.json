@@ -1697,7 +1697,7 @@
     "category": "network",
     "description": "Integration tests for starvation handler",
     "steps": ["Add integration tests for starvationChoice handler"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
