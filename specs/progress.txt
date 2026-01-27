@@ -1,5 +1,22 @@
 ## Progress Log
 
+### 2026-01-27: Network - Create error classes
+
+**Feature Completed**: "Create error classes"
+
+**Work Done**:
+- Created `packages/server/src/errors/index.ts` with:
+  - `GameError` base class with `code`, `message`, and `statusCode` properties
+  - `GameNotFoundError` (404) - takes gameId parameter
+  - `InvalidMoveError` (400) - takes reason parameter
+
+**Files Created**:
+- packages/server/src/errors/index.ts (25 lines)
+
+**Verification**: pnpm typecheck passes. 1033 tests total (1026 passing, 7 pre-existing integration test failures from database state issues). All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Unit test for health endpoint
 
 **Feature Completed**: "Unit test for health endpoint"

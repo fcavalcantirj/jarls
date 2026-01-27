@@ -1526,7 +1526,7 @@
       "Create GameNotFoundError (404)",
       "Create InvalidMoveError (400)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
