@@ -1,5 +1,22 @@
 ## Progress Log
 
+### 2026-01-27: Network - Configure Socket.IO options
+
+**Feature Completed**: "Configure Socket.IO options"
+
+**Work Done**:
+- Added Connection State Recovery to Socket.IO server with 2-minute disconnection window (`maxDisconnectionDuration: 120000ms`)
+- Enabled `skipMiddlewares: true` for recovered connections (middleware already ran on initial connection)
+- Added full type parameters to Socket.IO server using `ClientToServerEvents`, `ServerToClientEvents`, `InterServerEvents`, and `SocketData` types
+- CORS was already configured matching Express (localhost:5173)
+
+**Files Modified**:
+- packages/server/src/socket/server.ts (added Connection State Recovery config and typed server)
+
+**Verification**: pnpm typecheck passes. All non-integration tests pass (1094/1102, 8 pre-existing integration test failures unchanged). All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Define Socket.IO event types
 
 **Feature Completed**: "Define Socket.IO event types"

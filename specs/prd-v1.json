@@ -1646,7 +1646,7 @@
       "Configure Connection State Recovery (2-min window)",
       "Configure CORS to match Express"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
