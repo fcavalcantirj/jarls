@@ -1936,13 +1936,13 @@
       "Handle connection states: update store.connectionStatus",
       "Handle reconnection automatically"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
     "description": "Export Socket.IO client",
     "steps": ["Export socket instance and hook"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

@@ -1,5 +1,26 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Add Socket.IO event listeners & Export Socket.IO client
+
+**Features Completed**: "Add Socket.IO event listeners", "Export Socket.IO client"
+
+**Work Done**:
+- Created `packages/client/src/hooks/useSocket.ts` with full Socket.IO event listener integration
+- Hook manages connection lifecycle: connects on mount with sessionToken, disconnects on unmount
+- Listens to connection state events (connect, disconnect, connect_error, reconnect_attempt, reconnect) and updates store connectionStatus
+- Listens to game events (gameState, turnPlayed, gameEnded, playerJoined, playerLeft, playerReconnected) and updates Zustand store
+- Clears piece selection on state updates (turnPlayed, gameEnded, gameState)
+- Handles reconnection automatically via Socket.IO built-in reconnection + reconnect_attempt status tracking
+- Created `packages/client/src/socket/index.ts` barrel export for socket instance, types, and hook
+
+**Files Created**:
+- packages/client/src/hooks/useSocket.ts (119 lines)
+- packages/client/src/socket/index.ts (12 lines)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (22 failed, 1155 passed).
+
+---
+
 ### 2026-01-27: Frontend - Create Socket.IO client
 
 **Features Completed**: "Create Socket.IO client"
