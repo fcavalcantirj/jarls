@@ -1,5 +1,27 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Integrate persistence with GameManager create
+
+**Feature Completed**: "Integrate persistence with GameManager create"
+
+**Work Done**:
+- Updated `GameManager.create()` to be async and save the initial snapshot to the database via `saveSnapshot()`
+- Added a `GAME_CREATED` event saved to `game_events` table on game creation
+- Subscribed to XState actor state changes: on each top-level state transition, saves a new snapshot with incremented version and a `STATE_<NAME>` event
+- Introduced `ManagedGame` internal type to track actor, subscription, version counter, and previous state value per game
+- Extracted `getStateName()` helper to handle both simple and compound XState state values
+- Updated `remove()` and `shutdown()` to unsubscribe from actor state changes
+- Updated unit tests to mock the persistence module with `jest.unstable_mockModule`
+- Added 3 new tests: saves initial snapshot, saves GAME_CREATED event, persists state transitions on state change
+
+**Files Modified**:
+- packages/server/src/game/manager.ts (195 lines, was 126 lines)
+- packages/server/src/game/__tests__/manager.test.ts (280 lines, was 199 lines)
+
+**Verification**: pnpm typecheck passes, all 953 tests pass (20 in manager.test.ts, 3 new). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Create GameManager class structure
 
 **Feature Completed**: "Create GameManager class structure"

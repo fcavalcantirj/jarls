@@ -1388,7 +1388,7 @@
       "Subscribe to actor state changes: save snapshot on each change",
       "Save events to game_events table for each transition"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
