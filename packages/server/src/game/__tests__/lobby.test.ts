@@ -172,8 +172,8 @@ describe('Game Machine - Lobby State', () => {
       actor.send({ type: 'PLAYER_JOINED', playerId: 'p1', playerName: 'Alice' });
       actor.send({ type: 'PLAYER_JOINED', playerId: 'p2', playerName: 'Bob' });
       actor.send({ type: 'START_GAME', playerId: 'p1' });
-      // Setup state has an 'always' transition that immediately moves to 'playing'
-      expect(actor.getSnapshot().value).toBe('playing');
+      // Setup state has an 'always' transition that immediately moves to 'playing.awaitingMove'
+      expect(actor.getSnapshot().value).toEqual({ playing: 'awaitingMove' });
 
       actor.stop();
     });

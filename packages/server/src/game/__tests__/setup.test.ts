@@ -107,8 +107,8 @@ describe('Game Machine - Setup State', () => {
       const actor = createGameInSetup();
       const snapshot = actor.getSnapshot();
 
-      // The always transition should move us to 'playing'
-      expect(snapshot.value).toBe('playing');
+      // The always transition should move us to 'playing.awaitingMove'
+      expect(snapshot.value).toEqual({ playing: 'awaitingMove' });
 
       actor.stop();
     });

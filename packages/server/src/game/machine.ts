@@ -109,7 +109,23 @@ export const gameMachine = createMachine({
         target: 'playing',
       },
     },
-    playing: {},
+    playing: {
+      initial: 'awaitingMove',
+      states: {
+        awaitingMove: {},
+        checkingGameEnd: {
+          always: [
+            {
+              guard: ({ context }) => context.winnerId !== null,
+              target: '#game.ended',
+            },
+            {
+              target: 'awaitingMove',
+            },
+          ],
+        },
+      },
+    },
     starvation: {},
     paused: {},
     ended: {

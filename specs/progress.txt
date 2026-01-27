@@ -1,5 +1,30 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Add playing state structure
+
+**Feature Completed**: "Add playing state structure"
+
+**Work Done**:
+- Converted the empty `playing: {}` state into a compound state with substates
+- Added `awaitingMove` as the initial substate (where the game waits for player moves)
+- Added `checkingGameEnd` substate with always transitions:
+  - If `winnerId` is set, transitions to `#game.ended`
+  - Otherwise, transitions back to `awaitingMove`
+- Updated existing lobby and setup tests to expect `{ playing: 'awaitingMove' }` instead of `'playing'`
+- Created new test file `playing.test.ts` with tests for the playing state structure
+
+**Files Modified**:
+- packages/server/src/game/machine.ts (playing state structure)
+- packages/server/src/game/__tests__/lobby.test.ts (updated state value assertion)
+- packages/server/src/game/__tests__/setup.test.ts (updated state value assertion)
+
+**Files Created**:
+- packages/server/src/game/__tests__/playing.test.ts (playing state tests)
+
+**Verification**: pnpm typecheck passes, all 869 tests pass.
+
+---
+
 ### 2026-01-25: Infrastructure - Monorepo Initialization
 
 **Feature Completed**: "Monorepo initialized with npm workspaces"

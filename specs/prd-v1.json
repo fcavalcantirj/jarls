@@ -1198,7 +1198,7 @@
       "Add 'checkingGameEnd' substate",
       "Add 'ended' state"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
