@@ -2020,7 +2020,7 @@
       "Implement drawValidMoves(moves): draw green overlay on move destinations",
       "Implement drawAttackMoves(moves): draw red overlay on attack destinations"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

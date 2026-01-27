@@ -5,7 +5,7 @@
  * for rendering the game board.
  */
 
-import type { AxialCoord, Piece, GameState } from '@jarls/shared';
+import type { AxialCoord, Piece, GameState, ValidMove } from '@jarls/shared';
 import { generateAllBoardHexesAxial } from '@jarls/shared';
 import { hexToPixel, getHexCorners } from '../../utils/hexMath';
 
@@ -27,6 +27,14 @@ const PLAYER_COLORS: Record<string, string> = {};
 const COLOR_PALETTE = ['#e63946', '#457b9d'];
 /** Piece shadow color */
 const PIECE_SHADOW = 'rgba(0, 0, 0, 0.4)';
+/** Selection highlight ring color */
+const SELECTION_STROKE = '#ffffff';
+/** Valid move overlay color (green) */
+const VALID_MOVE_FILL = 'rgba(76, 175, 80, 0.35)';
+const VALID_MOVE_STROKE = '#4caf50';
+/** Attack move overlay color (red) */
+const ATTACK_MOVE_FILL = 'rgba(244, 67, 54, 0.35)';
+const ATTACK_MOVE_STROKE = '#f44336';
 
 export interface BoardDimensions {
   /** Pixel size of each hex (center to corner) */
@@ -303,6 +311,51 @@ export class BoardRenderer {
     }
     for (const piece of jarls) {
       this.drawJarl(piece);
+    }
+  }
+
+  /**
+   * Draw a highlight ring around the selected piece's hex.
+   */
+  drawSelection(hex: AxialCoord): void {
+    const dims = this.dimensions;
+    if (!dims) return;
+
+    const { x, y } = hexToPixel(hex, dims.hexSize, dims.centerX, dims.centerY);
+    const corners = getHexCorners(x, y, dims.hexSize * 0.92);
+    const ctx = this.ctx;
+
+    ctx.beginPath();
+    ctx.moveTo(corners[0].x, corners[0].y);
+    for (let i = 1; i < corners.length; i++) {
+      ctx.lineTo(corners[i].x, corners[i].y);
+    }
+    ctx.closePath();
+
+    ctx.strokeStyle = SELECTION_STROKE;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  /**
+   * Draw green overlays on valid move destinations (non-attack moves).
+   */
+  drawValidMoves(moves: ValidMove[]): void {
+    for (const move of moves) {
+      if (move.moveType === 'move') {
+        this.drawHex(move.destination, VALID_MOVE_FILL, VALID_MOVE_STROKE);
+      }
+    }
+  }
+
+  /**
+   * Draw red overlays on attack move destinations.
+   */
+  drawAttackMoves(moves: ValidMove[]): void {
+    for (const move of moves) {
+      if (move.moveType === 'attack') {
+        this.drawHex(move.destination, ATTACK_MOVE_FILL, ATTACK_MOVE_STROKE);
+      }
     }
   }
 

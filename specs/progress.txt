@@ -1,5 +1,23 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Implement move highlight functions
+
+**Features Completed**: "Implement move highlight functions"
+
+**Work Done**:
+- Added `drawSelection(hex)`: draws a white highlight ring (slightly inset hex outline) around the selected piece's hex
+- Added `drawValidMoves(moves)`: draws green semi-transparent overlays on non-attack move destinations, filtering ValidMove[] by moveType === 'move'
+- Added `drawAttackMoves(moves)`: draws red semi-transparent overlays on attack destinations, filtering ValidMove[] by moveType === 'attack'
+- Added highlight color constants: SELECTION_STROKE, VALID_MOVE_FILL/STROKE, ATTACK_MOVE_FILL/STROKE
+- Imported `ValidMove` type from `@jarls/shared`
+
+**Files Modified**:
+- packages/client/src/components/Board/BoardRenderer.ts (330 -> 383 lines)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (27 failed, 1166 passed).
+
+---
+
 ### 2026-01-27: Frontend - Implement piece rendering
 
 **Features Completed**: "Implement piece rendering"
