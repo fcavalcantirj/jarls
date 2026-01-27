@@ -964,7 +964,7 @@
       "Return { triggered: true, isInitial: false } at 15, 20, 25... rounds",
       "Export function"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
@@ -974,7 +974,7 @@
       "Add unit tests: trigger at 10, 15, 20 rounds",
       "Add unit tests: no trigger at 11, 12, 13, 14 rounds"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

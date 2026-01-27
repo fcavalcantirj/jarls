@@ -2656,3 +2656,31 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - packages/shared/src/__tests__/push-chain.test.ts (updated 1 test, added 5 new tests)
 - packages/shared/src/__tests__/apply-move.test.ts (updated 2 tests to avoid throne compression)
 - specs/prd-v1.json (marked 2 tasks as passes: true)
+
+---
+
+### 2026-01-27: Core Logic - Implement checkStarvationTrigger
+
+**Features Completed**: "Implement checkStarvationTrigger function" + "Unit tests for checkStarvationTrigger"
+
+**Work Done**:
+- Created `packages/shared/src/starvation.ts` with `checkStarvationTrigger` function
+- Function checks `roundsSinceElimination` on the GameState:
+  - No trigger for 0-9 rounds
+  - Initial trigger (`isInitial: true`) at exactly 10 rounds
+  - Recurring trigger (`isInitial: false`) every 5 rounds after (15, 20, 25, ...)
+- Exported `StarvationTriggerResult` type and `checkStarvationTrigger` function from index.ts
+- Created `__tests__/starvation-trigger.test.ts` with 29 tests covering all cases
+
+**Verification**:
+- All 805 tests pass across 26 test suites
+- pnpm typecheck passes
+- starvation.ts at 47 lines (well under 800)
+
+**Files Created**:
+- packages/shared/src/starvation.ts
+- packages/shared/src/__tests__/starvation-trigger.test.ts
+
+**Files Modified**:
+- packages/shared/src/index.ts (added starvation re-exports)
+- specs/prd-v1.json (marked 2 tasks as passes: true)

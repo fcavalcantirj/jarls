@@ -125,3 +125,7 @@ export {
   hasLegalMoves,
   applyMove,
 } from './move.js';
+
+// Re-export starvation functions and types
+export type { StarvationTriggerResult } from './starvation.js';
+export { checkStarvationTrigger } from './starvation.js';
