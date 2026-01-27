@@ -1,0 +1,11 @@
+# Jarls Project Progress
+
+## Completed Tasks
+
+### 2024-01-26: Extract combat-calculation.test.ts from index.test.ts
+- Created `packages/shared/src/__tests__/combat-calculation.test.ts` (939 lines)
+- Moved tests for: calculateAttack, calculateDefense, calculateCombat
+- Removed ~1607 lines from index.test.ts (now ~7404 lines)
+- Fixed unused imports (HexDirection, calculateAttack, calculateDefense)
+- All 752 tests pass
+- Typecheck passes
