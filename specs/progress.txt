@@ -1,5 +1,37 @@
 ## Progress Log
 
+### 2026-01-27: Network - Socket.IO connection management + integration tests
+
+**Features Completed**: "Implement Socket.IO connection management" and "Integration tests for connection management"
+
+**Work Done**:
+- Added `handleConnectionRecovery` function to `packages/server/src/socket/handlers.ts` for Socket.IO connection state recovery
+- When a socket reconnects within the 2-minute recovery window (`socket.recovered === true`), the handler: calls `gameManager.onReconnect()` to unpause the game, emits current `gameState` to the reconnected player, broadcasts `playerReconnected` to other players in the room
+- Added `playerReconnected` server-to-client event type and `PlayerReconnectedData` interface to `packages/server/src/socket/types.ts`
+- Disconnect handler was already implemented (calls `gameManager.onDisconnect()`, broadcasts `playerLeft`), confirmed working
+- `gameEnded` broadcasting was already handled per-handler (in playTurn and starvationChoice handlers)
+
+**Connection management integration tests (8 tests)**:
+- Broadcasts `playerLeft` when a player disconnects from a started game
+- Marks the disconnected player in game state
+- Pauses the game when the current player disconnects
+- Does not crash when a socket without game data disconnects
+- Does not pause the game when a non-current player disconnects
+- Allows a disconnected player to rejoin and get current state
+- Game can resume after disconnected player rejoins via new joinGame
+- Current player can make a move after reconnecting
+
+**Files Modified**:
+- packages/server/src/socket/handlers.ts (330 → 377 lines, added connection recovery handler)
+- packages/server/src/socket/types.ts (134 → 141 lines, added playerReconnected event + PlayerReconnectedData type)
+
+**Files Created**:
+- packages/server/src/socket/__tests__/connection.integration.test.ts (507 lines)
+
+**Verification**: pnpm typecheck passes. All 8 connection management tests pass. All existing socket handler tests (10 joinGame/startGame, 8 playTurn, 8 starvation) still pass. All 839 shared tests pass. All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Integration tests for starvation handler
 
 **Feature Completed**: "Integration tests for starvation handler"

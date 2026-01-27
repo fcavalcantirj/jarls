@@ -37,7 +37,10 @@ type TypedSocket = Socket<
  */
 export function registerSocketHandlers(io: TypedServer, gameManager: GameManager): void {
   io.on('connection', (socket: TypedSocket) => {
-    console.log(`Socket connected: ${socket.id}`);
+    console.log(`Socket connected: ${socket.id} (recovered: ${socket.recovered})`);
+
+    // Handle connection state recovery (Socket.IO automatic reconnect)
+    handleConnectionRecovery(socket, gameManager);
 
     handleJoinGame(socket, gameManager);
     handleStartGame(socket, io, gameManager);
@@ -45,6 +48,48 @@ export function registerSocketHandlers(io: TypedServer, gameManager: GameManager
     handleStarvationChoice(socket, io, gameManager);
     handleDisconnect(socket, io, gameManager);
   });
+}
+
+// ── Connection Recovery Handler ──────────────────────────────────────────
+
+/**
+ * Handle Socket.IO connection state recovery. When a client reconnects
+ * within the recovery window (2 minutes), Socket.IO restores the socket's
+ * rooms and data. We detect this and notify the game manager to unpause
+ * the game, then emit the current game state to the reconnected player.
+ */
+function handleConnectionRecovery(socket: TypedSocket, gameManager: GameManager): void {
+  if (!socket.recovered) return;
+
+  const { gameId, playerId, playerName } = socket.data;
+  if (!gameId || !playerId) return;
+
+  try {
+    // Notify the game manager about the reconnection (may unpause the game)
+    gameManager.onReconnect(gameId, playerId);
+
+    // Get the current game state and send it to the reconnected player
+    const snapshot = gameManager.getState(gameId);
+    if (snapshot) {
+      const context = snapshot.context as GameMachineContext;
+
+      // Send current state to the reconnected player
+      socket.emit('gameState', context);
+
+      // Notify other players about the reconnection
+      socket.to(gameId).emit('playerReconnected', {
+        playerId,
+        playerName: playerName ?? 'Unknown',
+        gameState: context,
+      });
+    }
+
+    console.log(`Player ${playerName} (${playerId}) recovered connection to game ${gameId}`);
+  } catch (err) {
+    // Recovery is best-effort; don't crash on errors
+    // (e.g., game may have ended during disconnection, or player wasn't actually disconnected)
+    console.error(`Error handling connection recovery for player ${playerId}:`, err);
+  }
 }
 
 // ── joinGame Handler ────────────────────────────────────────────────────

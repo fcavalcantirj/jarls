@@ -53,6 +53,8 @@ export interface ServerToClientEvents {
 
   playerLeft: (data: PlayerLeftData) => void;
 
+  playerReconnected: (data: PlayerReconnectedData) => void;
+
   starvationRequired: (data: StarvationRequiredData) => void;
 
   error: (data: SocketErrorData) => void;
@@ -80,6 +82,12 @@ export interface PlayerJoinedData {
 
 export interface PlayerLeftData {
   playerId: string;
+  gameState: GameState;
+}
+
+export interface PlayerReconnectedData {
+  playerId: string;
+  playerName: string;
   gameState: GameState;
 }
 

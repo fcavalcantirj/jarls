@@ -1707,7 +1707,7 @@
       "Handle connection recovery: rejoin room, emit current state",
       "Subscribe to GameManager: broadcast gameEnded when game ends"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
@@ -1717,7 +1717,7 @@
       "Add integration tests for reconnect",
       "Add integration tests for recovery"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
