@@ -73,9 +73,11 @@ shared/src/
     ├── push-chain.test.ts
     ├── push-edge.test.ts
     ├── push-compression.test.ts
+    ├── push-compression-edge.test.ts
     ├── push-resolution.test.ts
     ├── move-validation.test.ts
     ├── move-execution.test.ts
+    ├── move-validmoves.test.ts
     ├── apply-move.test.ts
     ├── victory-throne.test.ts
     ├── victory-elimination.test.ts

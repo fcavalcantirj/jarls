@@ -333,7 +333,7 @@
       "Verify all tests pass",
       "Verify all code files are under 800 lines where applicable (documentation allowed)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

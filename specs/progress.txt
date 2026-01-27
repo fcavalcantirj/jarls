@@ -2534,3 +2534,27 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - packages/shared/src/index.test.ts (all tests extracted to __tests__/ directory)
 
 **Test file splitting is now COMPLETE.** All blocking infrastructure tasks are done.
+
+---
+
+### 2026-01-27: Infrastructure - Verify no files exceed 800 lines
+
+**Feature Completed**: "Verify no files exceed 800 lines (apart from documentation)"
+
+**Work Done**:
+- Scanned all TypeScript source files for 800-line limit violations
+- Found 2 files exceeding limit:
+  - move-execution.test.ts (826 lines) → split into move-execution.test.ts (413 lines, getReachableHexes) and move-validmoves.test.ts (416 lines, getValidMoves)
+  - push-compression.test.ts (891 lines) → split into push-compression.test.ts (561 lines, core compression) and push-compression-edge.test.ts (359 lines, edge cases/directions/scenarios)
+- Reviewed remaining files close to limit: board.ts (796), board-validation.test.ts (793), board-generation.test.ts (788) - all under limit and logically cohesive, no split needed
+- All 752 tests pass across 24 test suites
+- pnpm typecheck passes
+- No code files exceed 800 lines
+
+**Files Modified**:
+- packages/shared/src/__tests__/move-execution.test.ts (826 → 413 lines, kept getReachableHexes tests)
+- packages/shared/src/__tests__/push-compression.test.ts (891 → 561 lines, kept core compression tests)
+
+**Files Created**:
+- packages/shared/src/__tests__/move-validmoves.test.ts (416 lines, getValidMoves tests)
+- packages/shared/src/__tests__/push-compression-edge.test.ts (359 lines, error handling/directions/mixed chains/scenarios)
