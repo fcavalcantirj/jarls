@@ -2409,3 +2409,36 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 **Files Modified**:
 - packages/shared/src/index.test.ts (removed extracted tests, now ~4057 lines)
 - specs/prd-v1.json (marked feature as complete)
+
+---
+
+### 2026-01-27: Infrastructure - Extract move-validation.test.ts from index.test.ts
+
+**Feature Completed**: "Extract move-validation.test.ts from index.test.ts (max 800 lines)"
+
+**Work Done**:
+- Created move-validation.test.ts (635 lines) with tests for:
+  - validateMove tests (piece exists, player's turn, game phase, distance, path clear, Jarl draft, Warriors/Throne, friendly pieces, board bounds, straight line, shields, momentum)
+  - pathCrossesThrone tests (crossing detection in all directions)
+  - Jarl 2-hex Throne crossing tests (adjustedDestination, applyMove integration)
+- Removed extracted tests from index.test.ts (reduced from ~4057 to ~3437 lines)
+- Cleaned up unused imports from index.test.ts (removed pathCrossesThrone, validateMove, MoveCommand)
+- Added comments indicating where tests were moved
+
+**Why This Matters**:
+- New file is under 800 lines (635 lines)
+- Follows the CLAUDE.md golden rule: no single code file should exceed ~800 lines
+- Improves maintainability by organizing tests by logical function
+- Part of blocking infrastructure tasks that must be completed before other work
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (752 tests total)
+- Tests now split across 16 files total
+
+**Files Created**:
+- packages/shared/src/__tests__/move-validation.test.ts (635 lines)
+
+**Files Modified**:
+- packages/shared/src/index.test.ts (removed extracted tests, now ~3437 lines)
+- specs/prd-v1.json (marked feature as complete)

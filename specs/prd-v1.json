@@ -274,7 +274,7 @@
       "Import from ../move.ts and ../move-validation.ts",
       "Verify tests pass and file is under 800 lines"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
