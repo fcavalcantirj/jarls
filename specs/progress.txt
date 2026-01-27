@@ -1,5 +1,25 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Create client directory structure and configuration
+
+**Features Completed**: "Create client directory structure and configuration"
+
+**Work Done**:
+- Created directory structure: src/components, src/hooks, src/store, src/utils, src/socket
+- Configured path aliases in tsconfig.json (baseUrl: "./src", paths: {"@/*": ["./*"]})
+- Updated vite.config.ts with resolve.alias for @ → src/
+- Installed socket.io-client (^4.8.3) and zustand (^5.0.10) as dependencies
+- Verified Vite dev server starts correctly on port 5173
+
+**Files Modified**:
+- packages/client/tsconfig.json (added baseUrl and paths)
+- packages/client/vite.config.ts (added path alias resolve)
+- packages/client/package.json (added socket.io-client, zustand)
+
+**Verification**: pnpm typecheck passes. Vite dev server starts. Pre-existing test failures unchanged (18 failed, 1140 passed).
+
+---
+
 ### 2026-01-27: AI - Implement AI move execution & Integration tests
 
 **Features Completed**: "Implement AI move execution", "Integration tests for AI"
