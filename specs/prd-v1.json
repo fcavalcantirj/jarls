@@ -1477,7 +1477,7 @@
       "Implement onDisconnect(gameId, playerId): send PLAYER_DISCONNECTED",
       "Implement onReconnect(gameId, playerId): send PLAYER_RECONNECTED"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

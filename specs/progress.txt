@@ -1,5 +1,26 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Implement GameManager disconnection
+
+**Feature Completed**: "Implement GameManager disconnection"
+
+**Work Done**:
+- Added `onDisconnect(gameId, playerId)` method to GameManager: validates game exists and is in a valid state (playing/paused/starvation), validates player exists in game, sends PLAYER_DISCONNECTED event to actor which pauses the game if it's the current player's turn
+- Added `onReconnect(gameId, playerId)` method to GameManager: validates game exists and is in a valid state, validates player is actually disconnected, sends PLAYER_RECONNECTED event to actor which resumes the game if it was paused
+- Created separate test file `manager-disconnection.test.ts` with 13 unit tests covering:
+  - **onDisconnect** (6 tests): marks player as disconnected, pauses game when current player disconnects, does not pause when non-current player disconnects, game not found, wrong state (lobby), player not found
+  - **onReconnect** (7 tests): marks player as reconnected, resumes paused game, preserves game state through disconnect/reconnect cycle, allows normal gameplay after reconnection, game not found, wrong state (lobby), player not disconnected
+
+**Files Modified**:
+- packages/server/src/game/manager.ts (515 lines, was 456 lines)
+
+**Files Created**:
+- packages/server/src/game/__tests__/manager-disconnection.test.ts (232 lines)
+
+**Verification**: pnpm typecheck passes, all 1022 unit tests pass (13 new in manager-disconnection.test.ts). 2 pre-existing integration test failures in persistence.integration.test.ts (database state issues, not related to this change). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Implement GameManager move execution
 
 **Features Completed**: "Implement GameManager move execution" + "Unit tests for GameManager move execution"

@@ -418,6 +418,65 @@ export class GameManager {
   }
 
   /**
+   * Handle a player disconnecting from the game.
+   * Sends PLAYER_DISCONNECTED to the actor, which may pause the game
+   * if it's the current player's turn.
+   * Throws if the game doesn't exist or is not in a valid state for disconnection.
+   */
+  onDisconnect(gameId: string, playerId: string): void {
+    const managed = this.games.get(gameId);
+    if (!managed) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+
+    const snapshot = managed.actor.getSnapshot();
+    const stateName = getStateName(snapshot.value);
+    if (stateName !== 'playing' && stateName !== 'paused' && stateName !== 'starvation') {
+      throw new Error(`Cannot disconnect in state: ${stateName}`);
+    }
+
+    const context = snapshot.context as GameMachineContext;
+    const playerExists = context.players.some((p) => p.id === playerId);
+    if (!playerExists) {
+      throw new Error(`Player not found in game: ${playerId}`);
+    }
+
+    managed.actor.send({
+      type: 'PLAYER_DISCONNECTED',
+      playerId,
+    });
+  }
+
+  /**
+   * Handle a previously disconnected player reconnecting to the game.
+   * Sends PLAYER_RECONNECTED to the actor, which resumes the game
+   * if it was paused.
+   * Throws if the game doesn't exist or the player wasn't disconnected.
+   */
+  onReconnect(gameId: string, playerId: string): void {
+    const managed = this.games.get(gameId);
+    if (!managed) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+
+    const snapshot = managed.actor.getSnapshot();
+    const stateName = getStateName(snapshot.value);
+    if (stateName !== 'playing' && stateName !== 'paused' && stateName !== 'starvation') {
+      throw new Error(`Cannot reconnect in state: ${stateName}`);
+    }
+
+    const context = snapshot.context as GameMachineContext;
+    if (!context.disconnectedPlayers.has(playerId)) {
+      throw new Error(`Player is not disconnected: ${playerId}`);
+    }
+
+    managed.actor.send({
+      type: 'PLAYER_RECONNECTED',
+      playerId,
+    });
+  }
+
+  /**
    * Get the actor for a game. Used internally and for testing.
    */
   getActor(gameId: string): GameActor | undefined {
