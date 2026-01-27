@@ -1,5 +1,27 @@
 ## Progress Log
 
+### 2026-01-27: Network - Set up Express app with body parser
+
+**Feature Completed**: "Set up Express app with body parser"
+
+**Work Done**:
+- Installed express, cors, helmet, @types/express, @types/cors in server package
+- Created `packages/server/src/server.ts` with:
+  - Express app instance with JSON body parser (`express.json()`)
+  - CORS configuration allowing `http://localhost:5173` (Vite dev server) with credentials
+  - `createServer()` function wrapping Express app in `http.Server` for future Socket.IO attachment
+  - Exported `app` and `createServer` for use by other modules
+
+**Files Created**:
+- packages/server/src/server.ts (22 lines)
+
+**Files Modified**:
+- packages/server/package.json (added express, cors, helmet, @types/express, @types/cors)
+
+**Verification**: pnpm typecheck passes. All 1032 tests pass (1025 passing, 7 pre-existing integration test failures from database state issues). No new test failures. All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Integration tests for GameManager disconnection and recovery
 
 **Feature Completed**: "Integration tests for GameManager disconnection and recovery"

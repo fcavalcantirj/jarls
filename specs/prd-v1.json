@@ -1498,7 +1498,7 @@
       "Create Express app with JSON body parser",
       "Add CORS configuration (allow localhost:5173 for dev)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
