@@ -1,5 +1,23 @@
 ## Progress Log
 
+### 2026-01-27: AI - Define AI types and interface
+
+**Features Completed**: "Define AI types and interface"
+
+**Work Done**:
+- Created `packages/server/src/ai/types.ts` with AI player interface definitions
+- Defined `AIDifficulty` type (`'random' | 'heuristic'`)
+- Defined `AIPlayer` interface with `difficulty` property, `generateMove(state, playerId)` async method, and `makeStarvationChoice(candidates, playerId)` async method
+- Interface uses shared types: `GameState`, `MoveCommand`, `StarvationCandidates`, `StarvationChoice`
+- Methods are async (Promise-based) to support thinking delays and potential future async AI implementations
+
+**Files Created**:
+- packages/server/src/ai/types.ts (26 lines)
+
+**Verification**: pnpm typecheck passes. All shared tests pass. Pre-existing integration test failures unchanged.
+
+---
+
 ### 2026-01-27: Network - Server entry point (config loading, app wiring, startup/shutdown)
 
 **Features Completed**: "Create server entry point config loading", "Create server entry point app wiring", "Create server entry point startup and shutdown"

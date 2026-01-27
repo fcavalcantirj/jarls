@@ -1758,7 +1758,7 @@
       "Create packages/server/src/ai/types.ts",
       "Define AIPlayer interface: generateMove(state, playerId), makeStarvationChoice(candidates)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ai",
