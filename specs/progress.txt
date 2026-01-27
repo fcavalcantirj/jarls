@@ -1,5 +1,24 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Implement move execution on click
+
+**Features Completed**: "Implement move execution on click"
+
+**Work Done**:
+- Updated Board.tsx handleClick to detect clicks on valid move destinations
+- When a piece is selected and a valid destination is clicked, emits `playTurn` via socket with gameId and MoveCommand
+- Clears selection immediately while waiting for server response
+- Logs error to console if move fails (server response handling)
+- turnPlayed event updates state via existing socket listener
+
+**Files Modified**:
+- packages/client/src/components/Board/Board.tsx (134 -> 163 lines)
+- specs/prd-v1.json (marked 1 task as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (20 failed, 1173 passed).
+
+---
+
 ### 2026-01-27: Frontend - Implement piece selection logic
 
 **Features Completed**: "Implement piece selection logic"

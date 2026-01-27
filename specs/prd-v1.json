@@ -2084,7 +2084,7 @@
       "Clear selection while waiting for response",
       "On turnPlayed event: update state (already handled by socket listener)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

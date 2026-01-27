@@ -4,6 +4,7 @@ import { useGameStore, selectIsMyTurn } from '../../store/gameStore';
 import { BoardRenderer } from './BoardRenderer';
 import type { RenderHighlights } from './BoardRenderer';
 import { pixelToHex } from '../../utils/hexMath';
+import { getSocket } from '../../socket/client';
 
 export function Board() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -99,6 +100,34 @@ export function Board() {
       // Ignore clicks outside the board
       if (!isOnBoardAxial(clickedHex, gameState.config.boardRadius)) return;
 
+      const store = useGameStore.getState();
+
+      // If a piece is selected and we click a valid move destination, execute the move
+      if (selectedPieceId && validMoves.length > 0) {
+        const targetMove = validMoves.find(
+          (m) => m.destination.q === clickedHex.q && m.destination.r === clickedHex.r
+        );
+        if (targetMove) {
+          // Clear selection immediately while waiting for server response
+          store.clearSelection();
+
+          const socket = getSocket();
+          socket.emit(
+            'playTurn',
+            {
+              gameId: gameState.id,
+              command: { pieceId: selectedPieceId, destination: targetMove.destination },
+            },
+            (response) => {
+              if (!response.success) {
+                console.error('Move failed:', response.error);
+              }
+            }
+          );
+          return;
+        }
+      }
+
       // Check if hex contains a piece owned by the current player
       const piece = gameState.pieces.find(
         (p) => p.position.q === clickedHex.q && p.position.r === clickedHex.r
@@ -109,13 +138,13 @@ export function Board() {
       if (isOwnPiece && isMyTurn) {
         // Own piece clicked on player's turn: select and compute valid moves
         const moves = getValidMoves(gameState, piece.id);
-        useGameStore.getState().selectPiece(piece.id, moves);
+        store.selectPiece(piece.id, moves);
       } else {
         // Clicked elsewhere or not player's turn: clear selection
-        useGameStore.getState().clearSelection();
+        store.clearSelection();
       }
     },
-    [gameState, playerId, isMyTurn]
+    [gameState, playerId, isMyTurn, selectedPieceId, validMoves]
   );
 
   return (
