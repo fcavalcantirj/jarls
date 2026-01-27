@@ -428,7 +428,7 @@
       "Configure connection with REDIS_URL from env",
       "Add auto-reconnection handling"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
@@ -438,7 +438,7 @@
       "Add graceful disconnect on shutdown",
       "Export client from redis/index.ts"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
@@ -448,7 +448,7 @@
       "Test set/get operations",
       "Test TTL expiration"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

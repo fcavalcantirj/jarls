@@ -3014,3 +3014,33 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Modified**:
 - packages/server/package.json (added @jest/globals dev dependency)
+
+---
+
+### 2026-01-27: Infrastructure - Redis Client Setup with ioredis
+
+**Features Completed**:
+- "Redis client setup with ioredis"
+- "Redis client error handling and export"
+- "Redis client unit test"
+
+**Work Done**:
+- Installed ioredis dependency in server package
+- Created packages/server/src/redis/client.ts with Redis client instance
+- Configured connection using REDIS_URL environment variable (default: redis://localhost:6379)
+- Added auto-reconnection with exponential backoff (retryStrategy with max 5s delay)
+- Added error, connect, and reconnecting event listeners with console logging
+- Added graceful shutdown handling (SIGINT/SIGTERM) to close Redis connection
+- Created closeRedis() function for programmatic shutdown
+- Created packages/server/src/redis/index.ts barrel export
+- Created unit tests verifying: instance creation, event handler registration, error/connect handler behavior, closeRedis functionality
+- All 844 tests pass, typecheck passes
+
+**Files Created**:
+- packages/server/src/redis/client.ts
+- packages/server/src/redis/index.ts
+- packages/server/src/redis/__tests__/client.test.ts
+
+**Files Modified**:
+- packages/server/package.json (added ioredis dependency)
+- specs/prd-v1.json (marked 3 Redis tasks as passes: true)
