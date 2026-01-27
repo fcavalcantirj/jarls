@@ -1,5 +1,25 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Implement piece drawing functions
+
+**Features Completed**: "Implement piece drawing functions"
+
+**Work Done**:
+- Added player color palette constants (`#e63946` for P1, `#457b9d` for P2) with dynamic assignment via `getPlayerColor()`
+- Added shield rendering constants (gray fill/stroke)
+- Implemented `drawShield(hex)`: renders a gray hex with a diamond/kite shield icon in silver
+- Implemented `drawWarrior(piece)`: renders a colored circle with shadow and white border at piece position
+- Implemented `drawJarl(piece)`: renders a larger colored circle with gold border and three-triangle crown indicator
+- All piece drawing methods include drop shadows for visual depth
+- Imported `Piece` type from `@jarls/shared`
+
+**Files Modified**:
+- packages/client/src/components/Board/BoardRenderer.ts (159 -> 282 lines)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (16 failed, 1177 passed).
+
+---
+
 ### 2026-01-27: Frontend - Add BoardRenderer resize handling
 
 **Features Completed**: "Add BoardRenderer resize handling"

@@ -5,7 +5,7 @@
  * for rendering the game board.
  */
 
-import type { AxialCoord } from '@jarls/shared';
+import type { AxialCoord, Piece } from '@jarls/shared';
 import { generateAllBoardHexesAxial } from '@jarls/shared';
 import { hexToPixel, getHexCorners } from '../../utils/hexMath';
 
@@ -17,6 +17,16 @@ const DEFAULT_HEX_STROKE = '#4a4a5e';
 const THRONE_FILL = '#b8860b';
 /** Stroke color for the Throne hex */
 const THRONE_STROKE = '#daa520';
+/** Fill color for shield hexes */
+const SHIELD_FILL = '#6b6b7b';
+/** Stroke color for shield hexes */
+const SHIELD_STROKE = '#8a8a9a';
+/** Player colors indexed by player order */
+const PLAYER_COLORS: Record<string, string> = {};
+/** Default player color palette */
+const COLOR_PALETTE = ['#e63946', '#457b9d'];
+/** Piece shadow color */
+const PIECE_SHADOW = 'rgba(0, 0, 0, 0.4)';
 
 export interface BoardDimensions {
   /** Pixel size of each hex (center to corner) */
@@ -154,6 +164,119 @@ export class BoardRenderer {
       } else {
         this.drawHex(hex, DEFAULT_HEX_FILL, DEFAULT_HEX_STROKE);
       }
+    }
+  }
+
+  /**
+   * Get a color for a given player ID.
+   * Assigns colors from the palette on first encounter and caches them.
+   */
+  getPlayerColor(playerId: string): string {
+    if (!PLAYER_COLORS[playerId]) {
+      const index = Object.keys(PLAYER_COLORS).length;
+      PLAYER_COLORS[playerId] = COLOR_PALETTE[index % COLOR_PALETTE.length];
+    }
+    return PLAYER_COLORS[playerId];
+  }
+
+  /**
+   * Draw a shield piece on the board.
+   * Renders the hex with a gray fill and a shield icon (simple diamond shape).
+   */
+  drawShield(hex: AxialCoord): void {
+    const dims = this.dimensions;
+    if (!dims) return;
+
+    this.drawHex(hex, SHIELD_FILL, SHIELD_STROKE);
+
+    const { x, y } = hexToPixel(hex, dims.hexSize, dims.centerX, dims.centerY);
+    const iconSize = dims.hexSize * 0.35;
+    const ctx = this.ctx;
+
+    // Shield icon: a simple diamond/kite shape
+    ctx.beginPath();
+    ctx.moveTo(x, y - iconSize);
+    ctx.lineTo(x + iconSize * 0.7, y);
+    ctx.lineTo(x, y + iconSize * 0.8);
+    ctx.lineTo(x - iconSize * 0.7, y);
+    ctx.closePath();
+
+    ctx.fillStyle = '#c0c0c0';
+    ctx.fill();
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  /**
+   * Draw a Warrior piece as a colored circle at its position.
+   */
+  drawWarrior(piece: Piece): void {
+    const dims = this.dimensions;
+    if (!dims || !piece.playerId) return;
+
+    const { x, y } = hexToPixel(piece.position, dims.hexSize, dims.centerX, dims.centerY);
+    const radius = dims.hexSize * 0.35;
+    const color = this.getPlayerColor(piece.playerId);
+    const ctx = this.ctx;
+
+    // Shadow
+    ctx.beginPath();
+    ctx.arc(x + 2, y + 2, radius, 0, Math.PI * 2);
+    ctx.fillStyle = PIECE_SHADOW;
+    ctx.fill();
+
+    // Main circle
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  /**
+   * Draw a Jarl piece as a larger circle with a crown indicator.
+   */
+  drawJarl(piece: Piece): void {
+    const dims = this.dimensions;
+    if (!dims || !piece.playerId) return;
+
+    const { x, y } = hexToPixel(piece.position, dims.hexSize, dims.centerX, dims.centerY);
+    const radius = dims.hexSize * 0.42;
+    const color = this.getPlayerColor(piece.playerId);
+    const ctx = this.ctx;
+
+    // Shadow
+    ctx.beginPath();
+    ctx.arc(x + 2, y + 2, radius, 0, Math.PI * 2);
+    ctx.fillStyle = PIECE_SHADOW;
+    ctx.fill();
+
+    // Main circle
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Crown indicator: three small triangles on top
+    const crownY = y - radius * 0.3;
+    const crownSize = radius * 0.35;
+    const points = [-0.6, 0, 0.6];
+
+    ctx.fillStyle = '#ffd700';
+    for (const offset of points) {
+      const cx = x + offset * radius;
+      ctx.beginPath();
+      ctx.moveTo(cx, crownY - crownSize);
+      ctx.lineTo(cx - crownSize * 0.4, crownY + crownSize * 0.3);
+      ctx.lineTo(cx + crownSize * 0.4, crownY + crownSize * 0.3);
+      ctx.closePath();
+      ctx.fill();
     }
   }
 }

@@ -2000,7 +2000,7 @@
       "Implement drawWarrior(piece): colored circle at piece position",
       "Implement drawJarl(piece): larger circle with crown indicator"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
