@@ -1898,7 +1898,7 @@
       "Create src/store/gameStore.ts",
       "Define state: gameState, playerId, sessionToken, connectionStatus, selectedPieceId, validMoves"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
@@ -1908,13 +1908,13 @@
       "Add computed selectors: isMyTurn, myPieces, currentPlayer",
       "Export useGameStore hook"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
     "description": "Unit tests for Zustand store",
     "steps": ["Add unit tests for store actions"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

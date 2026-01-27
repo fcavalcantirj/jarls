@@ -4497,3 +4497,23 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - packages/client/src/components/Modals/index.ts
 
 **Verification**: pnpm typecheck passes. 1158 tests total (1136 passing, 22 pre-existing integration test failures). All files under 800 lines.
+
+---
+
+### 2026-01-27: Frontend - Set up Zustand store with actions, selectors, and unit tests
+
+**Features Completed**: "Set up Zustand store structure", "Implement Zustand store actions", "Unit tests for Zustand store"
+
+**Work Done**:
+- Created `packages/client/src/store/gameStore.ts` with Zustand store
+- Defined state: gameState, playerId, sessionToken, connectionStatus, selectedPieceId, validMoves
+- Implemented actions: setGameState, setPlayer, setSession, setConnectionStatus, selectPiece, clearSelection, clearGame
+- Added computed selectors: selectIsMyTurn, selectMyPieces, selectCurrentPlayer
+- Exported useGameStore hook and ConnectionStatus type
+- Created 19 unit tests covering all actions and selectors
+
+**Files Created**:
+- packages/client/src/store/gameStore.ts (68 lines)
+- packages/client/src/store/__tests__/gameStore.test.ts (213 lines)
+
+**Verification**: pnpm typecheck passes. 19 new client tests all pass. 1177 tests total (1151 passing, 26 pre-existing server integration test failures). All files under 800 lines.
