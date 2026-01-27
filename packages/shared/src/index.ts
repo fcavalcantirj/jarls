@@ -28,6 +28,7 @@ export type {
   JarlStarvedEvent,
   PlayerJoinedEvent,
   PlayerLeftEvent,
+  TurnSkippedEvent,
   MoveValidationError,
   MoveValidation,
   InlineSupportResult,

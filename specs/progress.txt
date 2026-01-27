@@ -1,5 +1,36 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Turn timer, autoSkipTurn, and unit tests
+
+**Features Completed**: "Implement turn timer delayed transition", "Implement autoSkipTurn action", and "Unit tests for turn timer"
+
+**Work Done**:
+- Added `TurnSkippedEvent` type to shared types (types.ts) and re-exported from index.ts
+- Added `turnTimer` dynamic delay to game machine using XState v5 `setup({ delays })` API
+  - Returns `context.turnTimerMs` when timer is configured, or max int when disabled
+- Added `isTurnTimerEnabled` guard to prevent timeout transitions when timer is null
+- Added `autoSkipTurn` action that advances the turn without making a move
+  - Mirrors the turn advancement logic from `applyMove` (next player, round rotation, firstPlayerIndex)
+- Added `after` transition in `awaitingMove` state: on timer expiration, executes `autoSkipTurn` and transitions to `checkingGameEnd`
+- Helper functions `getNextActivePlayerId` and `advanceTurnSkip` added to machine.ts
+- Created `turn-timer.test.ts` with 6 tests:
+  - Turn skipped after timer expires (5s)
+  - Turn not skipped before timer expires
+  - No skip when timer disabled (null)
+  - Timer resets after each turn transition
+  - Timer cancelled when valid move made before expiration
+  - Correct timer values (30s)
+
+**Files Modified**:
+- packages/shared/src/types.ts (added TurnSkippedEvent type and union member)
+- packages/shared/src/index.ts (re-exported TurnSkippedEvent)
+- packages/server/src/game/machine.ts (added delays, guards, autoSkipTurn action, after transition)
+- packages/server/src/game/__tests__/turn-timer.test.ts (new, 6 tests)
+
+**Verification**: pnpm typecheck passes, all 887 tests pass (6 new). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Implement rotating first player each round & Unit tests
 
 **Features Completed**: "Implement rotating first player each round" and "Unit tests for rotating first player"

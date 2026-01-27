@@ -1260,7 +1260,7 @@
       "Delay uses context.turnTimerMs if not null",
       "If turnTimerMs is null: no timeout (wait indefinitely)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
@@ -1270,7 +1270,7 @@
       "Generate TURN_SKIPPED event",
       "Transition to checkingGameEnd"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
@@ -1279,7 +1279,7 @@
       "Add unit tests with fake timers: turn skipped after timeout",
       "Add unit tests: no skip when timer disabled"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

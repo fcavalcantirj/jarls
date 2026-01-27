@@ -174,7 +174,8 @@ export type GameEvent =
   | StarvationResolvedEvent
   | JarlStarvedEvent
   | PlayerJoinedEvent
-  | PlayerLeftEvent;
+  | PlayerLeftEvent
+  | TurnSkippedEvent;
 
 /** Event: A piece was moved */
 export interface MoveEvent {
@@ -251,6 +252,14 @@ export interface PlayerJoinedEvent {
 export interface PlayerLeftEvent {
   type: 'PLAYER_LEFT';
   playerId: string;
+}
+
+/** Event: A turn was skipped due to timer expiration */
+export interface TurnSkippedEvent {
+  type: 'TURN_SKIPPED';
+  playerId: string;
+  nextPlayerId: string;
+  turnNumber: number;
 }
 
 // ============================================================================

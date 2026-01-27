@@ -4,6 +4,49 @@ import type { Piece, Player } from '@jarls/shared';
 import { createInitialState, applyMove } from '@jarls/shared';
 
 /**
+ * Get the next active (non-eliminated) player ID after the current player.
+ */
+function getNextActivePlayerId(context: GameMachineContext, currentPlayerId: string): string {
+  const activePlayers = context.players.filter((p) => !p.isEliminated);
+  const currentIndex = activePlayers.findIndex((p) => p.id === currentPlayerId);
+  const nextIndex = (currentIndex + 1) % activePlayers.length;
+  return activePlayers[nextIndex].id;
+}
+
+/**
+ * Advance the turn without making a move (used for turn timer timeout).
+ * Mirrors the turn advancement logic in applyMove from shared.
+ */
+function advanceTurnSkip(context: GameMachineContext): Partial<GameMachineContext> {
+  const currentPlayerId = context.currentPlayerId!;
+  const nextPlayerId = getNextActivePlayerId(context, currentPlayerId);
+  const newTurnNumber = context.turnNumber + 1;
+
+  const activePlayers = context.players.filter((p) => !p.isEliminated);
+  const currentFirstPlayer = activePlayers[context.firstPlayerIndex % activePlayers.length];
+  const isNewRound = nextPlayerId === currentFirstPlayer?.id && newTurnNumber > 0;
+  const newRoundNumber = isNewRound ? context.roundNumber + 1 : context.roundNumber;
+
+  const newFirstPlayerIndex = isNewRound
+    ? (context.firstPlayerIndex + 1) % activePlayers.length
+    : context.firstPlayerIndex;
+
+  const actualNextPlayerId = isNewRound ? activePlayers[newFirstPlayerIndex].id : nextPlayerId;
+
+  const newRoundsSinceElimination = isNewRound
+    ? context.roundsSinceElimination + 1
+    : context.roundsSinceElimination;
+
+  return {
+    currentPlayerId: actualNextPlayerId,
+    turnNumber: newTurnNumber,
+    roundNumber: newRoundNumber,
+    firstPlayerIndex: newFirstPlayerIndex,
+    roundsSinceElimination: newRoundsSinceElimination,
+  };
+}
+
+/**
  * Guard: Can the game start?
  * Requires at least 2 players in the lobby.
  */
@@ -32,7 +75,22 @@ export const gameMachine = setup({
     events: {} as GameMachineEvent,
     input: {} as GameMachineInput,
   },
+  delays: {
+    turnTimer: ({ context }: { context: GameMachineContext }) => {
+      // Return the turn timer duration, or a very large value if no timer configured.
+      // XState v5 requires a number, so we use Infinity-like value when disabled.
+      return context.turnTimerMs ?? 2_147_483_647;
+    },
+  },
+  guards: {
+    isTurnTimerEnabled: ({ context }: { context: GameMachineContext }) => {
+      return context.turnTimerMs !== null;
+    },
+  },
   actions: {
+    autoSkipTurn: assign(({ context }) => {
+      return advanceTurnSkip(context);
+    }),
     initializeBoard: assign(({ context }) => {
       // Generate board using shared logic
       const playerNames = context.players.map((p) => p.name);
@@ -118,6 +176,13 @@ export const gameMachine = setup({
       initial: 'awaitingMove',
       states: {
         awaitingMove: {
+          after: {
+            turnTimer: {
+              guard: 'isTurnTimerEnabled',
+              actions: 'autoSkipTurn',
+              target: 'checkingGameEnd',
+            },
+          },
           on: {
             MAKE_MOVE: [
               {
