@@ -1665,7 +1665,7 @@
       "Add integration tests for joinGame handler",
       "Add integration tests for startGame handler"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",

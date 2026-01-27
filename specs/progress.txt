@@ -1,5 +1,37 @@
 ## Progress Log
 
+### 2026-01-27: Network - Integration tests for Socket.IO lifecycle handlers
+
+**Feature Completed**: "Integration tests for Socket.IO lifecycle handlers"
+
+**Work Done**:
+- Installed `socket.io-client` as dev dependency in server package for Socket.IO testing
+- Created `packages/server/src/socket/__tests__/handlers.integration.test.ts` (484 lines)
+- Uses real PostgreSQL and Redis with mocked db/redis modules (same pattern as other integration tests)
+- Creates a real HTTP server with Socket.IO and `registerSocketHandlers` wired up
+- Uses `socket.io-client` to connect as typed clients and test events/callbacks
+
+**joinGame handler tests (5 tests)**:
+- Successfully joins game with valid session token, receives gameState and playerId
+- Returns error for invalid/expired session token
+- Returns error when session does not match the requested game
+- Returns error for non-existent game
+- Broadcasts `playerJoined` event to other players already in the room
+
+**startGame handler tests (5 tests)**:
+- Successfully starts game when host requests, verifies game transitions to playing state
+- Broadcasts `gameState` to all players after start (verified pieces and currentPlayerId)
+- Returns error when socket has not joined a game first
+- Returns error when non-host player tries to start
+- Returns error for game ID mismatch
+
+**Files Created**:
+- packages/server/src/socket/__tests__/handlers.integration.test.ts (484 lines)
+
+**Verification**: pnpm typecheck passes. All 10 new tests pass. All non-integration tests pass (1102 total). Pre-existing integration test failures unchanged. All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Implement Socket.IO game lifecycle handlers
 
 **Feature Completed**: "Implement Socket.IO game lifecycle handlers"
