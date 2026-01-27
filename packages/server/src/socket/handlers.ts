@@ -8,6 +8,8 @@ import type {
   JoinGameResponse,
   StartGamePayload,
   StartGameResponse,
+  PlayTurnPayload,
+  PlayTurnResponse,
 } from './types.js';
 import type { GameManager } from '../game/manager.js';
 import type { GameMachineContext } from '../game/types.js';
@@ -37,6 +39,7 @@ export function registerSocketHandlers(io: TypedServer, gameManager: GameManager
 
     handleJoinGame(socket, gameManager);
     handleStartGame(socket, io, gameManager);
+    handlePlayTurn(socket, io, gameManager);
     handleDisconnect(socket, io, gameManager);
   });
 }
@@ -140,6 +143,58 @@ function handleStartGame(socket: TypedSocket, io: TypedServer, gameManager: Game
       console.log(`Game ${gameId} started by player ${playerId}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to start game';
+      callback({ success: false, error: message });
+    }
+  });
+}
+
+// ── playTurn Handler ────────────────────────────────────────────────────
+
+function handlePlayTurn(socket: TypedSocket, io: TypedServer, gameManager: GameManager): void {
+  socket.on('playTurn', (payload: PlayTurnPayload, callback: (r: PlayTurnResponse) => void) => {
+    try {
+      const { gameId, command } = payload;
+      const { playerId } = socket.data;
+
+      if (!playerId || !socket.data.gameId) {
+        callback({ success: false, error: 'Not joined to a game. Call joinGame first.' });
+        return;
+      }
+
+      if (socket.data.gameId !== gameId) {
+        callback({ success: false, error: 'Game ID mismatch' });
+        return;
+      }
+
+      // Execute the move via GameManager
+      const result = gameManager.makeMove(gameId, playerId, command);
+
+      if (!result.success) {
+        callback({ success: false, error: result.error ?? 'Invalid move' });
+        return;
+      }
+
+      // Broadcast the turn result to all players in the room
+      io.to(gameId).emit('turnPlayed', {
+        newState: result.newState,
+        events: result.events,
+      });
+
+      // Check if the game ended
+      const gameEndedEvent = result.events.find((e) => e.type === 'GAME_ENDED');
+      if (gameEndedEvent && gameEndedEvent.type === 'GAME_ENDED') {
+        io.to(gameId).emit('gameEnded', {
+          winnerId: gameEndedEvent.winnerId,
+          winCondition: gameEndedEvent.winCondition,
+          finalState: result.newState,
+        });
+      }
+
+      callback({ success: true });
+
+      console.log(`Player ${playerId} played turn in game ${gameId}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to play turn';
       callback({ success: false, error: message });
     }
   });

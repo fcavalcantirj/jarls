@@ -1675,7 +1675,7 @@
       "Broadcast turnPlayed to room with events and newState",
       "Handle validation errors, emit error to client"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",

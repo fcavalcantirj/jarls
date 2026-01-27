@@ -1,5 +1,24 @@
 ## Progress Log
 
+### 2026-01-27: Network - Implement Socket.IO move execution handler
+
+**Feature Completed**: "Implement Socket.IO move execution handler"
+
+**Work Done**:
+- Added `handlePlayTurn` function to `packages/server/src/socket/handlers.ts`
+- **playTurn handler**: validates socket is joined to a game, validates game ID matches, delegates to `GameManager.makeMove()` which validates turn ownership and move legality
+- On success: broadcasts `turnPlayed` event to all players in the room with `newState` and `events`
+- On game end: checks for `GAME_ENDED` event in result events and broadcasts `gameEnded` with winner info, win condition, and final state
+- On failure: returns error message via callback (invalid move, wrong turn, game state mismatch)
+- Added `PlayTurnPayload` and `PlayTurnResponse` imports to handlers.ts
+
+**Files Modified**:
+- packages/server/src/socket/handlers.ts (180 → 234 lines, added playTurn handler)
+
+**Verification**: pnpm typecheck passes. All non-integration tests pass (1099 total). Existing handler integration tests pass (10/10). Pre-existing integration test failures unchanged. All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Integration tests for Socket.IO lifecycle handlers
 
 **Feature Completed**: "Integration tests for Socket.IO lifecycle handlers"
