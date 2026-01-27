@@ -1,7 +1,9 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, type MouseEvent } from 'react';
+import { isOnBoardAxial } from '@jarls/shared';
 import { useGameStore } from '../../store/gameStore';
 import { BoardRenderer } from './BoardRenderer';
 import type { RenderHighlights } from './BoardRenderer';
+import { pixelToHex } from '../../utils/hexMath';
 
 export function Board() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -74,13 +76,54 @@ export function Board() {
     return () => window.removeEventListener('resize', handleResize);
   }, [gameState, getHighlights]);
 
+  // Handle canvas click: convert to hex coordinates and detect piece
+  const handleClick = useCallback(
+    (event: MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      const renderer = rendererRef.current;
+      if (!canvas || !renderer || !gameState) return;
+
+      const dims = renderer.getDimensions();
+      if (!dims) return;
+
+      // Get click position relative to canvas
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      // Convert pixel coordinates to hex
+      const clickedHex = pixelToHex(x, y, dims.hexSize, dims.centerX, dims.centerY);
+
+      // Ignore clicks outside the board
+      if (!isOnBoardAxial(clickedHex, gameState.config.boardRadius)) return;
+
+      // Check if hex contains a piece owned by the current player
+      const piece = gameState.pieces.find(
+        (p) => p.position.q === clickedHex.q && p.position.r === clickedHex.r
+      );
+
+      const isOwnPiece = piece != null && piece.playerId === playerId;
+
+      if (isOwnPiece) {
+        // Own piece clicked - select it (selection logic handled by next task)
+        useGameStore.getState().selectPiece(piece.id, []);
+      } else {
+        // Clicked elsewhere - clear selection
+        useGameStore.getState().clearSelection();
+      }
+    },
+    [gameState, playerId]
+  );
+
   return (
     <canvas
       ref={canvasRef}
+      onClick={handleClick}
       style={{
         display: 'block',
         width: '100%',
         height: '100%',
+        cursor: 'pointer',
       }}
     />
   );

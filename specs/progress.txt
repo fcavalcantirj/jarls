@@ -1,5 +1,26 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Implement click handler and hex detection
+
+**Features Completed**: "Add Board component effects" (already implemented), "Implement click handler and hex detection"
+
+**Work Done**:
+- Marked "Add Board component effects" as passes: true (re-render on state changes, window resize, and export were already implemented in the Board component)
+- Added onClick handler to Board canvas element
+- Converts click coordinates to hex using pixelToHex with BoardRenderer dimensions
+- Validates clicked hex is on the board via isOnBoardAxial
+- Detects if clicked hex contains a piece owned by the current player
+- Selects own piece on click, clears selection on clicking elsewhere
+- Added cursor: pointer style to canvas
+
+**Files Modified**:
+- packages/client/src/components/Board/Board.tsx (87 -> 131 lines)
+- specs/prd-v1.json (marked 2 tasks as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (30 failed, 1163 passed).
+
+---
+
 ### 2026-01-27: Frontend - Create React Board component
 
 **Features Completed**: "Create React Board component"

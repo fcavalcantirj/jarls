@@ -2051,7 +2051,7 @@
       "Handle window resize: recalculate dimensions, re-render",
       "Export Board component"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
@@ -2061,7 +2061,7 @@
       "Convert click coordinates to hex using pixelToHex",
       "Check if hex contains a piece owned by current player"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
