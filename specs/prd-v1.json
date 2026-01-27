@@ -417,7 +417,7 @@
       "Test query helper returns results",
       "Test error handling on bad query"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

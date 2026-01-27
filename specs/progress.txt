@@ -2990,3 +2990,27 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Modified**:
 - packages/server/src/db/pool.ts (added shutdown signal handlers)
+---
+
+### 2026-01-27: Infrastructure - PostgreSQL connection pool unit test
+
+**Feature Completed**: "PostgreSQL connection pool unit test"
+
+**Work Done**:
+- Created packages/server/src/db/__tests__/pool.test.ts with 6 unit tests
+- Tests mock the pg module using jest.unstable_mockModule for ESM compatibility
+- Test: query() executes parameterized queries and returns results
+- Test: query() works without params
+- Test: query() throws and logs on error (Error objects)
+- Test: query() handles non-Error thrown values
+- Test: getClient() returns a pool client
+- Test: closePool() ends the pool gracefully
+- Added @jest/globals as dev dependency to server package for ESM mock support
+- All tests pass (30 suites, 839 tests)
+- Typecheck passes for all packages
+
+**Files Created**:
+- packages/server/src/db/__tests__/pool.test.ts
+
+**Files Modified**:
+- packages/server/package.json (added @jest/globals dev dependency)
