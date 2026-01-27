@@ -1848,13 +1848,13 @@
       "Handle AI starvation choices automatically",
       "Add 2-second timeout protection (fallback to random move)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ai",
     "description": "Integration tests for AI",
     "steps": ["Add integration tests: AI makes moves on its turn"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

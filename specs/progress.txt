@@ -1,5 +1,29 @@
 ## Progress Log
 
+### 2026-01-27: AI - Implement AI move execution & Integration tests
+
+**Features Completed**: "Implement AI move execution", "Integration tests for AI"
+
+**Work Done**:
+- Confirmed AI move execution was already fully implemented in `handleAITurn()` and `handleAIStarvation()` in GameManager
+- Marked "Implement AI move execution" as passing (thinking delay, auto-move, starvation choices, 2s timeout with RandomAI fallback)
+- Created `packages/server/src/ai/__tests__/ai-integration.test.ts` with 7 integration tests:
+  - AI player joins game and is tracked
+  - AI makes a move automatically when it is its turn (RandomAI)
+  - Heuristic AI makes a move automatically
+  - AI gets a Norse name when added
+  - Cannot add AI player to a full game
+  - Cannot add AI player to a non-lobby game
+  - isAIPlayer returns false for non-existent game
+- Tests use polling (`waitUntil`) to handle async AI move execution with thinking delays
+
+**Files Created**:
+- packages/server/src/ai/__tests__/ai-integration.test.ts (243 lines)
+
+**Verification**: pnpm typecheck passes. All 51 AI tests pass. Pre-existing integration test failures unchanged (16 failed, 1142 passed).
+
+---
+
 ### 2026-01-27: AI - Integrate AI with GameManager
 
 **Features Completed**: "Integrate AI with GameManager"
