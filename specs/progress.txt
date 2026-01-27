@@ -2877,3 +2877,34 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 **Files Modified**:
 - docker-compose.yml (added Redis service and redis_data volume)
 - package.json (added docker:up and docker:down scripts)
+
+---
+
+### 2026-01-27: Infrastructure - Database migrations setup with node-pg-migrate
+
+**Feature Completed**: "Database migrations setup with node-pg-migrate"
+
+**Work Done**:
+- Installed node-pg-migrate and pg as dependencies in @jarls/server
+- Installed @types/pg as dev dependency in @jarls/server
+- Created packages/server/migrations/ directory for migration files
+- Added npm scripts to server package.json:
+  - `db:migrate`: runs pending migrations
+  - `db:rollback`: rolls back last migration
+  - `db:create-migration`: creates a new migration file
+- Added convenience scripts to root package.json (db:migrate, db:rollback, db:create-migration)
+- Created packages/server/.env.example documenting required environment variables
+- node-pg-migrate configured to use DATABASE_URL env var and --decamelize for snake_case table names
+
+**Verification**:
+- `node-pg-migrate --help` runs correctly
+- `pnpm typecheck` passes (all 3 packages)
+- `pnpm test` passes (29 test suites, 833 tests)
+
+**Files Created**:
+- packages/server/migrations/ (directory)
+- packages/server/.env.example
+
+**Files Modified**:
+- packages/server/package.json (added node-pg-migrate, pg deps + migration scripts)
+- package.json (added db:migrate, db:rollback, db:create-migration scripts)

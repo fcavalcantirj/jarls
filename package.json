@@ -19,6 +19,9 @@
     "format:check": "prettier --check .",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
+    "db:migrate": "pnpm --filter @jarls/server db:migrate",
+    "db:rollback": "pnpm --filter @jarls/server db:rollback",
+    "db:create-migration": "pnpm --filter @jarls/server db:create-migration",
     "prepare": "husky"
   },
   "devDependencies": {

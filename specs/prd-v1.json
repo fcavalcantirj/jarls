@@ -365,7 +365,7 @@
       "Configure migrations directory and connection",
       "Add db:migrate and db:rollback npm scripts"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

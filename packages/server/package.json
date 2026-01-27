@@ -10,13 +10,19 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest --selectProjects server",
-    "lint": "echo \"Lint not configured\" && exit 0"
+    "lint": "echo \"Lint not configured\" && exit 0",
+    "db:migrate": "node-pg-migrate up --migrations-dir migrations --database-url-var DATABASE_URL --decamelize",
+    "db:rollback": "node-pg-migrate down --migrations-dir migrations --database-url-var DATABASE_URL --decamelize",
+    "db:create-migration": "node-pg-migrate create --migrations-dir migrations --decamelize"
   },
   "dependencies": {
-    "@jarls/shared": "workspace:*"
+    "@jarls/shared": "workspace:*",
+    "node-pg-migrate": "^8.0.4",
+    "pg": "^8.17.2"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "@types/pg": "^8.16.0",
     "nodemon": "^3.1.11",
     "tsx": "^4.7.0",
     "typescript": "^5.3.0"
