@@ -1,5 +1,21 @@
 ## Progress Log
 
+### 2026-01-27: Network - Unit test for health endpoint
+
+**Feature Completed**: "Unit test for health endpoint"
+
+**Work Done**:
+- Installed `supertest` and `@types/supertest` as dev dependencies in server package
+- Created `packages/server/src/__tests__/health.test.ts` with 1 test:
+  - Verifies `GET /health` returns 200 with `{ status: 'ok', timestamp }` and valid ISO timestamp
+
+**Files Created**:
+- packages/server/src/__tests__/health.test.ts (14 lines)
+
+**Verification**: pnpm typecheck passes. 1033 tests total (1026 passing, 7 pre-existing integration test failures from database state issues). New test passes. All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Add Express security and health endpoint
 
 **Feature Completed**: "Add Express security and health endpoint"

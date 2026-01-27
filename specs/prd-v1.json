@@ -1515,7 +1515,7 @@
     "category": "network",
     "description": "Unit test for health endpoint",
     "steps": ["Add basic test: health endpoint returns 200"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
