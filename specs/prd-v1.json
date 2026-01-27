@@ -1610,7 +1610,7 @@
       "GET /api/games/:id/valid-moves/:pieceId: require auth, call getValidMoves from shared, return array",
       "Mount routes in server.ts"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",

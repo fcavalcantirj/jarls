@@ -1,10 +1,11 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { GameManager } from '../game/manager.js';
-import { GameNotFoundError, ValidationError } from '../errors/index.js';
-import { getConfigForPlayerCount } from '@jarls/shared';
+import { GameNotFoundError, UnauthorizedError, ValidationError } from '../errors/index.js';
+import { getConfigForPlayerCount, getValidMoves } from '@jarls/shared';
 import { authenticateSession } from '../middleware/auth.js';
 import { createSession } from '../services/session.js';
+import type { GameMachineContext } from '../game/types.js';
 
 const joinGameSchema = z.object({
   playerName: z.string().min(1).max(30),
@@ -106,6 +107,64 @@ export function createGameRoutes(manager: GameManager): Router {
       next(err);
     }
   });
+
+  /**
+   * POST /api/games/:id/start
+   * Start a game. Requires auth. Only the host (first player) can start.
+   */
+  router.post(
+    '/:id/start',
+    authenticateSession,
+    (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const id = req.params.id as string;
+        const session = req.session!;
+
+        const snapshot = manager.getState(id);
+        if (!snapshot) {
+          throw new GameNotFoundError(id);
+        }
+
+        const context = snapshot.context as GameMachineContext;
+        if (context.players.length === 0 || context.players[0].id !== session.playerId) {
+          throw new UnauthorizedError('Only the host can start the game');
+        }
+
+        manager.start(id, session.playerId);
+
+        res.json({ success: true });
+      } catch (err) {
+        next(err);
+      }
+    }
+  );
+
+  /**
+   * GET /api/games/:id/valid-moves/:pieceId
+   * Get valid moves for a specific piece. Requires auth.
+   */
+  router.get(
+    '/:id/valid-moves/:pieceId',
+    authenticateSession,
+    (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const id = req.params.id as string;
+        const pieceId = req.params.pieceId as string;
+
+        const snapshot = manager.getState(id);
+        if (!snapshot) {
+          throw new GameNotFoundError(id);
+        }
+
+        const context = snapshot.context as GameMachineContext;
+        const moves = getValidMoves(context, pieceId);
+
+        res.json({ moves });
+      } catch (err) {
+        next(err);
+      }
+    }
+  );
 
   return router;
 }

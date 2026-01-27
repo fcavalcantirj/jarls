@@ -318,4 +318,178 @@ describe('Game routes', () => {
       expect(response.status).toBe(500);
     });
   });
+
+  describe('POST /api/games/:id/start', () => {
+    async function createGameWithPlayers() {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      const join1 = await request(app)
+        .post(`/api/games/${gameId}/join`)
+        .send({ playerName: 'Viking1' });
+      const hostPlayerId = join1.body.playerId;
+
+      await request(app).post(`/api/games/${gameId}/join`).send({ playerName: 'Viking2' });
+
+      return { gameId, hostPlayerId };
+    }
+
+    it('returns 401 without auth header', async () => {
+      const { gameId } = await createGameWithPlayers();
+
+      const response = await request(app).post(`/api/games/${gameId}/start`);
+
+      expect(response.status).toBe(401);
+    });
+
+    it('returns 401 with invalid token', async () => {
+      mockValidateSessionFn.mockResolvedValueOnce(null);
+      const { gameId } = await createGameWithPlayers();
+
+      const response = await request(app)
+        .post(`/api/games/${gameId}/start`)
+        .set('Authorization', 'Bearer invalid-token');
+
+      expect(response.status).toBe(401);
+    });
+
+    it('returns 404 for non-existent game', async () => {
+      mockValidateSessionFn.mockResolvedValueOnce({
+        gameId: 'nonexistent',
+        playerId: 'p1',
+        playerName: 'TestPlayer',
+      });
+
+      const response = await request(app)
+        .post('/api/games/nonexistent/start')
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(404);
+    });
+
+    it('returns 401 when non-host tries to start', async () => {
+      const { gameId } = await createGameWithPlayers();
+
+      // Authenticate as a non-host player
+      mockValidateSessionFn.mockResolvedValueOnce({
+        gameId,
+        playerId: 'not-the-host',
+        playerName: 'Imposter',
+      });
+
+      const response = await request(app)
+        .post(`/api/games/${gameId}/start`)
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(401);
+    });
+
+    it('starts game successfully when host requests', async () => {
+      const { gameId, hostPlayerId } = await createGameWithPlayers();
+
+      mockValidateSessionFn.mockResolvedValueOnce({
+        gameId,
+        playerId: hostPlayerId,
+        playerName: 'Viking1',
+      });
+
+      const response = await request(app)
+        .post(`/api/games/${gameId}/start`)
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ success: true });
+
+      // Verify game is now in playing state
+      const listRes = await request(app).get('/api/games?status=playing');
+      const game = listRes.body.games.find((g: { gameId: string }) => g.gameId === gameId);
+      expect(game).toBeDefined();
+      expect(game.status).toBe('playing');
+    });
+  });
+
+  describe('GET /api/games/:id/valid-moves/:pieceId', () => {
+    async function createAndStartGame() {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      const join1 = await request(app)
+        .post(`/api/games/${gameId}/join`)
+        .send({ playerName: 'Viking1' });
+      const hostPlayerId = join1.body.playerId;
+
+      await request(app).post(`/api/games/${gameId}/join`).send({ playerName: 'Viking2' });
+
+      // Start the game
+      manager.start(gameId, hostPlayerId);
+
+      return { gameId };
+    }
+
+    it('returns 401 without auth header', async () => {
+      const { gameId } = await createAndStartGame();
+
+      const response = await request(app).get(`/api/games/${gameId}/valid-moves/some-piece`);
+
+      expect(response.status).toBe(401);
+    });
+
+    it('returns 404 for non-existent game', async () => {
+      mockValidateSessionFn.mockResolvedValueOnce({
+        gameId: 'nonexistent',
+        playerId: 'p1',
+        playerName: 'TestPlayer',
+      });
+
+      const response = await request(app)
+        .get('/api/games/nonexistent/valid-moves/some-piece')
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(404);
+    });
+
+    it('returns moves array for a valid piece', async () => {
+      const { gameId } = await createAndStartGame();
+
+      // Get the game state to find a valid piece belonging to the current player
+      const snapshot = manager.getState(gameId);
+      const context = snapshot!.context as any;
+      const currentPlayerId = context.currentPlayerId;
+      const playerPiece = context.pieces.find(
+        (p: any) => p.playerId === currentPlayerId && p.type === 'warrior'
+      );
+      expect(playerPiece).toBeDefined();
+
+      mockValidateSessionFn.mockResolvedValueOnce({
+        gameId,
+        playerId: currentPlayerId,
+        playerName: 'Viking1',
+      });
+
+      const response = await request(app)
+        .get(`/api/games/${gameId}/valid-moves/${playerPiece.id}`)
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('moves');
+      expect(Array.isArray(response.body.moves)).toBe(true);
+    });
+
+    it('returns empty array for non-existent piece', async () => {
+      const { gameId } = await createAndStartGame();
+
+      mockValidateSessionFn.mockResolvedValueOnce({
+        gameId,
+        playerId: 'any-player',
+        playerName: 'Viking1',
+      });
+
+      const response = await request(app)
+        .get(`/api/games/${gameId}/valid-moves/nonexistent-piece`)
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ moves: [] });
+    });
+  });
 });

@@ -1,5 +1,27 @@
 ## Progress Log
 
+### 2026-01-27: Network - Implement game start and valid moves endpoints
+
+**Feature Completed**: "Implement game start and valid moves endpoints"
+
+**Work Done**:
+- Updated `packages/server/src/routes/games.ts` with two new endpoints:
+  - `POST /api/games/:id/start`: requires Bearer token auth via `authenticateSession` middleware, validates the authenticated player is the host (first player in the game), calls `GameManager.start()`, returns `{ success: true }`
+  - `GET /api/games/:id/valid-moves/:pieceId`: requires Bearer token auth, looks up game state, calls `getValidMoves()` from `@jarls/shared` with the game context and pieceId, returns `{ moves }` array
+- Added imports for `UnauthorizedError`, `getValidMoves`, and `GameMachineContext`
+- Updated `packages/server/src/routes/__tests__/games.test.ts` with 9 new tests:
+  - POST /:id/start: 401 without auth, 401 with invalid token, 404 for non-existent game, 401 when non-host tries to start, 200 success when host starts (verifies game transitions to playing state)
+  - GET /:id/valid-moves/:pieceId: 401 without auth, 404 for non-existent game, 200 returns moves array for valid piece, 200 returns empty array for non-existent piece
+- Routes already mounted in server.ts at `/api/games`
+
+**Files Modified**:
+- packages/server/src/routes/games.ts (170 lines, was 112)
+- packages/server/src/routes/__tests__/games.test.ts (496 lines, was 322)
+
+**Verification**: pnpm typecheck passes. 1078 tests total (1071 passing, 7 pre-existing integration test failures from database state issues). All 31 route tests pass (22 original + 9 new). All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Implement game join and state endpoints
 
 **Feature Completed**: "Implement game join and state endpoints"
