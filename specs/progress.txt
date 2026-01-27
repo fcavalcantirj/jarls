@@ -3176,3 +3176,25 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 **Files Modified**:
 - specs/prd-v1.json (marked task as passes: true)
 - specs/progress.txt (this entry)
+
+---
+
+### 2026-01-27: State Machine - Lobby State Event Handlers & Unit Tests
+
+**Features Completed**:
+- "Implement lobby state event handlers" (already implemented in machine.ts)
+- "Unit tests for lobby state"
+
+**Work Done**:
+- Verified lobby state handlers already implemented: PLAYER_JOINED, PLAYER_LEFT, START_GAME
+- Created unit tests for lobby state using XState v5's createActor
+- 13 tests covering: initial state, player join (color assignment, lobby full guard), player leave, game start (guard for 2+ players, transition to setup)
+- Typecheck passes, all 857 tests pass (32 suites)
+- File is 162 lines (well under 800 line limit)
+
+**Files Created**:
+- packages/server/src/game/__tests__/lobby.test.ts
+
+**Files Modified**:
+- specs/prd-v1.json (marked 2 tasks as passes: true)
+- specs/progress.txt (this entry)

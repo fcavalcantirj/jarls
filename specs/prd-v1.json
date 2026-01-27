@@ -1150,7 +1150,7 @@
       "On PLAYER_LEFT: remove player from context.players",
       "On START_GAME with guard: transition to 'setup'"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
@@ -1161,7 +1161,7 @@
       "Add unit tests: cannot start with < 2 players",
       "Add unit tests: can start with 2 players"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
