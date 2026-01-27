@@ -1962,7 +1962,7 @@
       "Implement getHexCorners(centerX, centerY, size): return 6 corner points for drawing",
       "Add unit tests for conversions"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

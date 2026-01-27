@@ -1,5 +1,20 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Add hex corner calculation and tests
+
+**Features Completed**: "Add hex corner calculation and tests"
+
+**Work Done**:
+- Created unit tests for `hexToPixel`, `pixelToHex`, and `getHexCorners` in `packages/client/src/utils/__tests__/hexMath.test.ts`
+- 16 tests covering: origin hex conversion, canvas center offset, negative coordinates, round-trip pixel-to-hex-to-pixel conversions, snap-to-nearest-hex on off-center clicks, corner count, corner distance from center, pointy-top orientation, equal corner spacing, and center offset
+
+**Files Created**:
+- packages/client/src/utils/__tests__/hexMath.test.ts (124 lines)
+
+**Verification**: pnpm typecheck passes. 16 new tests pass. Pre-existing test failures unchanged (20 failed, 1173 passed).
+
+---
+
 ### 2026-01-27: Frontend - Client-side hex coordinate utilities
 
 **Features Completed**: "Client-side hex coordinate utilities"
