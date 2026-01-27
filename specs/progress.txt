@@ -2216,3 +2216,52 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Modified**:
 - specs/prd-v1.json (marked feature as complete)
+
+---
+
+### 2026-01-26: Infrastructure - Re-split board.test.ts (1683 lines)
+
+**Feature Completed**: "Re-split board.test.ts (1683 lines) into board-generation.test.ts and board-validation.test.ts (max 800 lines each)"
+
+**Work Done**:
+- Analyzed board.test.ts structure to identify logical groupings
+- Created board-generation.test.ts (788 lines) with tests for:
+  - getConfigForPlayerCount (player count configs, turn timers, validation)
+  - getBoardHexCount (hex count formula)
+  - generateAllBoardHexes/generateAllBoardHexesAxial (hex generation)
+  - hexToPixel, hexToAngle (coordinate conversions)
+  - calculateStartingPositions (player starting positions)
+  - rotateHex (hex rotation)
+  - generateSymmetricalShields (shield placement)
+
+- Created board-validation.test.ts (793 lines) with tests for:
+  - hasPathToThrone (path detection through shields)
+  - validateShieldPlacement (shield placement validation)
+  - getDirectionTowardThrone (direction calculation)
+  - placeWarriors (warrior placement)
+  - generateId (ID generation)
+  - createInitialState (game state initialization)
+
+- Consolidated redundant tests using it.each() to reduce line counts
+- Deleted original board.test.ts (1683 lines)
+
+**Why This Matters**:
+- Both new files are under 800 lines (788 and 793 lines respectively)
+- Follows the CLAUDE.md golden rule: no single code file should exceed ~800 lines
+- Improves maintainability by organizing tests by logical function
+- Reduces context usage for AI assistants
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (752 tests total)
+- Tests now split across 6 files: index.test.ts, types.test.ts, hex-coordinates.test.ts, hex-directions.test.ts, board-generation.test.ts, board-validation.test.ts
+
+**Files Created**:
+- packages/shared/src/__tests__/board-generation.test.ts (788 lines)
+- packages/shared/src/__tests__/board-validation.test.ts (793 lines)
+
+**Files Deleted**:
+- packages/shared/src/__tests__/board.test.ts (1683 lines)
+
+**Files Modified**:
+- specs/prd-v1.json (marked feature as complete)

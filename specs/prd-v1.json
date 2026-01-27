@@ -208,7 +208,7 @@
       "Delete original board.test.ts after extraction",
       "Verify tests pass and each file is under 800 lines"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
