@@ -2118,3 +2118,51 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Modified**:
 - packages/shared/src/index.test.ts (removed hex tests and unused imports)
+
+---
+
+### 2026-01-26: Infrastructure - Split index.test.ts - extract board.test.ts
+
+**Feature Completed**: "Split shared/src/index.test.ts - extract board.test.ts"
+
+**Work Done**:
+- Created `packages/shared/src/__tests__/board.test.ts` containing all board generation tests
+- Moved ~150 tests from index.test.ts to board.test.ts:
+  - getConfigForPlayerCount tests (25 tests for all player counts, timer, error handling)
+  - getBoardHexCount tests (8 tests for hex count formula)
+  - generateAllBoardHexes tests (15 tests for hex generation, constraints, uniqueness)
+  - generateAllBoardHexesAxial tests (5 tests for axial conversion)
+  - hexToPixel tests (3 tests for coordinate conversion)
+  - hexToAngle tests (3 tests for angle calculation)
+  - calculateStartingPositions tests (20 tests for all player counts, edge placement)
+  - rotateHex tests (6 tests for rotation symmetry)
+  - generateSymmetricalShields tests (20 tests for shield placement)
+  - hasPathToThrone tests (10 tests for path detection)
+  - validateShieldPlacement tests (15 tests for validation)
+  - getDirectionTowardThrone tests (5 tests)
+  - placeWarriors tests (20 tests for warrior placement)
+  - generateId tests (3 tests)
+  - createInitialState tests (25 tests for full game state creation)
+- Updated `packages/shared/src/index.test.ts`:
+  - Removed all board-related test describe blocks (lines 58-1708)
+  - Removed unused imports (getConfigForPlayerCount, getBoardHexCount, generateAllBoardHexes, generateAllBoardHexesAxial, hexToPixel, hexToAngle, calculateStartingPositions, rotateHex, generateSymmetricalShields, hasPathToThrone, validateShieldPlacement, getDirectionTowardThrone, placeWarriors, generateId)
+  - Added comment noting board tests were moved
+  - File reduced from ~11,406 lines to ~9,757 lines (~1,649 lines removed)
+
+**Why This Matters**:
+- Continues critical file-splitting infrastructure work
+- Organizes tests to mirror source file structure (board.ts -> board.test.ts)
+- Reduces index.test.ts below 10k lines, improving maintainability
+- Reduces context usage for AI assistants
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (756 tests total)
+- Tests now split across 4 files: index.test.ts, __tests__/types.test.ts, __tests__/hex.test.ts, __tests__/board.test.ts
+
+**Files Created**:
+- packages/shared/src/__tests__/board.test.ts
+
+**Files Modified**:
+- packages/shared/src/index.test.ts (removed board tests and unused imports)
+- specs/prd-v1.json (marked feature as complete)

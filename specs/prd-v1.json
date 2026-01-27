@@ -208,7 +208,7 @@
       "Import from ../board.ts",
       "Verify tests pass"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
