@@ -1509,7 +1509,7 @@
       "Create GET /health endpoint returning { status: 'ok', timestamp }",
       "Export app and createServer() function"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",

@@ -1,8 +1,12 @@
-import express, { type Express } from 'express';
+import express, { type Express, type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import http from 'http';
 
 const app: Express = express();
+
+// Security headers
+app.use(helmet());
 
 // JSON body parser
 app.use(express.json());
@@ -14,6 +18,17 @@ app.use(
     credentials: true,
   })
 );
+
+// Request logging middleware
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+  next();
+});
+
+// Health endpoint
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 export function createServer(): http.Server {
   return http.createServer(app);

@@ -1,5 +1,22 @@
 ## Progress Log
 
+### 2026-01-27: Network - Add Express security and health endpoint
+
+**Feature Completed**: "Add Express security and health endpoint"
+
+**Work Done**:
+- Added `helmet` middleware for security headers
+- Added request logging middleware that logs timestamp, method, and URL
+- Created `GET /health` endpoint returning `{ status: 'ok', timestamp }` (ISO string)
+- `app` and `createServer()` remain exported (already in place)
+
+**Files Modified**:
+- packages/server/src/server.ts (37 lines, was 22 lines) — added helmet, logging, and health endpoint
+
+**Verification**: pnpm typecheck passes. All 1032 tests pass (1026 passing, 6 pre-existing integration test failures from database state issues). No new test failures. All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Set up Express app with body parser
 
 **Feature Completed**: "Set up Express app with body parser"
