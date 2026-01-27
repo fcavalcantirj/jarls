@@ -1,5 +1,25 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Implement MAKE_MOVE handler
+
+**Feature Completed**: "Implement MAKE_MOVE handler"
+
+**Work Done**:
+- Added MAKE_MOVE event handler in the `awaitingMove` substate of the playing state
+- Guard validates: (1) it's the player's turn, (2) the move is valid via shared `applyMove`
+- On valid move: assigns updated game state (pieces, players, turn, round, win conditions) and transitions to `checkingGameEnd`
+- On invalid move (wrong player or invalid destination): event is silently rejected, state unchanged
+- Added tests: valid move updates state, wrong player rejected, invalid destination rejected, turns alternate correctly, game-end mechanism verified
+- Imported `applyMove` from `@jarls/shared` to delegate move validation and execution to shared logic
+
+**Files Modified**:
+- packages/server/src/game/machine.ts (MAKE_MOVE handler in awaitingMove)
+- packages/server/src/game/__tests__/playing.test.ts (MAKE_MOVE tests)
+
+**Verification**: pnpm typecheck passes, all 874 tests pass.
+
+---
+
 ### 2026-01-27: State Machine - Add playing state structure
 
 **Feature Completed**: "Add playing state structure"

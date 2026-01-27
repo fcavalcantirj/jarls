@@ -1209,7 +1209,7 @@
       "If invalid: return error, stay in awaitingMove",
       "If valid: call applyMove, update context with newState and events"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

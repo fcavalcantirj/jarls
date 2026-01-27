@@ -1,7 +1,7 @@
 import { createMachine, assign } from 'xstate';
 import type { GameMachineContext, GameMachineEvent, GameMachineInput } from './types';
 import type { Piece, Player } from '@jarls/shared';
-import { createInitialState } from '@jarls/shared';
+import { createInitialState, applyMove } from '@jarls/shared';
 
 /**
  * Guard: Can the game start?
@@ -112,7 +112,40 @@ export const gameMachine = createMachine({
     playing: {
       initial: 'awaitingMove',
       states: {
-        awaitingMove: {},
+        awaitingMove: {
+          on: {
+            MAKE_MOVE: [
+              {
+                guard: ({ context, event }) => {
+                  // Must be this player's turn
+                  if (event.playerId !== context.currentPlayerId) {
+                    return false;
+                  }
+                  // Apply the move using shared logic - check if valid
+                  const result = applyMove(context, event.playerId, event.command);
+                  return result.success;
+                },
+                actions: assign(({ context, event }) => {
+                  const result = applyMove(context, event.playerId, event.command);
+                  // Merge the new game state into the machine context
+                  return {
+                    ...context,
+                    pieces: result.newState.pieces,
+                    players: result.newState.players,
+                    currentPlayerId: result.newState.currentPlayerId,
+                    turnNumber: result.newState.turnNumber,
+                    roundNumber: result.newState.roundNumber,
+                    roundsSinceElimination: result.newState.roundsSinceElimination,
+                    winnerId: result.newState.winnerId,
+                    winCondition: result.newState.winCondition,
+                    phase: result.newState.phase,
+                  };
+                }),
+                target: 'checkingGameEnd',
+              },
+            ],
+          },
+        },
         checkingGameEnd: {
           always: [
             {
