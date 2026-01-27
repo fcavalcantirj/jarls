@@ -6,6 +6,7 @@ import { errorMiddleware } from './middleware/error.js';
 import { createGameRoutes } from './routes/games.js';
 import { GameManager } from './game/manager.js';
 import { createSocketServer } from './socket/server.js';
+import { registerSocketHandlers } from './socket/handlers.js';
 
 const app: Express = express();
 const gameManager = new GameManager();
@@ -44,6 +45,7 @@ app.use(errorMiddleware);
 export function createServer() {
   const httpServer = http.createServer(app);
   const io = createSocketServer(httpServer);
+  registerSocketHandlers(io, gameManager);
   return { httpServer, io };
 }
 

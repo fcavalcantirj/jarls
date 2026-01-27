@@ -1,5 +1,26 @@
 ## Progress Log
 
+### 2026-01-27: Network - Implement Socket.IO game lifecycle handlers
+
+**Feature Completed**: "Implement Socket.IO game lifecycle handlers"
+
+**Work Done**:
+- Created `packages/server/src/socket/handlers.ts` with `registerSocketHandlers()` function
+- **joinGame handler**: validates session token via Redis, verifies game exists and session matches, stores session data on socket, joins Socket.IO room, extends session TTL, broadcasts `playerJoined` to other players, returns game state via callback
+- **startGame handler**: validates socket is joined to a game, delegates to `GameManager.start()` (which validates host, player count, state), broadcasts updated `gameState` to all room players
+- **disconnect handler**: notifies `GameManager.onDisconnect()`, broadcasts `playerLeft` to remaining players, best-effort error handling (won't crash if game is in invalid state for disconnect)
+- Updated `packages/server/src/server.ts` to import and call `registerSocketHandlers(io, gameManager)` in `createServer()`
+
+**Files Created**:
+- packages/server/src/socket/handlers.ts (163 lines)
+
+**Files Modified**:
+- packages/server/src/server.ts (added import and handler registration)
+
+**Verification**: pnpm typecheck passes. All non-integration tests pass (1091/1102, 11 pre-existing integration test failures unchanged). All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Configure Socket.IO options
 
 **Feature Completed**: "Configure Socket.IO options"

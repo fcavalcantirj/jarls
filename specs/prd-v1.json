@@ -1656,7 +1656,7 @@
       "On 'joinGame': validate session token, join socket to game room, emit current gameState",
       "On 'startGame': validate session is host, call GameManager.start(), broadcast gameState"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
