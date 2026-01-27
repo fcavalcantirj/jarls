@@ -1,5 +1,25 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Create Socket.IO client
+
+**Features Completed**: "Create Socket.IO client"
+
+**Work Done**:
+- Created `packages/client/src/socket/client.ts` with typed Socket.IO client
+- Defined `ClientToServerEvents` and `ServerToClientEvents` interfaces mirroring server types
+- Defined callback response types (`JoinGameResponse`, `PlayTurnResponse`, `StartGameResponse`, `StarvationChoiceResponse`)
+- Created `GameSocket` type alias for the typed socket
+- Implemented `getSocket()`: lazy singleton creation with `autoConnect: false`, reconnection enabled (10 attempts, 1-5s delay)
+- Implemented `connect(sessionToken)`: sets auth token and connects
+- Implemented `disconnect()`: disconnects the socket
+
+**Files Created**:
+- packages/client/src/socket/client.ts (105 lines)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (25 failed, 1152 passed).
+
+---
+
 ### 2026-01-27: Frontend - Create client directory structure and configuration
 
 **Features Completed**: "Create client directory structure and configuration"
