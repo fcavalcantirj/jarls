@@ -1792,7 +1792,7 @@
       "Score: +100 throne victory, +50 enemy Jarl elimination, +20 enemy piece elimination",
       "Score: +10 successful push, +5 momentum attack"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ai",

@@ -1,5 +1,26 @@
 ## Progress Log
 
+### 2026-01-27: AI - Implement scoreMove function
+
+**Features Completed**: "Implement scoreMove function"
+
+**Work Done**:
+- Created `packages/server/src/ai/heuristic.ts` with `scoreMove` function
+- Scores moves based on heuristic evaluation for AI decision-making
+- Positive scoring: +100 throne victory, +50 enemy Jarl elimination, +20 enemy piece elimination, +10 successful push, +5 momentum attack
+- Negative scoring: -30 own Jarl on edge, -10 own piece on edge after move
+- Positional scoring: +3 per hex closer to throne for Jarl moves
+- Small random factor (0-2) added to avoid predictability
+- Uses `applyMove` to simulate moves and evaluate outcomes
+- Compares piece counts before/after to detect eliminations
+
+**Files Created**:
+- packages/server/src/ai/heuristic.ts (97 lines)
+
+**Verification**: pnpm typecheck passes. All shared tests pass (839). Pre-existing integration test failures unchanged.
+
+---
+
 ### 2026-01-27: AI - Implement RandomAI class
 
 **Features Completed**: "Implement RandomAI class", "Add AI thinking delay and export", "Unit tests for RandomAI"
