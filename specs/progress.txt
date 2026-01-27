@@ -1,5 +1,34 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Implement reconnection handling + Unit tests for disconnection
+
+**Features Completed**: "Implement reconnection handling" and "Unit tests for disconnection"
+
+**Work Done**:
+- Verified that the paused state already implements all reconnection handling requirements:
+  - PLAYER_RECONNECTED handler marks player reconnected and returns to `playing.awaitingMove`
+  - 2-minute disconnect timer stays paused after expiry (future: configurable)
+  - Additional PLAYER_DISCONNECTED events handled while paused
+- Created `disconnection.test.ts` with 11 unit tests covering:
+  - Game pauses when current turn player disconnects
+  - Game does NOT pause when non-current player disconnects
+  - Player marked as disconnected even without pause
+  - Multiple players disconnecting while paused
+  - Game resumes on reconnect (transitions back to awaitingMove)
+  - Game state preserved after disconnect/reconnect cycle
+  - Normal gameplay continues after reconnection
+  - Game remains paused after 2-minute timeout expires
+  - Reconnection works even after timeout has expired
+  - Turn timer does not fire while game is paused
+  - Turn timer restarts fresh after reconnection
+
+**Files Created**:
+- packages/server/src/game/__tests__/disconnection.test.ts (11 tests)
+
+**Verification**: pnpm typecheck passes, all 915 tests pass (11 new). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Add paused state structure
 
 **Feature Completed**: "Add paused state structure"

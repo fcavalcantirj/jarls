@@ -1338,7 +1338,7 @@
       "On PLAYER_RECONNECTED: mark player connected, return to previous state",
       "On 2-minute timeout: stay paused (game waits - future: configurable)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
@@ -1347,7 +1347,7 @@
       "Add unit tests: game pauses on disconnect",
       "Add unit tests: game resumes on reconnect"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
