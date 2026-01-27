@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, type MouseEvent } from 'react';
-import { isOnBoardAxial } from '@jarls/shared';
-import { useGameStore } from '../../store/gameStore';
+import { isOnBoardAxial, getValidMoves } from '@jarls/shared';
+import { useGameStore, selectIsMyTurn } from '../../store/gameStore';
 import { BoardRenderer } from './BoardRenderer';
 import type { RenderHighlights } from './BoardRenderer';
 import { pixelToHex } from '../../utils/hexMath';
@@ -76,6 +76,8 @@ export function Board() {
     return () => window.removeEventListener('resize', handleResize);
   }, [gameState, getHighlights]);
 
+  const isMyTurn = useGameStore(selectIsMyTurn);
+
   // Handle canvas click: convert to hex coordinates and detect piece
   const handleClick = useCallback(
     (event: MouseEvent<HTMLCanvasElement>) => {
@@ -104,15 +106,16 @@ export function Board() {
 
       const isOwnPiece = piece != null && piece.playerId === playerId;
 
-      if (isOwnPiece) {
-        // Own piece clicked - select it (selection logic handled by next task)
-        useGameStore.getState().selectPiece(piece.id, []);
+      if (isOwnPiece && isMyTurn) {
+        // Own piece clicked on player's turn: select and compute valid moves
+        const moves = getValidMoves(gameState, piece.id);
+        useGameStore.getState().selectPiece(piece.id, moves);
       } else {
-        // Clicked elsewhere - clear selection
+        // Clicked elsewhere or not player's turn: clear selection
         useGameStore.getState().clearSelection();
       }
     },
-    [gameState, playerId]
+    [gameState, playerId, isMyTurn]
   );
 
   return (

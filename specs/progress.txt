@@ -1,5 +1,23 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Implement piece selection logic
+
+**Features Completed**: "Implement piece selection logic"
+
+**Work Done**:
+- Updated Board.tsx handleClick to compute valid moves locally via getValidMoves() when selecting own piece
+- Added isMyTurn check using selectIsMyTurn selector - selection is disabled when not player's turn
+- Valid moves are stored in gameStore via selectPiece(pieceId, moves) and rendered as highlights
+- Clicking elsewhere or clicking when not player's turn clears selection
+
+**Files Modified**:
+- packages/client/src/components/Board/Board.tsx (131 -> 134 lines)
+- specs/prd-v1.json (marked 1 task as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (21 failed, 1172 passed).
+
+---
+
 ### 2026-01-27: Frontend - Implement click handler and hex detection
 
 **Features Completed**: "Add Board component effects" (already implemented), "Implement click handler and hex detection"
