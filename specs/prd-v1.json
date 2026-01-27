@@ -1877,7 +1877,7 @@
       "Create src/pages/Lobby.tsx placeholder",
       "Test navigation between pages works"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
@@ -1889,7 +1889,7 @@
       "Create src/components/Modals/ directory",
       "Create index.ts barrel exports for each directory"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

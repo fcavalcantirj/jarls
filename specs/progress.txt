@@ -4476,3 +4476,24 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - specs/progress.txt (this entry)
 
 **Verification**: pnpm typecheck passes. 1042 tests total (1035 passing, 7 pre-existing integration test failures from database state issues). All files under 800 lines.
+
+---
+
+### 2026-01-27: Frontend - Create client routing/pages and component directory structure
+
+**Features Completed**: "Create client routing and page placeholders", "Create client component directory structure"
+
+**Work Done**:
+- Verified routing and page placeholders already existed (App.tsx with BrowserRouter, Home.tsx, Game.tsx, Lobby.tsx)
+- Marked "Create client routing and page placeholders" as passing
+- Created component subdirectories: Board/, Game/, Lobby/, Modals/ under src/components/
+- Created index.ts barrel export files in each component directory
+- Marked "Create client component directory structure" as passing
+
+**Files Created**:
+- packages/client/src/components/Board/index.ts
+- packages/client/src/components/Game/index.ts
+- packages/client/src/components/Lobby/index.ts
+- packages/client/src/components/Modals/index.ts
+
+**Verification**: pnpm typecheck passes. 1158 tests total (1136 passing, 22 pre-existing integration test failures). All files under 800 lines.

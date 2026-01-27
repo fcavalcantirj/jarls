@@ -1,0 +1,1 @@
+// Game component barrel export
