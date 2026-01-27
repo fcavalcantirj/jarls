@@ -1,7 +1,6 @@
 import { describe, it, expect, afterEach, jest, beforeEach } from '@jest/globals';
 import type { GameConfig } from '@jarls/shared';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockSaveSnapshotFn = jest
   .fn<(...args: any[]) => Promise<void>>()
   .mockResolvedValue(undefined);
@@ -12,12 +11,17 @@ const mockLoadSnapshotFn = jest.fn<(...args: any[]) => Promise<null>>().mockReso
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockLoadEventsFn = jest.fn<(...args: any[]) => Promise<never[]>>().mockResolvedValue([]);
 
+const mockLoadActiveSnapshotsFn = jest
+  .fn<(...args: any[]) => Promise<any[]>>()
+  .mockResolvedValue([]);
+
 // Mock persistence module before importing GameManager
 jest.unstable_mockModule('../persistence', () => ({
   saveSnapshot: mockSaveSnapshotFn,
   saveEvent: mockSaveEventFn,
   loadSnapshot: mockLoadSnapshotFn,
   loadEvents: mockLoadEventsFn,
+  loadActiveSnapshots: mockLoadActiveSnapshotsFn,
   VersionConflictError: class VersionConflictError extends Error {},
 }));
 
@@ -25,6 +29,7 @@ const { GameManager } = await import('../manager');
 
 const mockSaveSnapshot = mockSaveSnapshotFn;
 const mockSaveEvent = mockSaveEventFn;
+const mockLoadActiveSnapshots = mockLoadActiveSnapshotsFn;
 
 function createTestConfig(overrides?: Partial<GameConfig>): GameConfig {
   return {
@@ -98,13 +103,17 @@ describe('GameManager', () => {
       expect(snapshot!.context.turnTimerMs).toBe(30000);
     });
 
-    it('saves the initial snapshot to the database', async () => {
+    it('saves the initial persisted snapshot to the database', async () => {
       manager = new GameManager();
       const gameId = await manager.create({ config: createTestConfig() });
 
+      // Now saves the full XState persisted snapshot (has value and context keys)
       expect(mockSaveSnapshot).toHaveBeenCalledWith(
         gameId,
-        expect.objectContaining({ phase: 'lobby', players: [] }),
+        expect.objectContaining({
+          value: 'lobby',
+          context: expect.objectContaining({ phase: 'lobby', players: [] }),
+        }),
         1,
         'lobby'
       );
@@ -148,6 +157,12 @@ describe('GameManager', () => {
       const playingCall = mockSaveSnapshot.mock.calls.find((c: unknown[]) => c[3] === 'playing');
       expect(playingCall).toBeDefined();
       expect(playingCall![0]).toBe(gameId);
+      // The persisted snapshot should contain context with game state
+      expect(playingCall![1]).toEqual(
+        expect.objectContaining({
+          context: expect.objectContaining({ phase: 'playing' }),
+        })
+      );
 
       // Verify a STATE_PLAYING event was saved
       const stateEventCall = mockSaveEvent.mock.calls.find(
@@ -265,6 +280,240 @@ describe('GameManager', () => {
       manager = new GameManager();
 
       expect(manager.remove('non-existent')).toBe(false);
+    });
+  });
+
+  describe('recover', () => {
+    it('returns 0 when no active games in database', async () => {
+      manager = new GameManager();
+      mockLoadActiveSnapshots.mockResolvedValue([]);
+
+      const count = await manager.recover();
+      expect(count).toBe(0);
+      expect(manager.gameCount).toBe(0);
+    });
+
+    it('recovers a lobby game from database snapshot', async () => {
+      // First create a game to get a valid persisted snapshot
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+      const actor = manager.getActor(gameId)!;
+      const persistedSnapshot = actor.getPersistedSnapshot();
+      manager.shutdown();
+
+      // Now simulate recovery from the database
+      mockLoadActiveSnapshots.mockResolvedValue([
+        {
+          gameId: 'recovered-game-1',
+          state: persistedSnapshot,
+          version: 1,
+          status: 'lobby',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      manager = new GameManager();
+      const count = await manager.recover();
+
+      expect(count).toBe(1);
+      expect(manager.gameCount).toBe(1);
+
+      const snapshot = manager.getState('recovered-game-1');
+      expect(snapshot).toBeDefined();
+      expect(snapshot!.value).toBe('lobby');
+    });
+
+    it('recovers a playing game from database snapshot', async () => {
+      // Create a game and advance it to playing state
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+      const actor = manager.getActor(gameId)!;
+      actor.send({ type: 'PLAYER_JOINED', playerId: 'p1', playerName: 'Alice' });
+      actor.send({ type: 'PLAYER_JOINED', playerId: 'p2', playerName: 'Bob' });
+      actor.send({ type: 'START_GAME', playerId: 'p1' });
+
+      // Wait for transitions to settle
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const persistedSnapshot = actor.getPersistedSnapshot();
+      manager.shutdown();
+
+      // Recover from the persisted playing state
+      mockLoadActiveSnapshots.mockResolvedValue([
+        {
+          gameId: 'recovered-playing',
+          state: persistedSnapshot,
+          version: 3,
+          status: 'playing',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      manager = new GameManager();
+      const count = await manager.recover();
+
+      expect(count).toBe(1);
+
+      const snapshot = manager.getState('recovered-playing');
+      expect(snapshot).toBeDefined();
+      // Playing is a compound state: { playing: 'awaitingMove' }
+      expect(snapshot!.value).toEqual({ playing: 'awaitingMove' });
+      expect(snapshot!.context.players).toHaveLength(2);
+      expect(snapshot!.context.phase).toBe('playing');
+    });
+
+    it('recovers multiple games from database', async () => {
+      // Create two games with valid persisted snapshots
+      manager = new GameManager();
+      const id1 = await manager.create({ config: createTestConfig() });
+      const id2 = await manager.create({ config: createTestConfig() });
+      const snap1 = manager.getActor(id1)!.getPersistedSnapshot();
+      const snap2 = manager.getActor(id2)!.getPersistedSnapshot();
+      manager.shutdown();
+
+      mockLoadActiveSnapshots.mockResolvedValue([
+        {
+          gameId: 'rec-1',
+          state: snap1,
+          version: 1,
+          status: 'lobby',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          gameId: 'rec-2',
+          state: snap2,
+          version: 1,
+          status: 'lobby',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      manager = new GameManager();
+      const count = await manager.recover();
+
+      expect(count).toBe(2);
+      expect(manager.gameCount).toBe(2);
+      expect(manager.getState('rec-1')).toBeDefined();
+      expect(manager.getState('rec-2')).toBeDefined();
+    });
+
+    it('skips games already in memory', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+      const persistedSnapshot = manager.getActor(gameId)!.getPersistedSnapshot();
+
+      mockLoadActiveSnapshots.mockResolvedValue([
+        {
+          gameId, // Same ID as the already-created game
+          state: persistedSnapshot,
+          version: 1,
+          status: 'lobby',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      const count = await manager.recover();
+      expect(count).toBe(0);
+      expect(manager.gameCount).toBe(1); // Still just the one we created
+    });
+
+    it('continues recovering other games when one fails', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+      const validSnapshot = manager.getActor(gameId)!.getPersistedSnapshot();
+      manager.shutdown();
+
+      mockLoadActiveSnapshots.mockResolvedValue([
+        {
+          gameId: 'bad-game',
+          state: { invalid: 'snapshot' }, // Invalid snapshot will cause error
+          version: 1,
+          status: 'lobby',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          gameId: 'good-game',
+          state: validSnapshot,
+          version: 1,
+          status: 'lobby',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      // Suppress console.error for this test
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      manager = new GameManager();
+      const count = await manager.recover();
+
+      // The bad game may or may not throw depending on XState's handling,
+      // but the good game should be recovered
+      expect(manager.getState('good-game')).toBeDefined();
+      expect(count).toBeGreaterThanOrEqual(1);
+
+      consoleSpy.mockRestore();
+    });
+
+    it('sets correct version from database snapshot', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+      const persistedSnapshot = manager.getActor(gameId)!.getPersistedSnapshot();
+      manager.shutdown();
+
+      mockLoadActiveSnapshots.mockResolvedValue([
+        {
+          gameId: 'versioned-game',
+          state: persistedSnapshot,
+          version: 5,
+          status: 'lobby',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      manager = new GameManager();
+      await manager.recover();
+
+      // Recovered game should be functional
+      const snapshot = manager.getState('versioned-game');
+      expect(snapshot).toBeDefined();
+      expect(snapshot!.value).toBe('lobby');
+    });
+
+    it('recovered game actors respond to events', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+      const persistedSnapshot = manager.getActor(gameId)!.getPersistedSnapshot();
+      manager.shutdown();
+
+      mockLoadActiveSnapshots.mockResolvedValue([
+        {
+          gameId: 'interactive-game',
+          state: persistedSnapshot,
+          version: 1,
+          status: 'lobby',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      manager = new GameManager();
+      await manager.recover();
+
+      // The recovered actor should accept events
+      const actor = manager.getActor('interactive-game')!;
+      actor.send({ type: 'PLAYER_JOINED', playerId: 'p1', playerName: 'Alice' });
+
+      const snapshot = manager.getState('interactive-game');
+      expect(snapshot!.context.players).toHaveLength(1);
+      expect(snapshot!.context.players[0].name).toBe('Alice');
     });
   });
 

@@ -1398,7 +1398,7 @@
       "Recreate actors from snapshots",
       "Add games to in-memory Map"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

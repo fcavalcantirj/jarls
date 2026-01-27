@@ -1,5 +1,31 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Implement GameManager recover
+
+**Feature Completed**: "Implement GameManager recover"
+
+**Work Done**:
+- Added `loadActiveSnapshots()` function to `persistence.ts` that loads all non-ended game snapshots from the database
+- Changed snapshot persistence to save the full XState persisted snapshot (via `actor.getPersistedSnapshot()`) instead of just the context object, enabling proper state restoration
+- Implemented `GameManager.recover()` method that:
+  - Loads active game snapshots from the database
+  - Skips games already in memory
+  - Recreates XState actors from persisted snapshots using `createActor(gameMachine, { snapshot })`
+  - Subscribes to state changes for ongoing persistence
+  - Handles errors gracefully (logs and continues to next game)
+  - Returns the count of recovered games
+- Added 8 new unit tests covering: empty DB, lobby recovery, playing state recovery, multiple games, skip duplicates, error resilience, version tracking, and actor interactivity after recovery
+- Updated 2 existing tests to match new persisted snapshot format
+
+**Files Modified**:
+- packages/server/src/game/persistence.ts (188 lines, was 167 lines)
+- packages/server/src/game/manager.ts (268 lines, was 195 lines)
+- packages/server/src/game/__tests__/manager.test.ts (534 lines, was 284 lines)
+
+**Verification**: pnpm typecheck passes, all 971 tests pass (28 in manager.test.ts, 8 new). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Integrate persistence with GameManager create
 
 **Feature Completed**: "Integrate persistence with GameManager create"

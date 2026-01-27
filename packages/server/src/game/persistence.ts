@@ -143,6 +143,31 @@ export async function saveEvent(
 }
 
 /**
+ * Load all active (non-ended) game snapshots from the database.
+ * Used during server recovery to restore in-progress games.
+ *
+ * @returns Array of snapshot records for games that are not in 'ended' status
+ */
+export async function loadActiveSnapshots(): Promise<GameSnapshot[]> {
+  const result = await query<GameSnapshotRow>(
+    `SELECT game_id, state_snapshot, version, status, created_at, updated_at
+     FROM game_snapshots
+     WHERE status != $1
+     ORDER BY created_at ASC`,
+    ['ended']
+  );
+
+  return result.rows.map((row) => ({
+    gameId: row.game_id,
+    state: row.state_snapshot,
+    version: row.version,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+}
+
+/**
  * Load all events for a game, ordered by creation time (ascending).
  *
  * @param gameId - The unique game identifier

@@ -3,7 +3,7 @@ import { gameMachine } from './machine';
 import type { GameMachineContext, GameMachineInput } from './types';
 import type { GameConfig } from '@jarls/shared';
 import { generateId } from '@jarls/shared';
-import { saveSnapshot, saveEvent } from './persistence';
+import { saveSnapshot, saveEvent, loadActiveSnapshots } from './persistence';
 
 /** Summary of a game for listing purposes */
 export interface GameSummary {
@@ -82,9 +82,10 @@ export class GameManager {
         managedGame.previousStateValue = currentState;
 
         const context = snapshot.context as GameMachineContext;
+        const persistedSnapshot = actor.getPersistedSnapshot();
 
         // Fire-and-forget persistence (log errors but don't block the state machine)
-        saveSnapshot(gameId, context, managedGame.version, currentState).catch((err) => {
+        saveSnapshot(gameId, persistedSnapshot, managedGame.version, currentState).catch((err) => {
           console.error(`Failed to save snapshot for game ${gameId}:`, err);
         });
 
@@ -103,11 +104,10 @@ export class GameManager {
 
     actor.start();
 
-    // Save the initial snapshot to the database
-    const initialSnapshot = actor.getSnapshot();
-    const initialContext = initialSnapshot.context as GameMachineContext;
-    const initialState = getStateName(initialSnapshot.value);
-    await saveSnapshot(gameId, initialContext, 1, initialState);
+    // Save the initial persisted snapshot to the database
+    const initialState = getStateName(actor.getSnapshot().value);
+    const persistedSnapshot = actor.getPersistedSnapshot();
+    await saveSnapshot(gameId, persistedSnapshot, 1, initialState);
 
     // Save a GAME_CREATED event
     await saveEvent(gameId, 'GAME_CREATED', {
@@ -117,6 +117,85 @@ export class GameManager {
     this.games.set(gameId, managedGame);
 
     return gameId;
+  }
+
+  /**
+   * Recover active games from the database on server start.
+   * Loads all non-ended game snapshots, recreates XState actors from
+   * their persisted state, and adds them to the in-memory Map.
+   * Returns the number of games recovered.
+   */
+  async recover(): Promise<number> {
+    const snapshots = await loadActiveSnapshots();
+    let recovered = 0;
+
+    for (const snap of snapshots) {
+      const gameId = snap.gameId;
+
+      // Skip if already loaded (e.g., created during this session)
+      if (this.games.has(gameId)) continue;
+
+      try {
+        // The state field contains the full XState persisted snapshot
+        const persistedSnapshot = snap.state as ReturnType<GameActor['getPersistedSnapshot']>;
+
+        // XState v5 requires input even when restoring from snapshot.
+        // The input is only used for initial context creation, which is
+        // skipped when a snapshot is provided, so we pass a dummy input.
+        const actor = createActor(gameMachine, {
+          snapshot: persistedSnapshot,
+          input: {
+            gameId,
+            config: (persistedSnapshot as unknown as { context: GameMachineContext }).context
+              .config,
+          },
+        });
+
+        const managedGame: ManagedGame = {
+          actor,
+          subscription: { unsubscribe: () => {} },
+          version: snap.version,
+          previousStateValue: snap.status,
+        };
+
+        // Subscribe to state changes for ongoing persistence
+        const subscription = actor.subscribe((snapshot) => {
+          const currentState = getStateName(snapshot.value);
+          const previousState = managedGame.previousStateValue;
+
+          if (currentState !== previousState) {
+            managedGame.version += 1;
+            managedGame.previousStateValue = currentState;
+
+            const context = snapshot.context as GameMachineContext;
+            const persisted = actor.getPersistedSnapshot();
+
+            saveSnapshot(gameId, persisted, managedGame.version, currentState).catch((err) => {
+              console.error(`Failed to save snapshot for game ${gameId}:`, err);
+            });
+
+            saveEvent(gameId, `STATE_${currentState.toUpperCase()}`, {
+              fromState: previousState,
+              toState: currentState,
+              turnNumber: context.turnNumber,
+              roundNumber: context.roundNumber,
+            }).catch((err) => {
+              console.error(`Failed to save event for game ${gameId}:`, err);
+            });
+          }
+        });
+
+        managedGame.subscription = subscription;
+
+        actor.start();
+        this.games.set(gameId, managedGame);
+        recovered++;
+      } catch (err) {
+        console.error(`Failed to recover game ${gameId}:`, err);
+      }
+    }
+
+    return recovered;
   }
 
   /**
