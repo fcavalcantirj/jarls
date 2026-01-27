@@ -1838,7 +1838,7 @@
       "Implement addAIPlayer(gameId, difficulty): create AI instance, add to game as player",
       "Subscribe to game state changes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ai",

@@ -1,5 +1,26 @@
 ## Progress Log
 
+### 2026-01-27: AI - Integrate AI with GameManager
+
+**Features Completed**: "Integrate AI with GameManager"
+
+**Work Done**:
+- Updated `GameManager` to track AI players per game via `ManagedAIPlayer` interface
+- Added `addAIPlayer(gameId, difficulty)` method: creates AI instance (RandomAI or HeuristicAI), joins game with a Norse name, tracks AI player
+- Added `isAIPlayer(gameId, playerId)` helper method
+- Added `handleAITurn()` private method: subscribes to state changes, detects when it's an AI player's turn in `awaitingMove`, generates and executes moves asynchronously
+- Added `handleAIStarvation()` private method: automatically submits starvation choices for AI players during starvation phase
+- Added 2-second timeout protection with fallback to RandomAI if the primary AI fails
+- Added deduplication via `pendingAIMoves` set to prevent concurrent AI move generation
+- Verified state hasn't changed before executing AI moves (guards against stale moves)
+
+**Files Modified**:
+- packages/server/src/game/manager.ts (516 → 706 lines)
+
+**Verification**: pnpm typecheck passes. All 45 manager tests pass. Pre-existing integration test failures unchanged (15 failed, 1136 passed).
+
+---
+
 ### 2026-01-27: AI - Create Norse name generator
 
 **Features Completed**: "Create Norse name generator"

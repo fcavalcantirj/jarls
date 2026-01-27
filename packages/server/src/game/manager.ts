@@ -1,9 +1,13 @@
 import { createActor, type Actor, type Subscription } from 'xstate';
 import { gameMachine } from './machine';
 import type { GameMachineContext, GameMachineInput } from './types';
-import type { GameConfig, MoveCommand, MoveResult } from '@jarls/shared';
+import type { GameConfig, GameState, MoveCommand, MoveResult } from '@jarls/shared';
 import { generateId, applyMove } from '@jarls/shared';
 import { saveSnapshot, saveEvent, loadActiveSnapshots } from './persistence';
+import type { AIPlayer, AIDifficulty } from '../ai/types';
+import { RandomAI } from '../ai/random';
+import { HeuristicAI } from '../ai/heuristic-ai';
+import { generateNorseName } from '../ai/names';
 
 /** Summary of a game for listing purposes */
 export interface GameSummary {
@@ -22,12 +26,19 @@ export interface CreateGameConfig {
 type GameActor = Actor<typeof gameMachine>;
 type GameSnapshot = ReturnType<GameActor['getSnapshot']>;
 
+/** Tracks an AI player associated with a game */
+interface ManagedAIPlayer {
+  playerId: string;
+  ai: AIPlayer;
+}
+
 /** Internal tracking for a managed game */
 interface ManagedGame {
   actor: GameActor;
   subscription: Subscription;
   version: number;
   previousStateValue: string;
+  aiPlayers: ManagedAIPlayer[];
 }
 
 /**
@@ -46,6 +57,7 @@ function getStateName(value: string | Record<string, unknown>): string {
  */
 export class GameManager {
   private games: Map<string, ManagedGame> = new Map();
+  private pendingAIMoves: Set<string> = new Set();
 
   /**
    * Create a new game with the given configuration.
@@ -70,6 +82,7 @@ export class GameManager {
       subscription: { unsubscribe: () => {} },
       version: 1,
       previousStateValue: 'lobby',
+      aiPlayers: [],
     };
 
     const subscription = actor.subscribe((snapshot) => {
@@ -98,6 +111,9 @@ export class GameManager {
           console.error(`Failed to save event for game ${gameId}:`, err);
         });
       }
+
+      // Trigger AI moves when it's an AI player's turn
+      this.handleAITurn(gameId, managedGame, snapshot);
     });
 
     managedGame.subscription = subscription;
@@ -156,6 +172,7 @@ export class GameManager {
           subscription: { unsubscribe: () => {} },
           version: snap.version,
           previousStateValue: snap.status,
+          aiPlayers: [],
         };
 
         // Subscribe to state changes for ongoing persistence
@@ -183,6 +200,9 @@ export class GameManager {
               console.error(`Failed to save event for game ${gameId}:`, err);
             });
           }
+
+          // Trigger AI moves when it's an AI player's turn
+          this.handleAITurn(gameId, managedGame, snapshot);
         });
 
         managedGame.subscription = subscription;
@@ -474,6 +494,181 @@ export class GameManager {
       type: 'PLAYER_RECONNECTED',
       playerId,
     });
+  }
+
+  /**
+   * Add an AI player to a game in the lobby.
+   * Creates an AI instance based on difficulty, joins the game with a Norse name,
+   * and tracks the AI player for automatic move generation.
+   * Returns the generated player ID for the AI.
+   */
+  addAIPlayer(gameId: string, difficulty: AIDifficulty): string {
+    const managed = this.games.get(gameId);
+    if (!managed) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+
+    const snapshot = managed.actor.getSnapshot();
+    const stateName = getStateName(snapshot.value);
+    if (stateName !== 'lobby') {
+      throw new Error(`Cannot add AI player in state: ${stateName}`);
+    }
+
+    const context = snapshot.context as GameMachineContext;
+    if (context.players.length >= context.config.playerCount) {
+      throw new Error('Game is full');
+    }
+
+    // Create AI instance based on difficulty
+    const ai: AIPlayer =
+      difficulty === 'heuristic' ? new HeuristicAI(500, 1500) : new RandomAI(500, 1500);
+
+    // Join as a player with a Norse name
+    const playerName = generateNorseName();
+    const playerId = this.join(gameId, playerName);
+
+    // Track the AI player
+    managed.aiPlayers.push({ playerId, ai });
+
+    return playerId;
+  }
+
+  /**
+   * Check if a player is an AI player in the given game.
+   */
+  isAIPlayer(gameId: string, playerId: string): boolean {
+    const managed = this.games.get(gameId);
+    if (!managed) return false;
+    return managed.aiPlayers.some((ap) => ap.playerId === playerId);
+  }
+
+  /**
+   * Handle AI turn: if the current player is an AI, generate and execute a move.
+   * Called from the actor subscription whenever state changes.
+   */
+  private handleAITurn(gameId: string, managedGame: ManagedGame, snapshot: GameSnapshot): void {
+    const stateValue = snapshot.value;
+    const context = snapshot.context as GameMachineContext;
+
+    // Check if we're in the awaitingMove substate of playing
+    const isAwaitingMove =
+      typeof stateValue === 'object' &&
+      stateValue !== null &&
+      'playing' in stateValue &&
+      (stateValue as Record<string, string>).playing === 'awaitingMove';
+
+    if (!isAwaitingMove) {
+      // Also handle starvation state for AI players
+      this.handleAIStarvation(gameId, managedGame, snapshot);
+      return;
+    }
+
+    const currentPlayerId = context.currentPlayerId;
+    if (!currentPlayerId) return;
+
+    const aiPlayer = managedGame.aiPlayers.find((ap) => ap.playerId === currentPlayerId);
+    if (!aiPlayer) return;
+
+    // Avoid triggering multiple AI moves concurrently
+    const aiKey = `${gameId}:${currentPlayerId}:${context.turnNumber}`;
+    if (this.pendingAIMoves.has(aiKey)) return;
+    this.pendingAIMoves.add(aiKey);
+
+    // Generate and execute the AI move asynchronously
+    const gameState = context as GameState;
+    const timeoutMs = 2000;
+
+    const movePromise = Promise.race([
+      aiPlayer.ai.generateMove(gameState, currentPlayerId),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('AI timeout')), timeoutMs)
+      ),
+    ]);
+
+    movePromise
+      .then((command) => {
+        // Verify the game is still in the right state before making the move
+        const currentSnapshot = managedGame.actor.getSnapshot();
+        const currentContext = currentSnapshot.context as GameMachineContext;
+        if (
+          currentContext.currentPlayerId === currentPlayerId &&
+          currentContext.turnNumber === context.turnNumber
+        ) {
+          this.makeMove(gameId, currentPlayerId, command);
+        }
+      })
+      .catch((err) => {
+        console.error(`AI move failed for game ${gameId}, player ${currentPlayerId}:`, err);
+        // Fallback: try a random move
+        const fallbackAI = new RandomAI(0, 0);
+        fallbackAI
+          .generateMove(gameState, currentPlayerId)
+          .then((fallbackCommand) => {
+            const currentSnapshot = managedGame.actor.getSnapshot();
+            const currentContext = currentSnapshot.context as GameMachineContext;
+            if (
+              currentContext.currentPlayerId === currentPlayerId &&
+              currentContext.turnNumber === context.turnNumber
+            ) {
+              this.makeMove(gameId, currentPlayerId, fallbackCommand);
+            }
+          })
+          .catch((fallbackErr) => {
+            console.error(`AI fallback also failed for game ${gameId}:`, fallbackErr);
+          });
+      })
+      .finally(() => {
+        this.pendingAIMoves.delete(aiKey);
+      });
+  }
+
+  /**
+   * Handle AI starvation choices when the game enters starvation state.
+   */
+  private handleAIStarvation(
+    gameId: string,
+    managedGame: ManagedGame,
+    snapshot: GameSnapshot
+  ): void {
+    const stateValue = snapshot.value;
+    const context = snapshot.context as GameMachineContext;
+
+    // Check if we're in the starvation.awaitingChoices substate
+    const isAwaitingStarvation =
+      typeof stateValue === 'object' &&
+      stateValue !== null &&
+      'starvation' in stateValue &&
+      (stateValue as Record<string, string>).starvation === 'awaitingChoices';
+
+    if (!isAwaitingStarvation) return;
+
+    // For each AI player that has candidates and hasn't submitted a choice yet
+    for (const aiPlayer of managedGame.aiPlayers) {
+      const hasCandidates = context.starvationCandidates.some(
+        (c) => c.playerId === aiPlayer.playerId && c.candidates.length > 0
+      );
+      const alreadyChosen = context.starvationChoices.some(
+        (sc) => sc.playerId === aiPlayer.playerId
+      );
+
+      if (!hasCandidates || alreadyChosen) continue;
+
+      const starvationKey = `starvation:${gameId}:${aiPlayer.playerId}:${context.roundNumber}`;
+      if (this.pendingAIMoves.has(starvationKey)) continue;
+      this.pendingAIMoves.add(starvationKey);
+
+      aiPlayer.ai
+        .makeStarvationChoice(context.starvationCandidates, aiPlayer.playerId)
+        .then((choice) => {
+          this.submitStarvationChoice(gameId, choice.playerId, choice.pieceId);
+        })
+        .catch((err) => {
+          console.error(`AI starvation choice failed for game ${gameId}:`, err);
+        })
+        .finally(() => {
+          this.pendingAIMoves.delete(starvationKey);
+        });
+    }
   }
 
   /**
