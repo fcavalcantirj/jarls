@@ -1681,7 +1681,7 @@
     "category": "network",
     "description": "Integration tests for playTurn handler",
     "steps": ["Add integration tests for playTurn handler"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",

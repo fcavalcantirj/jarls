@@ -1,5 +1,32 @@
 ## Progress Log
 
+### 2026-01-27: Network - Integration tests for playTurn handler
+
+**Feature Completed**: "Integration tests for playTurn handler"
+
+**Work Done**:
+- Created `packages/server/src/socket/__tests__/playTurn.integration.test.ts` (340 lines)
+- Uses same test infrastructure pattern as handlers.integration.test.ts (real PostgreSQL + Redis, mocked modules, typed Socket.IO clients)
+- Added `setupStartedGame()` helper that creates a game, joins two players via socket, starts the game, and returns game state
+- Added `findValidMove()` helper that uses `getValidMoves` from @jarls/shared to find a valid move for the current player
+
+**playTurn handler tests (8 tests)**:
+- Successfully executes a valid move and returns success callback
+- Broadcasts turnPlayed to all players in the room (both sender and other player receive newState + events)
+- Returns error when socket has not joined a game
+- Returns error for game ID mismatch
+- Returns error when it is not the player's turn
+- Returns error for an invalid move (non-existent piece)
+- Returns error for an invalid destination (off-board)
+- Updates game state correctly after a successful move (piece position, turn number, MOVE event)
+
+**Files Created**:
+- packages/server/src/socket/__tests__/playTurn.integration.test.ts (340 lines)
+
+**Verification**: pnpm typecheck passes. All 8 new tests pass in isolation. All 1050 non-integration tests pass. Pre-existing integration test failures unchanged. All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Implement Socket.IO move execution handler
 
 **Feature Completed**: "Implement Socket.IO move execution handler"
