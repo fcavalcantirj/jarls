@@ -1,5 +1,32 @@
 ## Progress Log
 
+### 2026-01-27: Network - Integration tests for REST API endpoints
+
+**Feature Completed**: "Integration tests for REST API endpoints"
+
+**Work Done**:
+- Created `packages/server/src/routes/__tests__/games.integration.test.ts` with 24 integration tests
+- Tests use real PostgreSQL and Redis connections (same pattern as existing integration tests)
+- Mocks only the db and redis modules to route through test pool/client
+- Uses real session tokens (created via `createSession`, validated via `validateSession` through Redis)
+- Tests cover all 6 REST endpoints:
+  - POST /api/games: creation, persistence to DB, validation
+  - GET /api/games: empty list, multiple games, status filtering
+  - POST /api/games/:id/join: real session token in Redis, validation, 404, full game
+  - GET /api/games/:id: auth (401 no header, 401 bad token, 200 real token), 404
+  - POST /api/games/:id/start: auth, host-only, success, event persistence to DB
+  - GET /api/games/:id/valid-moves/:pieceId: auth, 404, real piece moves, non-existent piece
+- Full lifecycle test: create → join 2 players → start → get state → verify playing status
+- Tests verify database persistence (snapshots and events tables)
+- Tests verify Redis session storage (token length, session data roundtrip)
+
+**Files Created**:
+- packages/server/src/routes/__tests__/games.integration.test.ts (503 lines)
+
+**Verification**: pnpm typecheck passes. All 24 new integration tests pass in isolation. Pre-existing integration test interference in parallel runs (same issue documented in prior entries). All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Implement game start and valid moves endpoints
 
 **Feature Completed**: "Implement game start and valid moves endpoints"

@@ -1616,7 +1616,7 @@
     "category": "network",
     "description": "Integration tests for REST API endpoints",
     "steps": ["Add integration tests for each endpoint"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
