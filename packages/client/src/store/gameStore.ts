@@ -1,7 +1,13 @@
 import { create } from 'zustand';
-import type { GameState, ValidMove, CombatResult } from '@jarls/shared';
+import type { GameState, ValidMove, CombatResult, GameEvent } from '@jarls/shared';
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
+
+/** A queued turn update waiting for animation before being applied. */
+export interface PendingTurnUpdate {
+  newState: GameState;
+  events: GameEvent[];
+}
 
 export interface GameStore {
   // State
@@ -14,6 +20,10 @@ export interface GameStore {
   errorMessage: string | null;
   hoveredCombat: CombatResult | null;
   hoverPosition: { x: number; y: number } | null;
+  /** Queued turn update waiting for animation playback before state is applied. */
+  pendingTurnUpdate: PendingTurnUpdate | null;
+  /** Whether an animation is currently playing (blocks interaction). */
+  isAnimating: boolean;
 
   // Actions
   setGameState: (state: GameState) => void;
@@ -27,6 +37,9 @@ export interface GameStore {
   clearError: () => void;
   setHoveredCombat: (combat: CombatResult, x: number, y: number) => void;
   clearHoveredCombat: () => void;
+  setPendingTurnUpdate: (update: PendingTurnUpdate) => void;
+  clearPendingTurnUpdate: () => void;
+  setIsAnimating: (animating: boolean) => void;
 }
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -40,6 +53,8 @@ export const useGameStore = create<GameStore>((set) => ({
   errorMessage: null,
   hoveredCombat: null,
   hoverPosition: null,
+  pendingTurnUpdate: null,
+  isAnimating: false,
 
   // Actions
   setGameState: (gameState) => set({ gameState }),
@@ -60,11 +75,16 @@ export const useGameStore = create<GameStore>((set) => ({
       errorMessage: null,
       hoveredCombat: null,
       hoverPosition: null,
+      pendingTurnUpdate: null,
+      isAnimating: false,
     }),
   setError: (message) => set({ errorMessage: message }),
   clearError: () => set({ errorMessage: null }),
   setHoveredCombat: (combat, x, y) => set({ hoveredCombat: combat, hoverPosition: { x, y } }),
   clearHoveredCombat: () => set({ hoveredCombat: null, hoverPosition: null }),
+  setPendingTurnUpdate: (update) => set({ pendingTurnUpdate: update }),
+  clearPendingTurnUpdate: () => set({ pendingTurnUpdate: null }),
+  setIsAnimating: (isAnimating) => set({ isAnimating }),
 }));
 
 // Computed selectors

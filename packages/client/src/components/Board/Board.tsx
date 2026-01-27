@@ -1,10 +1,12 @@
 import { useRef, useEffect, useCallback, type MouseEvent, type TouchEvent } from 'react';
 import { isOnBoardAxial, getValidMoves } from '@jarls/shared';
+import type { AxialCoord } from '@jarls/shared';
 import { useGameStore, selectIsMyTurn } from '../../store/gameStore';
 import { BoardRenderer } from './BoardRenderer';
 import type { RenderHighlights } from './BoardRenderer';
+import { AnimationSystem } from './AnimationSystem';
 import { CombatPreview } from './CombatPreview';
-import { pixelToHex } from '../../utils/hexMath';
+import { hexToPixel, pixelToHex } from '../../utils/hexMath';
 import { getSocket } from '../../socket/client';
 
 const ERROR_TOAST_DURATION_MS = 3000;
@@ -12,6 +14,7 @@ const ERROR_TOAST_DURATION_MS = 3000;
 export function Board() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<BoardRenderer | null>(null);
+  const animationSystemRef = useRef(new AnimationSystem());
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const gameState = useGameStore((s) => s.gameState);
@@ -21,6 +24,8 @@ export function Board() {
   const errorMessage = useGameStore((s) => s.errorMessage);
   const hoveredCombat = useGameStore((s) => s.hoveredCombat);
   const hoverPosition = useGameStore((s) => s.hoverPosition);
+  const pendingTurnUpdate = useGameStore((s) => s.pendingTurnUpdate);
+  const isAnimating = useGameStore((s) => s.isAnimating);
 
   // Initialize renderer on mount
   useEffect(() => {
@@ -47,14 +52,67 @@ export function Board() {
     };
   }, [gameState, selectedPieceId, validMoves, playerId]);
 
-  // Re-render on state changes
+  // Re-render on state changes (only when not animating)
   useEffect(() => {
     const renderer = rendererRef.current;
-    if (!renderer || !gameState) return;
+    if (!renderer || !gameState || isAnimating) return;
 
     const highlights = getHighlights();
     renderer.render(gameState, highlights);
-  }, [gameState, selectedPieceId, validMoves, playerId, getHighlights]);
+  }, [gameState, selectedPieceId, validMoves, playerId, getHighlights, isAnimating]);
+
+  // Handle pending turn updates — play animation, then apply new state
+  useEffect(() => {
+    if (!pendingTurnUpdate || !gameState) return;
+
+    const renderer = rendererRef.current;
+    if (!renderer) return;
+
+    const animSystem = animationSystemRef.current;
+    const { newState, events } = pendingTurnUpdate;
+    const store = useGameStore.getState();
+
+    // Parse events into animations
+    const animations = animSystem.parseEvents(events);
+
+    if (animations.length === 0) {
+      // No animations to play — apply state immediately
+      store.clearPendingTurnUpdate();
+      store.setGameState(newState);
+      return;
+    }
+
+    // Mark as animating (blocks interaction)
+    store.setIsAnimating(true);
+    store.clearPendingTurnUpdate();
+
+    // Build set of piece IDs involved in animations
+    const animatingPieceIds = new Set(animations.map((a) => a.pieceId));
+
+    // Create hexToPixel function bound to current dimensions
+    const dims = renderer.getDimensions();
+    if (!dims) {
+      // No dimensions yet — skip animation, apply state
+      store.setIsAnimating(false);
+      store.setGameState(newState);
+      return;
+    }
+
+    const hexToPixelFn = (hex: AxialCoord) =>
+      hexToPixel(hex, dims.hexSize, dims.centerX, dims.centerY);
+
+    // Run animation loop
+    animSystem
+      .animate(animations, hexToPixelFn, (animatedPieces) => {
+        // Each frame: re-render board with animated piece overrides
+        renderer.renderAnimatedFrame(gameState, animatedPieces, animatingPieceIds);
+      })
+      .then(() => {
+        // Animation complete — apply the new state
+        store.setIsAnimating(false);
+        store.setGameState(newState);
+      });
+  }, [pendingTurnUpdate, gameState]);
 
   // Handle window resize
   useEffect(() => {
@@ -71,7 +129,7 @@ export function Board() {
 
       renderer.handleResize(canvas.width, canvas.height);
 
-      if (gameState) {
+      if (gameState && !isAnimating) {
         const highlights = getHighlights();
         renderer.render(gameState, highlights);
       }
@@ -82,7 +140,7 @@ export function Board() {
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [gameState, getHighlights]);
+  }, [gameState, getHighlights, isAnimating]);
 
   // Auto-clear error toast after duration
   useEffect(() => {
@@ -103,6 +161,9 @@ export function Board() {
   // Core interaction logic shared by mouse and touch handlers
   const handleInteraction = useCallback(
     (canvasX: number, canvasY: number) => {
+      // Block interaction during animations
+      if (isAnimating) return;
+
       const renderer = rendererRef.current;
       if (!renderer || !gameState) return;
 
@@ -165,7 +226,7 @@ export function Board() {
         store.clearSelection();
       }
     },
-    [gameState, playerId, isMyTurn, selectedPieceId, validMoves]
+    [gameState, playerId, isMyTurn, selectedPieceId, validMoves, isAnimating]
   );
 
   // Mouse click handler
@@ -205,6 +266,9 @@ export function Board() {
       const renderer = rendererRef.current;
       if (!canvas || !renderer || !gameState) return;
 
+      // No tooltip during animations
+      if (isAnimating) return;
+
       // Only show tooltip when a piece is selected with valid attack moves
       if (!selectedPieceId || validMoves.length === 0) {
         if (hoveredCombat) useGameStore.getState().clearHoveredCombat();
@@ -237,7 +301,7 @@ export function Board() {
         if (hoveredCombat) useGameStore.getState().clearHoveredCombat();
       }
     },
-    [gameState, selectedPieceId, validMoves, hoveredCombat]
+    [gameState, selectedPieceId, validMoves, hoveredCombat, isAnimating]
   );
 
   const handleMouseLeave = useCallback(() => {
@@ -256,7 +320,7 @@ export function Board() {
           display: 'block',
           width: '100%',
           height: '100%',
-          cursor: 'pointer',
+          cursor: isAnimating ? 'default' : 'pointer',
           touchAction: 'none',
         }}
       />

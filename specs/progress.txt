@@ -1,5 +1,30 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Integrate animations with Board
+
+**Features Completed**: "Integrate animations with Board"
+
+**Work Done**:
+- Integrated AnimationSystem with Board component for animated turn playback
+- Added `pendingTurnUpdate` and `isAnimating` state to Zustand gameStore
+- Modified useSocket hook to queue turnPlayed events (with game events) as pending updates instead of applying immediately
+- Board.tsx now: detects pending turn updates, parses events into animations, plays animation loop, then applies new state
+- Added `renderAnimatedFrame()` method to BoardRenderer that draws static pieces normally and animated pieces at interpolated pixel positions with opacity
+- Added `drawWarriorAt()` and `drawJarlAt()` private methods to BoardRenderer for pixel-position rendering during animations
+- Interaction (clicks, hover, touch) is blocked during animation playback
+- Cursor changes to 'default' during animations to indicate non-interactive state
+- Falls back to immediate state application when no events or no dimensions are available
+
+**Files Modified**:
+- packages/client/src/components/Board/Board.tsx (294 -> 359 lines)
+- packages/client/src/components/Board/BoardRenderer.ts (471 -> 592 lines)
+- packages/client/src/store/gameStore.ts (85 -> 104 lines)
+- packages/client/src/hooks/useSocket.ts (121 -> 131 lines)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (25 failed, 1168 passed).
+
+---
+
 ### 2026-01-27: Frontend - Implement animation rendering
 
 **Features Completed**: "Implement animation rendering"

@@ -77,9 +77,20 @@ export function useSocket(gameId: string | null): GameSocket | null {
       clearSelection();
     };
 
-    const onTurnPlayed = (data: { newState: Parameters<typeof setGameState>[0] }) => {
-      setGameState(data.newState);
-      clearSelection();
+    const onTurnPlayed = (data: {
+      newState: Parameters<typeof setGameState>[0];
+      events?: import('@jarls/shared').GameEvent[];
+    }) => {
+      const events = data.events ?? [];
+      if (events.length > 0) {
+        // Queue the update for animation playback — Board will apply state after animating
+        useGameStore.getState().setPendingTurnUpdate({ newState: data.newState, events });
+        clearSelection();
+      } else {
+        // No events to animate — apply immediately
+        setGameState(data.newState);
+        clearSelection();
+      }
     };
 
     const onGameEnded = (data: { finalState: Parameters<typeof setGameState>[0] }) => {

@@ -7,6 +7,7 @@
 
 import type { AxialCoord, Piece, GameState, ValidMove } from '@jarls/shared';
 import { generateAllBoardHexesAxial } from '@jarls/shared';
+import type { AnimatedPiece } from './AnimationSystem';
 import { hexToPixel, getHexCorners } from '../../utils/hexMath';
 
 /** Default fill color for normal board hexes */
@@ -466,6 +467,126 @@ export class BoardRenderer {
           this.drawMomentumIndicator(move.destination);
         }
       }
+    }
+  }
+
+  /**
+   * Render the board with animated piece overrides.
+   * Pieces listed in animatedPieces are drawn at their interpolated pixel positions
+   * instead of their game-state positions. Pieces whose animation has completed
+   * (not in the animatedPieces list) are skipped — the caller applies the final
+   * state after the full animation sequence finishes.
+   */
+  renderAnimatedFrame(
+    state: GameState,
+    animatedPieces: AnimatedPiece[],
+    animatingPieceIds: Set<string>
+  ): void {
+    const canvas = this.ctx.canvas;
+
+    // Ensure dimensions are calculated
+    if (!this.dimensions) {
+      this.calculateDimensions(state.config.boardRadius, canvas.width, canvas.height);
+    }
+    const dims = this.dimensions!;
+
+    // Clear entire canvas
+    this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw hex grid
+    this.drawGrid(state.config.boardRadius);
+
+    // Draw non-animated pieces at their normal positions
+    const staticPieces = state.pieces.filter((p) => !animatingPieceIds.has(p.id));
+    this.drawPieces(staticPieces);
+
+    // Draw animated pieces at their interpolated positions
+    const ctx = this.ctx;
+    for (const ap of animatedPieces) {
+      const piece = state.pieces.find((p) => p.id === ap.pieceId);
+      if (!piece) continue;
+
+      ctx.save();
+      ctx.globalAlpha = ap.opacity;
+
+      if (piece.type === 'shield') {
+        // Shields don't typically animate, but handle gracefully
+        this.drawShield(piece.position);
+      } else if (piece.type === 'jarl') {
+        this.drawJarlAt(ap.x, ap.y, piece, dims);
+      } else {
+        this.drawWarriorAt(ap.x, ap.y, piece, dims);
+      }
+
+      ctx.restore();
+    }
+  }
+
+  /**
+   * Draw a Warrior at a specific pixel position (for animation).
+   */
+  private drawWarriorAt(x: number, y: number, piece: Piece, dims: BoardDimensions): void {
+    if (!piece.playerId) return;
+
+    const radius = dims.hexSize * 0.35;
+    const color = this.getPlayerColor(piece.playerId);
+    const ctx = this.ctx;
+
+    // Shadow
+    ctx.beginPath();
+    ctx.arc(x + 2, y + 2, radius, 0, Math.PI * 2);
+    ctx.fillStyle = PIECE_SHADOW;
+    ctx.fill();
+
+    // Main circle
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  /**
+   * Draw a Jarl at a specific pixel position (for animation).
+   */
+  private drawJarlAt(x: number, y: number, piece: Piece, dims: BoardDimensions): void {
+    if (!piece.playerId) return;
+
+    const radius = dims.hexSize * 0.42;
+    const color = this.getPlayerColor(piece.playerId);
+    const ctx = this.ctx;
+
+    // Shadow
+    ctx.beginPath();
+    ctx.arc(x + 2, y + 2, radius, 0, Math.PI * 2);
+    ctx.fillStyle = PIECE_SHADOW;
+    ctx.fill();
+
+    // Main circle
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Crown indicator: three small triangles on top
+    const crownY = y - radius * 0.3;
+    const crownSize = radius * 0.35;
+    const points = [-0.6, 0, 0.6];
+
+    ctx.fillStyle = '#ffd700';
+    for (const offset of points) {
+      const cx = x + offset * radius;
+      ctx.beginPath();
+      ctx.moveTo(cx, crownY - crownSize);
+      ctx.lineTo(cx - crownSize * 0.4, crownY + crownSize * 0.3);
+      ctx.lineTo(cx + crownSize * 0.4, crownY + crownSize * 0.3);
+      ctx.closePath();
+      ctx.fill();
     }
   }
 }

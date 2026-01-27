@@ -2142,7 +2142,7 @@
     "category": "frontend",
     "description": "Integrate animations with Board",
     "steps": ["Integrate with Board: wait for animation before updating rendered state"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
