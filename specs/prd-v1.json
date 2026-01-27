@@ -344,7 +344,7 @@
       "Configure network for inter-container communication",
       "Add healthcheck for PostgreSQL"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

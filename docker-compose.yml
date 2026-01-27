@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jarls-postgres
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: jarls
+      POSTGRES_PASSWORD: jarls
+      POSTGRES_DB: jarls
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U jarls']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jarls-network
+
+volumes:
+  postgres_data:
+
+networks:
+  jarls-network:
+    driver: bridge

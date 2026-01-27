@@ -2825,3 +2825,27 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Created**:
 - packages/shared/src/__tests__/starvation-jarl-grace.test.ts
+
+---
+
+### 2026-01-27: Infrastructure - Docker Compose with PostgreSQL 16
+
+**Feature Completed**: "Docker Compose file with PostgreSQL 16 service"
+
+**Work Done**:
+- Created docker-compose.yml at project root
+- Added PostgreSQL 16 (alpine) service with:
+  - Container name: jarls-postgres
+  - Port mapping: 5432:5432
+  - Environment: POSTGRES_USER=jarls, POSTGRES_PASSWORD=jarls, POSTGRES_DB=jarls
+  - Named volume `postgres_data` for data persistence
+  - Healthcheck using `pg_isready -U jarls` (10s interval, 5s timeout, 5 retries)
+- Configured `jarls-network` bridge network for inter-container communication
+- All 833 tests pass, typecheck clean
+
+**Verification**:
+- `pnpm typecheck` passes (all 3 packages)
+- `pnpm test` passes (29 test suites, 833 tests)
+
+**Files Created**:
+- docker-compose.yml
