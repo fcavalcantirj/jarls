@@ -397,7 +397,7 @@
       "Configure pool settings (max 10 connections, 30s idle timeout)",
       "Create query() helper function with error handling"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

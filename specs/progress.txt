@@ -2951,3 +2951,23 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Created**:
 - packages/server/migrations/1769510708642_player-sessions.js
+
+---
+
+### 2026-01-27: Infrastructure - PostgreSQL connection pool setup
+
+**Feature Completed**: "PostgreSQL connection pool setup"
+
+**Work Done**:
+- Verified pg (^8.17.2) and @types/pg (^8.16.0) already installed in server package
+- Created packages/server/src/db/pool.ts
+- Configured Pool with max 10 connections, 30s idle timeout, reading DATABASE_URL from env
+- Created query() helper function with error handling and logging
+- Created getClient() for transaction support (caller releases)
+- Created closePool() for graceful shutdown
+- Added pool error event handler for idle client errors
+- All existing tests pass (29 suites, 833 tests)
+- Typecheck passes for all packages
+
+**Files Created**:
+- packages/server/src/db/pool.ts
