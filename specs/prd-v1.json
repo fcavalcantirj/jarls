@@ -1119,7 +1119,7 @@
       "Define GameMachineContext extending GameState with: turnTimerMs, disconnectedPlayers, starvationChoices",
       "Export GameMachineContext type"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

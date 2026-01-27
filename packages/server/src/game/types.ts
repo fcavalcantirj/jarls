@@ -1,4 +1,4 @@
-import type { GameConfig } from '@jarls/shared';
+import type { GameConfig, GameState, StarvationChoice } from '@jarls/shared';
 
 /**
  * Input required to create a game machine actor.
@@ -9,4 +9,17 @@ export interface GameMachineInput {
   gameId: string;
   /** Game configuration (board size, piece counts, timer settings) */
   config: GameConfig;
+}
+
+/**
+ * Game machine context - extends the shared GameState with server-side
+ * properties needed for the XState state machine.
+ */
+export interface GameMachineContext extends GameState {
+  /** Turn timer duration in ms, or null if no timer is configured */
+  turnTimerMs: number | null;
+  /** Set of player IDs that are currently disconnected */
+  disconnectedPlayers: Set<string>;
+  /** Starvation choices collected from players during a starvation phase */
+  starvationChoices: StarvationChoice[];
 }

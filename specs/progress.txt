@@ -3103,3 +3103,23 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - packages/server/package.json (added xstate@5 dependency)
 - specs/prd-v1.json (marked task as passes: true)
 - specs/progress.txt (this entry)
+
+---
+
+### 2026-01-27: State Machine - Define game machine context types
+
+**Feature Completed**: "Define game machine context types"
+
+**Work Done**:
+- Added GameMachineContext interface to packages/server/src/game/types.ts
+- GameMachineContext extends GameState with three server-side properties:
+  - turnTimerMs: number | null (turn timer duration)
+  - disconnectedPlayers: Set<string> (tracking disconnected player IDs)
+  - starvationChoices: StarvationChoice[] (collected choices during starvation phase)
+- Built shared package to update dist/ declarations
+- Typecheck passes, all 844 tests pass (31 suites)
+
+**Files Modified**:
+- packages/server/src/game/types.ts (added GameMachineContext)
+- specs/prd-v1.json (marked task as passes: true)
+- specs/progress.txt (this entry)
