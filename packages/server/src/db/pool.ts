@@ -43,4 +43,21 @@ export async function closePool(): Promise<void> {
   await pool.end();
 }
 
+function handleShutdown(signal: string) {
+  console.log(`Received ${signal}. Closing database pool...`);
+  pool
+    .end()
+    .then(() => {
+      console.log('Database pool closed.');
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('Error closing database pool:', err);
+      process.exit(1);
+    });
+}
+
+process.on('SIGINT', () => handleShutdown('SIGINT'));
+process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+
 export { pool };

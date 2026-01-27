@@ -407,7 +407,7 @@
       "Add graceful shutdown handling",
       "Export pool and helpers from db/index.ts"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

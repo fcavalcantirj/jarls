@@ -2971,3 +2971,22 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Created**:
 - packages/server/src/db/pool.ts
+
+---
+
+### 2026-01-27: Infrastructure - PostgreSQL connection pool transactions and export
+
+**Feature Completed**: "PostgreSQL connection pool transactions and export"
+
+**Work Done**:
+- getClient() for transactions already existed in pool.ts
+- Added graceful shutdown signal handling (SIGINT/SIGTERM) to pool.ts
+- Created packages/server/src/db/index.ts barrel export for pool, query, getClient, closePool
+- All existing tests pass (29 suites, 833 tests)
+- Typecheck passes for all packages
+
+**Files Created**:
+- packages/server/src/db/index.ts
+
+**Files Modified**:
+- packages/server/src/db/pool.ts (added shutdown signal handlers)
