@@ -190,55 +190,123 @@
   },
   {
     "category": "infrastructure",
-    "description": "Split shared/src/index.test.ts - extract hex.test.ts",
+    "description": "Re-split hex.test.ts (1274 lines) into hex-coordinates.test.ts and hex-directions.test.ts (max 800 lines each)",
     "steps": [
-      "Create __tests__/hex.test.ts",
-      "Move all hex coordinate tests",
-      "Import from ../hex.ts",
-      "Verify tests pass"
+      "Create __tests__/hex-coordinates.test.ts (~600 lines: coordinate conversions, distance, neighbors)",
+      "Create __tests__/hex-directions.test.ts (~600 lines: directions, rings, lines)",
+      "Delete original hex.test.ts after extraction",
+      "Verify tests pass and each file is under 800 lines"
     ],
     "passes": true
   },
   {
     "category": "infrastructure",
-    "description": "Split shared/src/index.test.ts - extract board.test.ts",
+    "description": "Re-split board.test.ts (1683 lines) into board-generation.test.ts and board-validation.test.ts (max 800 lines each)",
     "steps": [
-      "Create __tests__/board.test.ts",
-      "Move all board generation tests",
-      "Import from ../board.ts",
-      "Verify tests pass"
+      "Create __tests__/board-generation.test.ts (~800 lines: generateAllBoardHexes, hexToPixel, calculateStartingPositions, rotateHex)",
+      "Create __tests__/board-validation.test.ts (~800 lines: hasPathToThrone, validateShieldPlacement, placeWarriors, createInitialState, generateId)",
+      "Delete original board.test.ts after extraction",
+      "Verify tests pass and each file is under 800 lines"
     ],
-    "passes": true
+    "passes": false
   },
   {
     "category": "infrastructure",
-    "description": "Split shared/src/index.test.ts - extract combat.test.ts",
+    "description": "Extract combat-strength.test.ts from index.test.ts (max 800 lines)",
     "steps": [
-      "Create __tests__/combat.test.ts",
-      "Move all combat-related tests",
+      "Create __tests__/combat-strength.test.ts",
+      "Move getPieceStrength, findInlineSupport, findBracing tests",
+      "Import from ../combat.ts and ../combat-core.ts",
+      "Verify tests pass and file is under 800 lines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Extract combat-calculation.test.ts from index.test.ts (max 800 lines)",
+    "steps": [
+      "Create __tests__/combat-calculation.test.ts",
+      "Move calculateAttack, calculateDefense, calculateCombat tests",
       "Import from ../combat.ts",
-      "Verify tests pass"
+      "Verify tests pass and file is under 800 lines"
     ],
     "passes": false
   },
   {
     "category": "infrastructure",
-    "description": "Split shared/src/index.test.ts - extract move.test.ts",
+    "description": "Extract push-simple.test.ts from index.test.ts (max 800 lines)",
     "steps": [
-      "Create __tests__/move.test.ts",
-      "Move all move validation/execution tests",
+      "Create __tests__/push-simple.test.ts",
+      "Move resolveSimplePush tests",
+      "Import from ../combat.ts",
+      "Verify tests pass and file is under 800 lines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Extract push-complex.test.ts from index.test.ts (max 800 lines)",
+    "steps": [
+      "Create __tests__/push-complex.test.ts",
+      "Move resolveEdgePush, resolveCompression, resolvePush, detectChain tests",
+      "Import from ../combat.ts",
+      "Verify tests pass and file is under 800 lines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Extract move-validation.test.ts from index.test.ts (max 800 lines)",
+    "steps": [
+      "Create __tests__/move-validation.test.ts",
+      "Move validateMove, pathCrossesThrone, Jarl throne crossing tests",
+      "Import from ../move.ts and ../move-validation.ts",
+      "Verify tests pass and file is under 800 lines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Extract move-execution.test.ts from index.test.ts (max 800 lines)",
+    "steps": [
+      "Create __tests__/move-execution.test.ts",
+      "Move getReachableHexes, getValidMoves, applyMove tests",
       "Import from ../move.ts",
-      "Verify tests pass"
+      "Verify tests pass and file is under 800 lines"
     ],
     "passes": false
   },
   {
     "category": "infrastructure",
-    "description": "Split shared/src/index.test.ts - finalize and cleanup",
+    "description": "Extract victory.test.ts from index.test.ts (max 800 lines)",
     "steps": [
-      "Remove or minimize index.test.ts (keep only integration tests if any)",
+      "Create __tests__/victory.test.ts",
+      "Move checkThroneVictory, eliminatePlayer, checkLastStanding, checkWinConditions tests",
+      "Import from ../move.ts or relevant module",
+      "Verify tests pass and file is under 800 lines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Extract utils.test.ts from index.test.ts (max 800 lines)",
+    "steps": [
+      "Create __tests__/utils.test.ts",
+      "Move getPieceAt, getPieceById, isPathClear, hasDraftFormation, getDirectionBetweenAdjacent, getLineDirection tests",
+      "Import from relevant modules",
+      "Verify tests pass and file is under 800 lines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Finalize index.test.ts - should be empty or minimal (max 200 lines)",
+    "steps": [
+      "Review remaining tests in index.test.ts",
+      "Move any remaining tests to appropriate files",
+      "Delete index.test.ts if empty, or keep only integration tests (max 200 lines)",
       "Run full test suite: pnpm test",
-      "Verify all 756+ tests pass"
+      "Verify all tests pass"
     ],
     "passes": false
   },

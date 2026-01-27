@@ -2166,3 +2166,53 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 **Files Modified**:
 - packages/shared/src/index.test.ts (removed board tests and unused imports)
 - specs/prd-v1.json (marked feature as complete)
+
+---
+
+### 2026-01-26: Infrastructure - Re-split hex.test.ts into hex-coordinates.test.ts and hex-directions.test.ts
+
+**Feature Completed**: "Re-split hex.test.ts (1274 lines) into hex-coordinates.test.ts and hex-directions.test.ts (max 800 lines each)"
+
+**Work Done**:
+- Created `packages/shared/src/__tests__/hex-coordinates.test.ts` (755 lines) containing:
+  - HexDirection and DIRECTIONS tests (unit vector validation, ordering)
+  - axialToCube/cubeToAxial conversion tests
+  - Round-trip conversion tests
+  - hexDistance/hexDistanceAxial tests
+  - isOnBoard/isOnBoardAxial tests
+  - isOnEdge/isOnEdgeAxial tests
+  - Board boundary case tests (Jarl positions, Throne, pushed-off pieces)
+  - hexToKey/keyToHex/keyToHexCube tests
+  - Map storage integration tests
+
+- Created `packages/shared/src/__tests__/hex-directions.test.ts` (532 lines) containing:
+  - getNeighbor tests (all 6 directions, constraint validation)
+  - getAllNeighbors tests (ordering, uniqueness, distance)
+  - getNeighborAxial/getAllNeighborsAxial tests
+  - getOppositeDirection tests (self-inverse, vector sum)
+  - cubeRound tests (integer, fractional, edge cases)
+  - hexLine tests (straight lines, diagonal, symmetry)
+  - hexLineAxial tests (game scenarios)
+
+- Deleted original `packages/shared/src/__tests__/hex.test.ts` (1274 lines)
+
+**Why This Matters**:
+- Both new files are under 800 lines (755 and 532 lines respectively)
+- Follows the CLAUDE.md golden rule: no single code file should exceed ~800 lines
+- Improves maintainability by organizing tests by logical function
+- Reduces context usage for AI assistants
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test` passes (756 tests total)
+- Tests now split across 5 files: index.test.ts, __tests__/types.test.ts, __tests__/hex-coordinates.test.ts, __tests__/hex-directions.test.ts, __tests__/board.test.ts
+
+**Files Created**:
+- packages/shared/src/__tests__/hex-coordinates.test.ts (755 lines)
+- packages/shared/src/__tests__/hex-directions.test.ts (532 lines)
+
+**Files Deleted**:
+- packages/shared/src/__tests__/hex.test.ts
+
+**Files Modified**:
+- specs/prd-v1.json (marked feature as complete)
