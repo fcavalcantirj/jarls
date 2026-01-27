@@ -1,5 +1,25 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Implement checkingGameEnd substate & Unit tests for playing state
+
+**Features Completed**: "Implement checkingGameEnd substate" and "Unit tests for playing state"
+
+**Work Done**:
+- Refactored gameMachine to use XState v5 `setup()` API with named `initializeBoard` action, enabling `provide()` overrides in tests
+- Added proper checkingGameEnd tests using `gameMachine.provide()` to inject a custom board with Jarl adjacent to the throne
+- Test: Jarl moves to throne (0,0) → machine transitions to `ended` state with winnerId, winCondition='throne', phase='ended', status='done'
+- Test: Normal move (no winner) → machine cycles through checkingGameEnd back to `awaitingMove`
+- Test: Non-winning move on custom board → game continues, no winner set
+- checkingGameEnd substate uses `always` transitions: winnerId !== null → #game.ended, otherwise → awaitingMove
+
+**Files Modified**:
+- packages/server/src/game/machine.ts (refactored to use `setup()` API with named actions)
+- packages/server/src/game/__tests__/playing.test.ts (added 3 checkingGameEnd tests, victory via provide() override)
+
+**Verification**: pnpm typecheck passes, all 875 tests pass.
+
+---
+
 ### 2026-01-27: State Machine - Implement MAKE_MOVE handler
 
 **Feature Completed**: "Implement MAKE_MOVE handler"

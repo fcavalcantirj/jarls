@@ -1,8 +1,8 @@
 import { describe, it, expect } from '@jest/globals';
-import { createActor } from 'xstate';
+import { createActor, assign } from 'xstate';
 import { gameMachine } from '../machine';
 import type { GameMachineInput, GameMachineContext } from '../types';
-import type { GameState, MoveCommand } from '@jarls/shared';
+import type { GameState, MoveCommand, Piece } from '@jarls/shared';
 import { getValidMoves } from '@jarls/shared';
 
 function createTestInput(overrides?: Partial<GameMachineInput>): GameMachineInput {
@@ -64,6 +64,47 @@ function findValidMove(context: GameMachineContext, playerId: string): MoveComma
     }
   }
   return null;
+}
+
+/**
+ * Create a game machine with a custom board where p1's Jarl is adjacent to the throne.
+ * This allows testing victory by moving the Jarl onto the throne (0,0).
+ */
+function createGameWithJarlNearThrone() {
+  // Override initializeBoard to place Jarl adjacent to throne
+  const testMachine = gameMachine.provide({
+    actions: {
+      initializeBoard: assign(({ context }) => {
+        // Place p1's Jarl at (0, -1), one hex away from throne (0, 0)
+        // Place p2's Jarl far away, with warriors to keep the game valid
+        const pieces: Piece[] = [
+          { id: 'p1-jarl', type: 'jarl', playerId: 'p1', position: { q: 0, r: -1 } },
+          { id: 'p1-w1', type: 'warrior', playerId: 'p1', position: { q: 1, r: -2 } },
+          { id: 'p1-w2', type: 'warrior', playerId: 'p1', position: { q: -1, r: -1 } },
+          { id: 'p2-jarl', type: 'jarl', playerId: 'p2', position: { q: 0, r: 3 } },
+          { id: 'p2-w1', type: 'warrior', playerId: 'p2', position: { q: 1, r: 2 } },
+          { id: 'p2-w2', type: 'warrior', playerId: 'p2', position: { q: -1, r: 3 } },
+          { id: 'shield-1', type: 'shield', playerId: null, position: { q: 2, r: -2 } },
+        ];
+
+        return {
+          ...context,
+          pieces,
+          phase: 'playing' as const,
+          currentPlayerId: context.players[0].id,
+        };
+      }),
+    },
+  });
+
+  const actor = createActor(testMachine, { input: createTestInput() });
+  actor.start();
+
+  actor.send({ type: 'PLAYER_JOINED', playerId: 'p1', playerName: 'Alice' });
+  actor.send({ type: 'PLAYER_JOINED', playerId: 'p2', playerName: 'Bob' });
+  actor.send({ type: 'START_GAME', playerId: 'p1' });
+
+  return actor;
 }
 
 describe('Game Machine - Playing State', () => {
@@ -217,34 +258,91 @@ describe('Game Machine - Playing State', () => {
 
       actor.stop();
     });
-
-    it('game ends on victory - winnerId transitions to ended', () => {
-      const actor = createGameInPlaying();
-      const snapshot = actor.getSnapshot();
-
-      // Verify the game starts with no winner
-      expect(snapshot.context.winnerId).toBeNull();
-      expect(snapshot.value).toEqual({ playing: 'awaitingMove' });
-
-      // The checkingGameEnd substate uses an always transition:
-      // if winnerId is set -> #game.ended, otherwise -> awaitingMove
-      // This is verified by the fact that normal moves return to awaitingMove
-      // (no winnerId set) and that the guard checks context.winnerId !== null
-
-      actor.stop();
-    });
   });
 
   describe('checkingGameEnd substate', () => {
-    it('transitions to ended when winnerId is set', () => {
-      // We test the guard logic by verifying the always transition structure
-      // When winnerId is not null, checkingGameEnd should transition to #game.ended
+    it('transitions back to awaitingMove when no winner', () => {
       const actor = createGameInPlaying();
       const snapshot = actor.getSnapshot();
 
-      // Game should be in awaitingMove with no winner
+      // Make a normal move - should cycle through checkingGameEnd and back
+      const move = findValidMove(snapshot.context, 'p1');
+      expect(move).not.toBeNull();
+
+      actor.send({
+        type: 'MAKE_MOVE',
+        playerId: 'p1',
+        command: move!,
+      });
+
+      const afterMove = actor.getSnapshot();
+
+      // Should be back in awaitingMove (checkingGameEnd found no winner)
+      expect(afterMove.value).toEqual({ playing: 'awaitingMove' });
+      expect(afterMove.context.winnerId).toBeNull();
+
+      actor.stop();
+    });
+
+    it('transitions to ended when Jarl moves to throne', () => {
+      const actor = createGameWithJarlNearThrone();
+      const snapshot = actor.getSnapshot();
+
+      // Verify setup: p1's Jarl should be at (0, -1), throne is at (0, 0)
       expect(snapshot.value).toEqual({ playing: 'awaitingMove' });
-      expect(snapshot.context.winnerId).toBeNull();
+      expect(snapshot.context.currentPlayerId).toBe('p1');
+
+      const jarl = snapshot.context.pieces.find((p) => p.id === 'p1-jarl');
+      expect(jarl).toBeDefined();
+      expect(jarl!.position).toEqual({ q: 0, r: -1 });
+
+      // Move Jarl to the throne (0, 0)
+      actor.send({
+        type: 'MAKE_MOVE',
+        playerId: 'p1',
+        command: {
+          pieceId: 'p1-jarl',
+          destination: { q: 0, r: 0 },
+        },
+      });
+
+      const afterMove = actor.getSnapshot();
+
+      // Machine should have transitioned to 'ended' via checkingGameEnd
+      expect(afterMove.value).toBe('ended');
+      expect(afterMove.context.winnerId).toBe('p1');
+      expect(afterMove.context.winCondition).toBe('throne');
+      expect(afterMove.context.phase).toBe('ended');
+      expect(afterMove.status).toBe('done');
+
+      actor.stop();
+    });
+
+    it('does not end game when non-winning move is made', () => {
+      const actor = createGameWithJarlNearThrone();
+      const snapshot = actor.getSnapshot();
+
+      // Move a warrior instead of the Jarl to the throne
+      // p1-w1 is at (1, -2), move it somewhere valid
+      const state = contextToGameState(snapshot.context);
+      const warriorMoves = getValidMoves(state, 'p1-w1');
+
+      if (warriorMoves.length > 0) {
+        actor.send({
+          type: 'MAKE_MOVE',
+          playerId: 'p1',
+          command: {
+            pieceId: 'p1-w1',
+            destination: warriorMoves[0].destination,
+          },
+        });
+
+        const afterMove = actor.getSnapshot();
+
+        // Game should not have ended
+        expect(afterMove.value).toEqual({ playing: 'awaitingMove' });
+        expect(afterMove.context.winnerId).toBeNull();
+      }
 
       actor.stop();
     });

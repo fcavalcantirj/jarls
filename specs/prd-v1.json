@@ -1220,7 +1220,7 @@
       "If ended: transition to 'ended' state",
       "If not ended: transition back to 'awaitingMove'"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
@@ -1230,7 +1230,7 @@
       "Add unit tests: invalid move rejected",
       "Add unit tests: game ends on victory"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

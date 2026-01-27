@@ -1,4 +1,4 @@
-import { createMachine, assign } from 'xstate';
+import { setup, assign } from 'xstate';
 import type { GameMachineContext, GameMachineEvent, GameMachineInput } from './types';
 import type { Piece, Player } from '@jarls/shared';
 import { createInitialState, applyMove } from '@jarls/shared';
@@ -26,15 +26,42 @@ function isLobbyFull({ context }: { context: GameMachineContext }): boolean {
  * - Players can join and leave
  * - Game starts when host triggers START_GAME with >= 2 players
  */
-export const gameMachine = createMachine({
-  id: 'game',
-  type: 'compound' as const,
-  initial: 'lobby',
+export const gameMachine = setup({
   types: {
     context: {} as GameMachineContext,
     events: {} as GameMachineEvent,
     input: {} as GameMachineInput,
   },
+  actions: {
+    initializeBoard: assign(({ context }) => {
+      // Generate board using shared logic
+      const playerNames = context.players.map((p) => p.name);
+      const generated = createInitialState(playerNames, context.turnTimerMs);
+
+      // Map generated player IDs to the existing lobby player IDs
+      const idMap = new Map<string, string>();
+      for (let i = 0; i < generated.players.length; i++) {
+        idMap.set(generated.players[i].id, context.players[i].id);
+      }
+
+      // Remap piece playerIds to match existing lobby players
+      const pieces: Piece[] = generated.pieces.map((piece) => ({
+        ...piece,
+        playerId: piece.playerId ? (idMap.get(piece.playerId) ?? piece.playerId) : null,
+      }));
+
+      return {
+        ...context,
+        pieces,
+        phase: 'playing' as const,
+        currentPlayerId: context.players[0].id,
+      };
+    }),
+  },
+}).createMachine({
+  id: 'game',
+  type: 'compound' as const,
+  initial: 'lobby',
   context: ({ input }: { input: GameMachineInput }): GameMachineContext => ({
     id: input.gameId,
     phase: 'lobby',
@@ -81,30 +108,7 @@ export const gameMachine = createMachine({
       },
     },
     setup: {
-      entry: assign(({ context }) => {
-        // Generate board using shared logic
-        const playerNames = context.players.map((p) => p.name);
-        const generated = createInitialState(playerNames, context.turnTimerMs);
-
-        // Map generated player IDs to the existing lobby player IDs
-        const idMap = new Map<string, string>();
-        for (let i = 0; i < generated.players.length; i++) {
-          idMap.set(generated.players[i].id, context.players[i].id);
-        }
-
-        // Remap piece playerIds to match existing lobby players
-        const pieces: Piece[] = generated.pieces.map((piece) => ({
-          ...piece,
-          playerId: piece.playerId ? (idMap.get(piece.playerId) ?? piece.playerId) : null,
-        }));
-
-        return {
-          ...context,
-          pieces,
-          phase: 'playing' as const,
-          currentPlayerId: context.players[0].id,
-        };
-      }),
+      entry: 'initializeBoard',
       always: {
         target: 'playing',
       },
