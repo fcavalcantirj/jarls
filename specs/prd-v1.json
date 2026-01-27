@@ -1972,7 +1972,7 @@
       "Create BoardRenderer class with canvas context",
       "Implement calculateDimensions(boardRadius, canvasWidth, canvasHeight): compute hexSize and center"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

@@ -1,5 +1,27 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Create BoardRenderer class
+
+**Features Completed**: "Create BoardRenderer class"
+
+**Work Done**:
+- Created `packages/client/src/components/Board/BoardRenderer.ts` with canvas-based renderer
+- `BoardRenderer` class accepts a `CanvasRenderingContext2D` in constructor
+- Implemented `calculateDimensions(boardRadius, canvasWidth, canvasHeight)` computing hexSize and canvas center
+- Hex sizing uses pointy-top layout formulas with 10% padding to fit the full board
+- Exported `BoardDimensions` interface with hexSize, centerX, centerY, canvasWidth, canvasHeight
+- Updated `Board/index.ts` barrel export
+
+**Files Created**:
+- packages/client/src/components/Board/BoardRenderer.ts (82 lines)
+
+**Files Modified**:
+- packages/client/src/components/Board/index.ts
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (23 failed, 1170 passed).
+
+---
+
 ### 2026-01-27: Frontend - Add hex corner calculation and tests
 
 **Features Completed**: "Add hex corner calculation and tests"
