@@ -459,7 +459,7 @@
       "Define Zod schema: DATABASE_URL (string), REDIS_URL (string), PORT (number, default 3000), NODE_ENV (enum)",
       "Parse and validate env vars on import"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
@@ -469,7 +469,7 @@
       "Export typed config object",
       "Update .env.example with all variables documented"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

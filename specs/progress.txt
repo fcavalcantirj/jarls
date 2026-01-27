@@ -3044,3 +3044,25 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 **Files Modified**:
 - packages/server/package.json (added ioredis dependency)
 - specs/prd-v1.json (marked 3 Redis tasks as passes: true)
+---
+
+### 2026-01-27: Infrastructure - Environment Variable Management with Zod
+
+**Features Completed**: "Environment variable management with Zod" and "Environment config export and documentation"
+
+**Work Done**:
+- Installed dotenv and zod in @jarls/server package
+- Created packages/server/src/config/env.ts with Zod schema validation
+- Schema validates: DATABASE_URL (string), REDIS_URL (string), PORT (number, default 3000), NODE_ENV (enum: development/production/test)
+- Throws clear error with per-field messages if validation fails
+- Exports typed `env` config object and `Env` type
+- Updated .env.example with comments documenting each variable
+- All 844 tests pass, typecheck passes
+
+**Files Created**:
+- packages/server/src/config/env.ts
+
+**Files Modified**:
+- packages/server/package.json (added dotenv, zod dependencies)
+- packages/server/.env.example (added documentation comments)
+- specs/prd-v1.json (marked 2 env tasks as passes: true)
