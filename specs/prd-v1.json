@@ -758,7 +758,7 @@
       "Cannot move through friendly pieces",
       "Cannot land on friendly pieces (already covered)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
@@ -767,7 +767,7 @@
       "Unit tests: cannot move through own Warrior",
       "Unit tests: push chain stops if would push ally"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

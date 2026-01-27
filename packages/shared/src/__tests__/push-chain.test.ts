@@ -445,4 +445,62 @@ describe('detectChain', () => {
       expect(result.terminator).toBe('edge');
     });
   });
+
+  describe('push chain with friendly pieces (ally in chain)', () => {
+    it('should include ally pieces in the push chain', () => {
+      // Attacker p1 pushes p2 warrior, but p1 warrior is behind p2 warrior in push direction
+      // Chain: p2 warrior at (1,0), p1 warrior at (2,0) — ally gets pushed too
+      const pieces: Piece[] = [
+        { id: 'enemy', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
+        { id: 'ally', type: 'warrior', playerId: 'p1', position: { q: 2, r: 0 } },
+      ];
+      const state = createTestState(pieces);
+
+      const result = detectChain(state, { q: 1, r: 0 }, 0); // Push East
+
+      expect(result.pieces).toHaveLength(2);
+      expect(result.pieces[0].id).toBe('enemy');
+      expect(result.pieces[1].id).toBe('ally');
+      // Both pieces are in chain regardless of allegiance
+      expect(result.pieces[0].playerId).toBe('p2');
+      expect(result.pieces[1].playerId).toBe('p1');
+      expect(result.terminator).toBe('empty');
+    });
+
+    it('should push ally toward edge if chain ends at edge', () => {
+      // Chain toward edge: enemy at (1,0), ally at (2,0), ally at (3,0) — edge push
+      const pieces: Piece[] = [
+        { id: 'enemy', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
+        { id: 'ally1', type: 'warrior', playerId: 'p1', position: { q: 2, r: 0 } },
+        { id: 'ally2', type: 'warrior', playerId: 'p1', position: { q: 3, r: 0 } }, // At edge
+      ];
+      const state = createTestState(pieces);
+
+      const result = detectChain(state, { q: 1, r: 0 }, 0); // Push East
+
+      expect(result.pieces).toHaveLength(3);
+      expect(result.terminator).toBe('edge');
+      // Ally at edge gets eliminated
+      expect(result.pieces[2].id).toBe('ally2');
+      expect(result.pieces[2].playerId).toBe('p1');
+    });
+
+    it('should compress allies against shield just like enemies', () => {
+      // Shield at (3,0), ally at (2,0), enemy at (1,0) — shield compression
+      const pieces: Piece[] = [
+        { id: 'enemy', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
+        { id: 'ally', type: 'warrior', playerId: 'p1', position: { q: 2, r: 0 } },
+        { id: 'shield', type: 'shield', playerId: null, position: { q: 3, r: 0 } },
+      ];
+      const state = createTestState(pieces);
+
+      const result = detectChain(state, { q: 1, r: 0 }, 0); // Push East
+
+      expect(result.pieces).toHaveLength(2); // Shield not in chain
+      expect(result.terminator).toBe('shield');
+      // Both enemy and ally are in the compression chain
+      expect(result.pieces[0].id).toBe('enemy');
+      expect(result.pieces[1].id).toBe('ally');
+    });
+  });
 });

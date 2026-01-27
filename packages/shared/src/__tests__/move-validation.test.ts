@@ -632,4 +632,127 @@ describe('Move Validation', () => {
       expect(jarl?.position).toEqual({ q: 0, r: 0 });
     });
   });
+
+  describe('friendly piece blocking', () => {
+    function createFriendlyBlockingTestState(pieces: Piece[], currentPlayerId: string): GameState {
+      return {
+        id: 'test-game',
+        phase: 'playing',
+        config: {
+          playerCount: 2,
+          boardRadius: 3,
+          shieldCount: 0,
+          warriorCount: 0,
+          turnTimerMs: null,
+        },
+        players: [
+          { id: 'p1', name: 'Player 1', color: '#ff0000', isEliminated: false },
+          { id: 'p2', name: 'Player 2', color: '#0000ff', isEliminated: false },
+        ],
+        pieces,
+        currentPlayerId,
+        turnNumber: 1,
+        roundNumber: 1,
+        roundsSinceElimination: 0,
+        winnerId: null,
+        winCondition: null,
+      };
+    }
+
+    it('should not allow a warrior to move through own warrior', () => {
+      // p1 warrior at (0,1), own warrior at (1,0) blocking path to (2,0)
+      // Warrior at (0,1) tries to move East 2 hexes to (2,0), but (1,0) has own warrior
+      const state = createFriendlyBlockingTestState(
+        [
+          { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
+          { id: 'w2', type: 'warrior', playerId: 'p1', position: { q: 2, r: 0 } }, // Blocking
+          { id: 'j1', type: 'jarl', playerId: 'p1', position: { q: -1, r: -1 } },
+          { id: 'j2', type: 'jarl', playerId: 'p2', position: { q: -3, r: 0 } },
+        ],
+        'p1'
+      );
+
+      const command: MoveCommand = { pieceId: 'w1', destination: { q: 3, r: 0 } };
+      const result = validateMove(state, 'p1', command);
+
+      expect(result.isValid).toBe(false);
+      expect(result.error).toBe('PATH_BLOCKED');
+    });
+
+    it('should not allow a warrior to land on own warrior', () => {
+      // p1 warrior at (1,0), own warrior at (2,0) at destination
+      const state = createFriendlyBlockingTestState(
+        [
+          { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
+          { id: 'w2', type: 'warrior', playerId: 'p1', position: { q: 2, r: 0 } }, // At destination
+          { id: 'j1', type: 'jarl', playerId: 'p1', position: { q: -1, r: -1 } },
+          { id: 'j2', type: 'jarl', playerId: 'p2', position: { q: -3, r: 0 } },
+        ],
+        'p1'
+      );
+
+      const command: MoveCommand = { pieceId: 'w1', destination: { q: 2, r: 0 } };
+      const result = validateMove(state, 'p1', command);
+
+      expect(result.isValid).toBe(false);
+      expect(result.error).toBe('DESTINATION_OCCUPIED_FRIENDLY');
+    });
+
+    it('should not allow a jarl to move through own warrior', () => {
+      // p1 jarl at (0,1) with draft in East direction, own warrior at (1,1) blocking
+      const state = createFriendlyBlockingTestState(
+        [
+          { id: 'j1', type: 'jarl', playerId: 'p1', position: { q: 1, r: 0 } },
+          { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 2, r: 0 } }, // Blocking path East
+          // Draft formation behind jarl (West direction = opposite of East)
+          { id: 'w2', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+          { id: 'w3', type: 'warrior', playerId: 'p1', position: { q: -1, r: 0 } },
+          { id: 'j2', type: 'jarl', playerId: 'p2', position: { q: -3, r: 0 } },
+        ],
+        'p1'
+      );
+
+      const command: MoveCommand = { pieceId: 'j1', destination: { q: 3, r: 0 } };
+      const result = validateMove(state, 'p1', command);
+
+      expect(result.isValid).toBe(false);
+      expect(result.error).toBe('PATH_BLOCKED');
+    });
+
+    it('should not allow a jarl to land on own warrior', () => {
+      const state = createFriendlyBlockingTestState(
+        [
+          { id: 'j1', type: 'jarl', playerId: 'p1', position: { q: 1, r: 0 } },
+          { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 2, r: 0 } }, // At destination
+          { id: 'j2', type: 'jarl', playerId: 'p2', position: { q: -3, r: 0 } },
+        ],
+        'p1'
+      );
+
+      const command: MoveCommand = { pieceId: 'j1', destination: { q: 2, r: 0 } };
+      const result = validateMove(state, 'p1', command);
+
+      expect(result.isValid).toBe(false);
+      expect(result.error).toBe('DESTINATION_OCCUPIED_FRIENDLY');
+    });
+
+    it('should allow moving to hex adjacent to own warrior (not through it)', () => {
+      // p1 warrior at (1,0), own warrior at (2,0). Can move to (2,-1) which is not blocked.
+      const state = createFriendlyBlockingTestState(
+        [
+          { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
+          { id: 'w2', type: 'warrior', playerId: 'p1', position: { q: 2, r: 0 } },
+          { id: 'j1', type: 'jarl', playerId: 'p1', position: { q: -1, r: -1 } },
+          { id: 'j2', type: 'jarl', playerId: 'p2', position: { q: -3, r: 0 } },
+        ],
+        'p1'
+      );
+
+      // Move in a different direction (NE) which is not blocked
+      const command: MoveCommand = { pieceId: 'w1', destination: { q: 2, r: -1 } };
+      const result = validateMove(state, 'p1', command);
+
+      expect(result.isValid).toBe(true);
+    });
+  });
 });

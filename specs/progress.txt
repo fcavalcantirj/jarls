@@ -2590,3 +2590,37 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Created**:
 - packages/shared/src/__tests__/has-legal-moves.test.ts (11 tests)
+
+---
+
+### 2026-01-27: Core Logic - Friendly Piece Blocking Validation and Tests
+
+**Features Completed**:
+- "Validate friendly piece blocking in paths"
+- "Unit tests for friendly piece blocking"
+
+**Work Done**:
+- Verified that `isPathClear` already blocks ALL pieces (friend or foe) in the path
+- Verified that `validateMove` already prevents landing on friendly pieces (DESTINATION_OCCUPIED_FRIENDLY error)
+- Verified that `getReachableHexes` correctly breaks on friendly pieces at destinations
+- Verified that `detectChain` includes ally pieces in push chains (allies get pushed along with enemies)
+- Added 5 unit tests to move-validation.test.ts for friendly piece blocking:
+  - Cannot move warrior through own warrior (PATH_BLOCKED)
+  - Cannot land warrior on own warrior (DESTINATION_OCCUPIED_FRIENDLY)
+  - Cannot move jarl through own warrior (PATH_BLOCKED)
+  - Cannot land jarl on own warrior (DESTINATION_OCCUPIED_FRIENDLY)
+  - Can move to hex adjacent to own warrior in different direction
+- Added 3 unit tests to push-chain.test.ts for ally pieces in push chains:
+  - Ally pieces are included in push chain regardless of allegiance
+  - Ally at edge gets eliminated when pushed off
+  - Allies compress against shield just like enemies
+
+**Verification**:
+- All 771 tests pass across 25 test suites
+- pnpm typecheck passes
+- move-validation.test.ts at 761 lines, push-chain.test.ts at 506 lines (both under 800)
+
+**Files Modified**:
+- packages/shared/src/__tests__/move-validation.test.ts (added 5 friendly blocking tests)
+- packages/shared/src/__tests__/push-chain.test.ts (added 3 ally push chain tests)
+- specs/prd-v1.json (marked 2 tasks as passes: true)
