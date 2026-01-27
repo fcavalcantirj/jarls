@@ -168,10 +168,8 @@ describe('detectChain', () => {
       expect(result.pieces).toHaveLength(1); // Only defender, shield not in chain
     });
 
-    it('should identify throne terminator when pushing toward empty throne', () => {
-      // Position piece adjacent to throne (center)
-      // Note: An empty throne does NOT block pushes. Pieces can be pushed onto the throne.
-      // So pushing toward an empty throne results in 'empty' terminator (piece can move there).
+    it('should identify throne terminator when pushing Warrior toward empty throne', () => {
+      // Warrior adjacent to throne (center) - Warriors cannot enter the Throne
       const defender: Piece = {
         id: 'defender',
         type: 'warrior',
@@ -182,8 +180,8 @@ describe('detectChain', () => {
 
       const result = detectChain(state, { q: -1, r: 0 }, 0); // Push East (toward throne)
 
-      // Throne is empty and doesn't block pushes, so chain terminates at empty throne
-      expect(result.terminator).toBe('empty');
+      // Warriors cannot enter the Throne - it acts as a compression point
+      expect(result.terminator).toBe('throne');
       expect(result.terminatorPosition).toEqual({ q: 0, r: 0 });
     });
   });
@@ -501,6 +499,92 @@ describe('detectChain', () => {
       // Both enemy and ally are in the compression chain
       expect(result.pieces[0].id).toBe('enemy');
       expect(result.pieces[1].id).toBe('ally');
+    });
+  });
+
+  describe('Warrior Throne compression in detectChain', () => {
+    it('should terminate with throne when Warrior is pushed toward empty throne', () => {
+      // Single Warrior adjacent to throne, pushed toward it
+      const warrior: Piece = {
+        id: 'w1',
+        type: 'warrior',
+        playerId: 'p2',
+        position: { q: 1, r: 0 },
+      };
+      const state = createTestState([warrior]);
+
+      const result = detectChain(state, { q: 1, r: 0 }, 3); // Push West toward throne
+
+      expect(result.pieces).toHaveLength(1);
+      expect(result.pieces[0].id).toBe('w1');
+      expect(result.terminator).toBe('throne');
+      expect(result.terminatorPosition).toEqual({ q: 0, r: 0 });
+    });
+
+    it('should terminate with throne when chain of Warriors is pushed toward throne', () => {
+      // Two Warriors in a line, pushed toward throne
+      const pieces: Piece[] = [
+        { id: 'w1', type: 'warrior', playerId: 'p2', position: { q: 2, r: 0 } },
+        { id: 'w2', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
+      ];
+      const state = createTestState(pieces);
+
+      const result = detectChain(state, { q: 2, r: 0 }, 3); // Push West toward throne
+
+      expect(result.pieces).toHaveLength(2);
+      expect(result.terminator).toBe('throne');
+      expect(result.terminatorPosition).toEqual({ q: 0, r: 0 });
+    });
+
+    it('should NOT terminate with throne when Jarl is pushed toward empty throne', () => {
+      // Jarl adjacent to throne — Jarls CAN be pushed onto the throne
+      const jarl: Piece = {
+        id: 'j1',
+        type: 'jarl',
+        playerId: 'p2',
+        position: { q: 1, r: 0 },
+      };
+      const state = createTestState([jarl]);
+
+      const result = detectChain(state, { q: 1, r: 0 }, 3); // Push West toward throne
+
+      // Jarl can be pushed onto throne — no throne compression
+      expect(result.terminator).toBe('empty');
+      expect(result.terminatorPosition).toEqual({ q: 0, r: 0 });
+    });
+
+    it('should terminate with throne when chain ends with Warrior before throne', () => {
+      // Jarl then Warrior in chain, Warrior is last and would be pushed onto throne
+      const pieces: Piece[] = [
+        { id: 'j1', type: 'jarl', playerId: 'p2', position: { q: 2, r: 0 } },
+        { id: 'w1', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
+      ];
+      const state = createTestState(pieces);
+
+      const result = detectChain(state, { q: 2, r: 0 }, 3); // Push West toward throne
+
+      // The last piece in the chain (w1) is a Warrior, so throne blocks
+      expect(result.pieces).toHaveLength(2);
+      expect(result.terminator).toBe('throne');
+      expect(result.terminatorPosition).toEqual({ q: 0, r: 0 });
+    });
+
+    it('should NOT terminate with throne when chain ends with Jarl before throne', () => {
+      // Warrior then Jarl in chain, Jarl is last and would be pushed onto throne
+      const pieces: Piece[] = [
+        { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 2, r: 0 } },
+        { id: 'j1', type: 'jarl', playerId: 'p2', position: { q: 1, r: 0 } },
+      ];
+      const state = createTestState(pieces);
+
+      const result = detectChain(state, { q: 2, r: 0 }, 3); // Push West toward throne
+
+      // The last piece (j1) is a Jarl — throne doesn't block Jarls
+      expect(result.pieces).toHaveLength(2);
+      expect(result.terminator).toBe('empty');
+      // Jarl can enter throne, so chain continues past to empty hex at (-1,0) or throne itself
+      // Actually throne at (0,0) is empty, so Jarl moves there — terminator is empty at (0,0)
+      expect(result.terminatorPosition).toEqual({ q: 0, r: 0 });
     });
   });
 });

@@ -183,10 +183,23 @@ export function detectChain(
       };
     }
 
-    // Note: The throne (center hex at 0,0) does NOT block pushes.
-    // Pieces can be pushed onto the throne (they just can't voluntarily move there).
-    // If the throne is empty, it acts like any other empty hex for push purposes.
-    // If there's a piece on the throne, it becomes part of the chain.
+    // Check if next position is the Throne (0,0) and the last piece in the chain
+    // is a Warrior. Warriors cannot enter the Throne — it acts as a compression
+    // point (like a Shield). Jarls CAN be pushed onto the Throne (they just
+    // don't win from being pushed).
+    const lastPieceInChain = pieces[pieces.length - 1];
+    if (
+      nextPos.q === 0 &&
+      nextPos.r === 0 &&
+      lastPieceInChain &&
+      lastPieceInChain.type === 'warrior'
+    ) {
+      return {
+        pieces,
+        terminator: 'throne',
+        terminatorPosition: nextPos,
+      };
+    }
 
     currentPos = nextPos;
   }

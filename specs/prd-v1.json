@@ -870,7 +870,7 @@
       "If next piece is Warrior and next hex is Throne, mark as compression terminator",
       "Warriors compress against Throne like they do against Shields"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
@@ -880,7 +880,7 @@
       "Unit tests: Chain with multiple Warriors compresses at Throne edge",
       "Unit tests: Jarl CAN enter Throne voluntarily (no compression for Jarl)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

@@ -174,9 +174,10 @@ describe('applyMove', () => {
   describe('attack with push', () => {
     it('should push defender when attack succeeds', () => {
       // Jarl attacking Warrior (2 vs 1 = push)
+      // Positions moved away from throne so push doesn't hit throne compression
       const pieces: Piece[] = [
-        { id: 'p1-jarl', type: 'jarl', playerId: 'p1', position: { q: 2, r: 0 } },
-        { id: 'p2-w1', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
+        { id: 'p1-jarl', type: 'jarl', playerId: 'p1', position: { q: 3, r: 0 } },
+        { id: 'p2-w1', type: 'warrior', playerId: 'p2', position: { q: 2, r: 0 } },
         { id: 'p2-jarl', type: 'jarl', playerId: 'p2', position: { q: -3, r: 0 } },
       ];
       const state = createTestState(pieces);
@@ -185,9 +186,9 @@ describe('applyMove', () => {
       const combatResult = calculateCombat(
         state,
         pieces[0], // p1-jarl
-        { q: 2, r: 0 }, // attacker position
+        { q: 3, r: 0 }, // attacker position
         pieces[1], // p2-w1
-        { q: 1, r: 0 }, // defender position
+        { q: 2, r: 0 }, // defender position
         3, // West direction
         false // no momentum
       );
@@ -196,30 +197,32 @@ describe('applyMove', () => {
       expect(combatResult.outcome).toBe('push');
 
       // Now test applyMove
-      const result = applyMove(state, 'p1', { pieceId: 'p1-jarl', destination: { q: 1, r: 0 } });
+      const result = applyMove(state, 'p1', { pieceId: 'p1-jarl', destination: { q: 2, r: 0 } });
 
       expect(result.success).toBe(true);
 
       // Attacker should be at defender's original position
       const attacker = result.newState.pieces.find((p) => p.id === 'p1-jarl');
-      expect(attacker!.position).toEqual({ q: 1, r: 0 });
+      expect(attacker!.position).toEqual({ q: 2, r: 0 });
 
-      // Defender should be pushed West
+      // Defender should be pushed West to (1,0)
       const defender = result.newState.pieces.find((p) => p.id === 'p2-w1');
-      expect(defender!.position).toEqual({ q: 0, r: 0 }); // Pushed to throne (Warriors can be pushed there)
+      expect(defender!.position).toEqual({ q: 1, r: 0 });
     });
 
     it('should generate MOVE and PUSH events for successful push', () => {
-      // Same setup as above - 2-hex move for momentum
+      // 2-hex move for momentum, positions away from throne to avoid compression
       const pieces: Piece[] = [
-        { id: 'p1-jarl', type: 'jarl', playerId: 'p1', position: { q: 0, r: 3 } }, // Out of the way
-        { id: 'p1-w1', type: 'warrior', playerId: 'p1', position: { q: 3, r: 0 } },
-        { id: 'p2-w1', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
-        { id: 'p2-jarl', type: 'jarl', playerId: 'p2', position: { q: -3, r: 0 } },
+        { id: 'p1-jarl', type: 'jarl', playerId: 'p1', position: { q: 0, r: -3 } },
+        { id: 'p1-w1', type: 'warrior', playerId: 'p1', position: { q: -1, r: -1 } },
+        { id: 'p2-w1', type: 'warrior', playerId: 'p2', position: { q: 1, r: -1 } },
+        { id: 'p2-jarl', type: 'jarl', playerId: 'p2', position: { q: 3, r: 0 } },
       ];
       const state = createTestState(pieces);
 
-      const result = applyMove(state, 'p1', { pieceId: 'p1-w1', destination: { q: 1, r: 0 } });
+      // Warrior at (-1,-1) moves 2 hexes East to (1,-1) attacking p2-w1
+      // Push East: defender pushed from (1,-1) to (2,-1)
+      const result = applyMove(state, 'p1', { pieceId: 'p1-w1', destination: { q: 1, r: -1 } });
 
       expect(result.success).toBe(true);
 
@@ -230,8 +233,8 @@ describe('applyMove', () => {
       const pushEvent = result.events.find((e) => e.type === 'PUSH') as PushEvent;
       expect(pushEvent).toBeDefined();
       expect(pushEvent.pieceId).toBe('p2-w1');
-      expect(pushEvent.from).toEqual({ q: 1, r: 0 });
-      expect(pushEvent.to).toEqual({ q: 0, r: 0 });
+      expect(pushEvent.from).toEqual({ q: 1, r: -1 });
+      expect(pushEvent.to).toEqual({ q: 2, r: -1 });
     });
 
     it('should eliminate piece pushed off edge', () => {

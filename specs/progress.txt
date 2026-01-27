@@ -2624,3 +2624,35 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - packages/shared/src/__tests__/move-validation.test.ts (added 5 friendly blocking tests)
 - packages/shared/src/__tests__/push-chain.test.ts (added 3 ally push chain tests)
 - specs/prd-v1.json (marked 2 tasks as passes: true)
+
+---
+
+### 2026-01-27: Core Logic - Warriors Stop Adjacent to Throne in Push Chains
+
+**Features Completed**:
+- "Warriors stop adjacent to Throne in push chains"
+- "Unit tests for Warrior Throne compression"
+
+**Work Done**:
+- Modified `detectChain` in `combat.ts` to check if the next hex in a push chain is the Throne (0,0) and the last piece in the chain is a Warrior — if so, terminate the chain with `'throne'` compression
+- Warriors cannot enter the Throne hex; it acts as a compression point like Shields
+- Jarls CAN still be pushed onto the Throne (they just don't win from being pushed)
+- Updated existing test in `push-chain.test.ts` that expected Warriors could be pushed onto the Throne
+- Updated two tests in `apply-move.test.ts` that set up pushes toward the Throne — repositioned pieces to avoid throne compression
+- Added 5 new tests for Warrior Throne compression in `push-chain.test.ts`:
+  - Single Warrior pushed toward empty throne terminates with 'throne'
+  - Chain of Warriors pushed toward throne terminates with 'throne'
+  - Jarl pushed toward empty throne does NOT terminate (can enter)
+  - Chain ending with Warrior before throne terminates with 'throne'
+  - Chain ending with Jarl before throne does NOT terminate
+
+**Verification**:
+- All 776 tests pass across 25 test suites
+- pnpm typecheck passes
+- combat.ts at 628 lines, push-chain.test.ts at 590 lines (both under 800)
+
+**Files Modified**:
+- packages/shared/src/combat.ts (modified detectChain to add Warrior throne compression)
+- packages/shared/src/__tests__/push-chain.test.ts (updated 1 test, added 5 new tests)
+- packages/shared/src/__tests__/apply-move.test.ts (updated 2 tests to avoid throne compression)
+- specs/prd-v1.json (marked 2 tasks as passes: true)
