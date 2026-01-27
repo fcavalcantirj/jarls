@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, jest } from '@jest/globals';
 import { createActor, assign } from 'xstate';
 import { gameMachine } from '../machine';
 import type { GameMachineInput } from '../types';
@@ -389,6 +389,138 @@ describe('Game Machine - Starvation State Structure', () => {
       expect(afterOneChoice.value).toEqual({ starvation: 'awaitingChoices' });
 
       actor.stop();
+    });
+
+    it('auto-selects random candidates on starvation timeout when no choices made', () => {
+      jest.useFakeTimers();
+
+      const actor = triggerStarvation();
+      const snapshot = actor.getSnapshot();
+      expect(snapshot.value).toEqual({ starvation: 'awaitingChoices' });
+
+      // Don't submit any choices - let the timer expire
+      // Default starvation timer is 30s when turnTimerMs is null
+      jest.advanceTimersByTime(30_000);
+
+      const afterTimeout = actor.getSnapshot();
+
+      // Should have resolved and returned to playing
+      expect(afterTimeout.value).toEqual({ playing: 'awaitingMove' });
+
+      // Warriors should have been removed (auto-selected)
+      const warriorCount = afterTimeout.context.pieces.filter((p) => p.type === 'warrior').length;
+      // Original had 4 warriors (2 per player), after starvation 2 should be removed
+      expect(warriorCount).toBeLessThan(4);
+      expect(afterTimeout.context.roundsSinceElimination).toBe(0);
+
+      actor.stop();
+      jest.useRealTimers();
+    });
+
+    it('auto-selects only for players who have not yet chosen on timeout', () => {
+      jest.useFakeTimers();
+
+      const actor = triggerStarvation();
+      const snapshot = actor.getSnapshot();
+      expect(snapshot.value).toEqual({ starvation: 'awaitingChoices' });
+
+      // P1 submits a choice, P2 does not
+      const p1Candidates = snapshot.context.starvationCandidates.find((c) => c.playerId === 'p1');
+      const p1ChosenId = p1Candidates!.candidates[0].id;
+
+      actor.send({
+        type: 'STARVATION_CHOICE',
+        playerId: 'p1',
+        pieceId: p1ChosenId,
+      });
+
+      // Still in awaitingChoices (p2 hasn't chosen)
+      expect(actor.getSnapshot().value).toEqual({ starvation: 'awaitingChoices' });
+
+      // Timer expires - p2's choice should be auto-selected
+      jest.advanceTimersByTime(30_000);
+
+      const afterTimeout = actor.getSnapshot();
+      expect(afterTimeout.value).toEqual({ playing: 'awaitingMove' });
+
+      // P1's chosen warrior should be removed
+      const remainingIds = afterTimeout.context.pieces.map((p) => p.id);
+      expect(remainingIds).not.toContain(p1ChosenId);
+
+      // P2's warrior should also be removed (auto-selected)
+      const p2Warriors = afterTimeout.context.pieces.filter(
+        (p) => p.type === 'warrior' && p.playerId === 'p2'
+      );
+      // P2 had 2 warriors originally, one should have been auto-removed
+      expect(p2Warriors.length).toBeLessThanOrEqual(1);
+
+      actor.stop();
+      jest.useRealTimers();
+    });
+
+    it('uses turnTimerMs for starvation timeout when configured', () => {
+      jest.useFakeTimers();
+
+      // Create game with a custom turn timer
+      const testMachine = gameMachine.provide({
+        actions: {
+          initializeBoard: assign(({ context }) => {
+            const pieces: Piece[] = [
+              { id: 'p1-jarl', type: 'jarl', playerId: 'p1', position: { q: -3, r: 0 } },
+              { id: 'p1-w1', type: 'warrior', playerId: 'p1', position: { q: -2, r: 0 } },
+              { id: 'p1-w2', type: 'warrior', playerId: 'p1', position: { q: -1, r: 0 } },
+              { id: 'p2-jarl', type: 'jarl', playerId: 'p2', position: { q: 3, r: 0 } },
+              { id: 'p2-w1', type: 'warrior', playerId: 'p2', position: { q: 2, r: 0 } },
+              { id: 'p2-w2', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
+              { id: 'shield-1', type: 'shield', playerId: null, position: { q: 0, r: -3 } },
+            ];
+            return {
+              ...context,
+              pieces,
+              phase: 'playing' as const,
+              currentPlayerId: context.players[0].id,
+              roundsSinceElimination: 10,
+            };
+          }),
+        },
+      });
+
+      const actor = createActor(testMachine, {
+        input: createTestInput({
+          config: {
+            playerCount: 2,
+            boardRadius: 3,
+            shieldCount: 5,
+            warriorCount: 5,
+            turnTimerMs: 60_000, // 60 seconds
+          },
+        }),
+      });
+      actor.start();
+
+      actor.send({ type: 'PLAYER_JOINED', playerId: 'p1', playerName: 'Alice' });
+      actor.send({ type: 'PLAYER_JOINED', playerId: 'p2', playerName: 'Bob' });
+      actor.send({ type: 'START_GAME', playerId: 'p1' });
+
+      // Make a move to trigger starvation
+      actor.send({
+        type: 'MAKE_MOVE',
+        playerId: 'p1',
+        command: { pieceId: 'p1-w2', destination: { q: -1, r: -1 } },
+      });
+
+      expect(actor.getSnapshot().value).toEqual({ starvation: 'awaitingChoices' });
+
+      // At 30s (default), should NOT have timed out since turnTimer is 60s
+      jest.advanceTimersByTime(30_000);
+      expect(actor.getSnapshot().value).toEqual({ starvation: 'awaitingChoices' });
+
+      // At 60s, should have auto-resolved
+      jest.advanceTimersByTime(30_000);
+      expect(actor.getSnapshot().value).toEqual({ playing: 'awaitingMove' });
+
+      actor.stop();
+      jest.useRealTimers();
     });
 
     it('transitions to ended if starvation causes last standing victory', () => {

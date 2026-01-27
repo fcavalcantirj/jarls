@@ -107,6 +107,10 @@ export const gameMachine = setup({
       // XState v5 requires a number, so we use Infinity-like value when disabled.
       return context.turnTimerMs ?? 2_147_483_647;
     },
+    starvationTimer: ({ context }: { context: GameMachineContext }) => {
+      // Use turn timer if configured, otherwise default to 30 seconds
+      return context.turnTimerMs ?? 30_000;
+    },
   },
   guards: {
     isTurnTimerEnabled: ({ context }: { context: GameMachineContext }) => {
@@ -159,6 +163,26 @@ export const gameMachine = setup({
         phase: result.newState.phase,
         starvationChoices: [],
         starvationCandidates: [],
+      };
+    }),
+    autoSelectStarvation: assign(({ context }) => {
+      // For each player with candidates who hasn't submitted a choice,
+      // auto-select a random candidate
+      const playersWithCandidates = context.starvationCandidates.filter(
+        (c) => c.candidates.length > 0
+      );
+      const missingChoices = playersWithCandidates.filter(
+        (pc) => !context.starvationChoices.some((sc) => sc.playerId === pc.playerId)
+      );
+      const autoChoices = missingChoices.map((pc) => {
+        const randomIndex = Math.floor(Math.random() * pc.candidates.length);
+        return {
+          playerId: pc.playerId,
+          pieceId: pc.candidates[randomIndex].id,
+        };
+      });
+      return {
+        starvationChoices: [...context.starvationChoices, ...autoChoices],
       };
     }),
     initializeBoard: assign(({ context }) => {
@@ -314,6 +338,12 @@ export const gameMachine = setup({
       initial: 'awaitingChoices',
       states: {
         awaitingChoices: {
+          after: {
+            starvationTimer: {
+              actions: 'autoSelectStarvation',
+              target: 'resolving',
+            },
+          },
           always: {
             guard: 'allStarvationChoicesMade',
             target: 'resolving',

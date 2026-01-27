@@ -1309,7 +1309,7 @@
       "Update context with result",
       "Transition to 'checkingGameEnd' or 'ended'"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
@@ -1318,7 +1318,7 @@
       "Add unit tests: starvation flow with manual choices",
       "Add unit tests: auto-select on timeout"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

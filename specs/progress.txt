@@ -1,5 +1,26 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Implement starvation auto-timeout + Unit tests for starvation state
+
+**Features Completed**: "Implement starvation auto-timeout" and "Unit tests for starvation state"
+
+**Work Done**:
+- Added `starvationTimer` delay to the game machine: uses `turnTimerMs` if configured, otherwise defaults to 30 seconds
+- Added `autoSelectStarvation` action: for each player with candidates who hasn't submitted a choice, randomly selects a candidate warrior
+- Added `after` delayed transition in `awaitingChoices` substate: on starvation timer expiry, runs `autoSelectStarvation` then transitions to `resolving`
+- Added 3 new tests in starvation-state.test.ts:
+  - Auto-selects random candidates on starvation timeout when no choices made
+  - Auto-selects only for players who have not yet chosen on timeout
+  - Uses turnTimerMs for starvation timeout when configured (60s instead of 30s default)
+
+**Files Modified**:
+- packages/server/src/game/machine.ts (added starvationTimer delay, autoSelectStarvation action, after transition in awaitingChoices)
+- packages/server/src/game/__tests__/starvation-state.test.ts (added 3 new timeout tests)
+
+**Verification**: pnpm typecheck passes, all 904 tests pass (3 new). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Implement starvation choice handler
 
 **Feature Completed**: "Implement starvation choice handler"
