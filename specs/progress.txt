@@ -1,5 +1,26 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Integration tests for GameManager disconnection and recovery
+
+**Feature Completed**: "Integration tests for GameManager disconnection and recovery"
+
+**Work Done**:
+- Created `manager-disconnection.integration.test.ts` with 8 integration tests using real PostgreSQL:
+  - **disconnect persists to database** (4 tests): paused state persisted on disconnect, STATE_PAUSED event saved, playing state restored after reconnect, STATE_PLAYING event saved after reconnect
+  - **recover paused games from database** (4 tests): recovers paused game from DB, recovered game accepts reconnection, preserves player data through disconnect/recovery cycle, allows gameplay after recovery+reconnect
+- Fixed Set serialization bug in persistence layer: `JSON.stringify(new Set(['p1']))` produces `"{}"` losing all data. Added `jsonReplacer` (serializes Sets as `{ __type: 'Set', values: [...] }`) and `reconstituteSets` (recursively walks objects to reconstitute Sets on load). Without this fix, `disconnectedPlayers` was lost during DB persistence/recovery.
+
+**Files Created**:
+- packages/server/src/game/__tests__/manager-disconnection.integration.test.ts (279 lines)
+
+**Files Modified**:
+- packages/server/src/game/persistence.ts (225 lines, was 193 lines) — added Set serialization/deserialization
+- packages/server/src/game/manager.ts (515 lines, was 516 lines) — removed manual Set reconstitution (now handled by persistence layer)
+
+**Verification**: pnpm typecheck passes. All 1032 tests pass (839 shared + 193 server, including 8 new integration tests). Integration tests pass individually and sequentially (`--runInBand`). Pre-existing concurrent integration test interference when run in parallel (not caused by this change). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Implement GameManager disconnection
 
 **Feature Completed**: "Implement GameManager disconnection"

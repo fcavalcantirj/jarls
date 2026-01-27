@@ -1487,7 +1487,7 @@
       "Add integration tests for reconnect",
       "Add integration tests for recovery"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",

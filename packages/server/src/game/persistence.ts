@@ -1,6 +1,39 @@
 import { query } from '../db';
 
 /**
+ * JSON replacer that converts Set instances to arrays for serialization.
+ * Without this, JSON.stringify(new Set(['a'])) produces "{}" losing all data.
+ */
+function jsonReplacer(_key: string, value: unknown): unknown {
+  if (value instanceof Set) {
+    return { __type: 'Set', values: Array.from(value) };
+  }
+  return value;
+}
+
+/**
+ * Recursively walk an object tree and reconstitute Set instances
+ * from the { __type: 'Set', values: [...] } marker format.
+ * This is needed because pg parses JSONB directly (not via JSON.parse with a reviver).
+ */
+function reconstituteSets(obj: unknown): unknown {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(reconstituteSets);
+  }
+  const record = obj as Record<string, unknown>;
+  if (record.__type === 'Set' && Array.isArray(record.values)) {
+    return new Set(record.values as string[]);
+  }
+  for (const key of Object.keys(record)) {
+    record[key] = reconstituteSets(record[key]);
+  }
+  return record;
+}
+
+/**
  * Row shape returned from game_events table.
  */
 interface GameEventRow {
@@ -77,7 +110,7 @@ export async function saveSnapshot(
     await query(
       `INSERT INTO game_snapshots (game_id, state_snapshot, version, status)
        VALUES ($1, $2, $3, $4)`,
-      [gameId, JSON.stringify(state), version, status]
+      [gameId, JSON.stringify(state, jsonReplacer), version, status]
     );
     return;
   }
@@ -86,7 +119,7 @@ export async function saveSnapshot(
     `UPDATE game_snapshots
      SET state_snapshot = $1, version = $2, status = $3, updated_at = now()
      WHERE game_id = $4 AND version = $5`,
-    [JSON.stringify(state), version, status, gameId, version - 1]
+    [JSON.stringify(state, jsonReplacer), version, status, gameId, version - 1]
   );
 
   if (result.rowCount === 0) {
@@ -115,7 +148,7 @@ export async function loadSnapshot(gameId: string): Promise<GameSnapshot | null>
   const row = result.rows[0];
   return {
     gameId: row.game_id,
-    state: row.state_snapshot,
+    state: reconstituteSets(row.state_snapshot),
     version: row.version,
     status: row.status,
     createdAt: row.created_at,
@@ -159,7 +192,7 @@ export async function loadActiveSnapshots(): Promise<GameSnapshot[]> {
 
   return result.rows.map((row) => ({
     gameId: row.game_id,
-    state: row.state_snapshot,
+    state: reconstituteSets(row.state_snapshot),
     version: row.version,
     status: row.status,
     createdAt: row.created_at,
