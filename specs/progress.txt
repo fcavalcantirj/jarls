@@ -1,5 +1,26 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Integrate CombatPreview with hover
+
+**Features Completed**: "Integrate CombatPreview with hover"
+
+**Work Done**:
+- Added `hoveredCombat` and `hoverPosition` state to gameStore with `setHoveredCombat`/`clearHoveredCombat` actions
+- Added `onMouseMove` handler to Board canvas that detects when cursor hovers over an attack destination hex
+- When hovering over an attack move with a combatPreview, shows the CombatPreview tooltip near the cursor
+- Added `onMouseLeave` handler to clear tooltip when cursor leaves the canvas
+- Tooltip is positioned within viewport bounds using existing CombatPreview clamping logic
+- Hover state is cleared on selection clear and game clear to avoid stale tooltips
+
+**Files Modified**:
+- packages/client/src/store/gameStore.ts (74 -> 83 lines)
+- packages/client/src/components/Board/Board.tsx (235 -> 288 lines)
+- specs/prd-v1.json (marked 1 task as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (18 failed, 1175 passed). All 839 shared tests pass.
+
+---
+
 ### 2026-01-27: Frontend - Create CombatPreview component
 
 **Features Completed**: "Create CombatPreview component"

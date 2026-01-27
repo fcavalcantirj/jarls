@@ -3,6 +3,7 @@ import { isOnBoardAxial, getValidMoves } from '@jarls/shared';
 import { useGameStore, selectIsMyTurn } from '../../store/gameStore';
 import { BoardRenderer } from './BoardRenderer';
 import type { RenderHighlights } from './BoardRenderer';
+import { CombatPreview } from './CombatPreview';
 import { pixelToHex } from '../../utils/hexMath';
 import { getSocket } from '../../socket/client';
 
@@ -18,6 +19,8 @@ export function Board() {
   const validMoves = useGameStore((s) => s.validMoves);
   const playerId = useGameStore((s) => s.playerId);
   const errorMessage = useGameStore((s) => s.errorMessage);
+  const hoveredCombat = useGameStore((s) => s.hoveredCombat);
+  const hoverPosition = useGameStore((s) => s.hoverPosition);
 
   // Initialize renderer on mount
   useEffect(() => {
@@ -195,12 +198,60 @@ export function Board() {
     [handleInteraction]
   );
 
+  // Mouse move handler for combat preview tooltip
+  const handleMouseMove = useCallback(
+    (event: MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      const renderer = rendererRef.current;
+      if (!canvas || !renderer || !gameState) return;
+
+      // Only show tooltip when a piece is selected with valid attack moves
+      if (!selectedPieceId || validMoves.length === 0) {
+        if (hoveredCombat) useGameStore.getState().clearHoveredCombat();
+        return;
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      const canvasX = event.clientX - rect.left;
+      const canvasY = event.clientY - rect.top;
+
+      const dims = renderer.getDimensions();
+      if (!dims) return;
+
+      const hex = pixelToHex(canvasX, canvasY, dims.hexSize, dims.centerX, dims.centerY);
+
+      // Check if hovering over an attack destination
+      const attackMove = validMoves.find(
+        (m) => m.moveType === 'attack' && m.destination.q === hex.q && m.destination.r === hex.r
+      );
+
+      if (attackMove?.combatPreview) {
+        useGameStore
+          .getState()
+          .setHoveredCombat(
+            attackMove.combatPreview,
+            event.clientX - rect.left,
+            event.clientY - rect.top
+          );
+      } else {
+        if (hoveredCombat) useGameStore.getState().clearHoveredCombat();
+      }
+    },
+    [gameState, selectedPieceId, validMoves, hoveredCombat]
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoveredCombat) useGameStore.getState().clearHoveredCombat();
+  }, [hoveredCombat]);
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <canvas
         ref={canvasRef}
         onClick={handleClick}
         onTouchEnd={handleTouchEnd}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
         style={{
           display: 'block',
           width: '100%',
@@ -228,6 +279,15 @@ export function Board() {
         >
           {errorMessage}
         </div>
+      )}
+      {hoveredCombat && hoverPosition && (
+        <CombatPreview
+          combat={hoveredCombat}
+          x={hoverPosition.x}
+          y={hoverPosition.y}
+          viewportWidth={canvasRef.current?.clientWidth ?? 800}
+          viewportHeight={canvasRef.current?.clientHeight ?? 600}
+        />
       )}
     </div>
   );

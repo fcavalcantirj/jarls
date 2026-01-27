@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { GameState, ValidMove } from '@jarls/shared';
+import type { GameState, ValidMove, CombatResult } from '@jarls/shared';
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -12,6 +12,8 @@ export interface GameStore {
   selectedPieceId: string | null;
   validMoves: ValidMove[];
   errorMessage: string | null;
+  hoveredCombat: CombatResult | null;
+  hoverPosition: { x: number; y: number } | null;
 
   // Actions
   setGameState: (state: GameState) => void;
@@ -23,6 +25,8 @@ export interface GameStore {
   clearGame: () => void;
   setError: (message: string) => void;
   clearError: () => void;
+  setHoveredCombat: (combat: CombatResult, x: number, y: number) => void;
+  clearHoveredCombat: () => void;
 }
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -34,6 +38,8 @@ export const useGameStore = create<GameStore>((set) => ({
   selectedPieceId: null,
   validMoves: [],
   errorMessage: null,
+  hoveredCombat: null,
+  hoverPosition: null,
 
   // Actions
   setGameState: (gameState) => set({ gameState }),
@@ -41,7 +47,8 @@ export const useGameStore = create<GameStore>((set) => ({
   setSession: (sessionToken) => set({ sessionToken }),
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
   selectPiece: (pieceId, moves) => set({ selectedPieceId: pieceId, validMoves: moves }),
-  clearSelection: () => set({ selectedPieceId: null, validMoves: [] }),
+  clearSelection: () =>
+    set({ selectedPieceId: null, validMoves: [], hoveredCombat: null, hoverPosition: null }),
   clearGame: () =>
     set({
       gameState: null,
@@ -51,9 +58,13 @@ export const useGameStore = create<GameStore>((set) => ({
       selectedPieceId: null,
       validMoves: [],
       errorMessage: null,
+      hoveredCombat: null,
+      hoverPosition: null,
     }),
   setError: (message) => set({ errorMessage: message }),
   clearError: () => set({ errorMessage: null }),
+  setHoveredCombat: (combat, x, y) => set({ hoveredCombat: combat, hoverPosition: { x, y } }),
+  clearHoveredCombat: () => set({ hoveredCombat: null, hoverPosition: null }),
 }));
 
 // Computed selectors

@@ -2115,7 +2115,7 @@
       "On mouse leave or hover elsewhere: hide tooltip",
       "Position tooltip to stay within viewport"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
