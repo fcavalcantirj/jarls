@@ -17,6 +17,8 @@
     "lint": "eslint packages/*/src/**/*.ts packages/*/src/**/*.tsx",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
     "prepare": "husky"
   },
   "devDependencies": {

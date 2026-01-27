@@ -355,7 +355,7 @@
       "Add docker:up and docker:down npm scripts",
       "Verify both services start and are accessible"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

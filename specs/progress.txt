@@ -2849,3 +2849,31 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Created**:
 - docker-compose.yml
+
+---
+
+### 2026-01-27: Infrastructure - Docker Compose Redis 7 service and npm scripts
+
+**Feature Completed**: "Docker Compose Redis 7 service and npm scripts"
+
+**Work Done**:
+- Added Redis 7 service to docker-compose.yml using `redis:7-alpine` image
+  - Container name: `jarls-redis`
+  - Port mapping: 6379:6379
+  - Named volume `redis_data` for data persistence
+  - Healthcheck using `redis-cli ping` (10s interval, 5s timeout, 5 retries)
+  - Connected to `jarls-network` bridge network
+- Added `docker:up` and `docker:down` npm scripts to root package.json
+  - `docker:up`: runs `docker compose up -d`
+  - `docker:down`: runs `docker compose down`
+- Validated docker-compose.yml configuration with `docker compose config`
+- All 833 tests pass, typecheck clean
+
+**Verification**:
+- `docker compose config` validates successfully
+- `pnpm typecheck` passes (all 3 packages)
+- `pnpm test` passes (29 test suites, 833 tests)
+
+**Files Modified**:
+- docker-compose.yml (added Redis service and redis_data volume)
+- package.json (added docker:up and docker:down scripts)

@@ -18,8 +18,24 @@ services:
     networks:
       - jarls-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: jarls-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jarls-network
+
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   jarls-network:
