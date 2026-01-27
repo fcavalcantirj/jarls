@@ -1,5 +1,35 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Create GameManager class structure
+
+**Feature Completed**: "Create GameManager class structure"
+
+**Work Done**:
+- Created `packages/server/src/game/manager.ts` with the `GameManager` class:
+  - Manages a `Map<string, GameActor>` of active game machine actors
+  - `create(config)`: generates unique game ID via `generateId()`, creates and starts XState actor, returns gameId
+  - `getState(gameId)`: returns current XState snapshot or undefined
+  - `listGames(filter?)`: returns array of `GameSummary` objects with optional status filtering
+  - `getActor(gameId)`: returns raw actor for internal use
+  - `remove(gameId)`: stops actor and removes from map
+  - `shutdown()`: stops all actors and clears the map
+  - `gameCount` getter for total active games
+- Created `packages/server/src/game/__tests__/manager.test.ts` with 17 unit tests covering:
+  - create: returns ID, unique IDs, increments count, starts in lobby, initializes config
+  - getState: returns snapshot, undefined for missing game
+  - listGames: empty array, all games, correct summaries, status filtering, player info updates
+  - getActor: returns actor, undefined for missing
+  - remove: removes and returns true, false for missing
+  - shutdown: stops all actors and clears
+
+**Files Created**:
+- packages/server/src/game/manager.ts (124 lines)
+- packages/server/src/game/__tests__/manager.test.ts (179 lines)
+
+**Verification**: pnpm typecheck passes, all 960 tests pass (17 new). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Integration tests for persistence
 
 **Feature Completed**: "Integration tests for persistence"

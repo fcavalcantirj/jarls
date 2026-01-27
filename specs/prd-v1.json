@@ -1417,7 +1417,7 @@
       "Create GameManager class with Map<gameId, Actor>",
       "Implement create(config): create actor, generate gameId, return gameId"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
@@ -1426,7 +1426,7 @@
       "Implement getState(gameId): return current snapshot",
       "Implement listGames(filter?): return array of game summaries"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
@@ -1436,7 +1436,7 @@
       "Add unit tests for getState",
       "Add unit tests for listGames"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
