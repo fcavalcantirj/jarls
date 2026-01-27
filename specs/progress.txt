@@ -1,5 +1,26 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Implement GameManager move execution
+
+**Features Completed**: "Implement GameManager move execution" + "Unit tests for GameManager move execution"
+
+**Work Done**:
+- Added `makeMove(gameId, playerId, command)` method to GameManager: validates game exists and is in playing state, checks it's the player's turn, applies the move using shared `applyMove()` logic, sends MAKE_MOVE event to actor on success, returns full MoveResult with success/failure, new state, and events
+- Added `submitStarvationChoice(gameId, playerId, pieceId)` method: validates game exists and is in starvation state, validates player has candidates, validates selected piece is a valid candidate, checks for duplicate submissions, sends STARVATION_CHOICE event to actor
+- Created separate test file `manager-moves.test.ts` with 13 unit tests covering:
+  - **makeMove** (10 tests): valid move execution, state update after move, not-your-turn rejection, invalid move command, state machine not updated on invalid move, game not found, wrong game state, non-existent piece, consecutive moves from different players, state machine returns to awaitingMove
+  - **submitStarvationChoice** (3 tests): game not found, wrong state (playing), wrong state (lobby)
+
+**Files Modified**:
+- packages/server/src/game/manager.ts (456 lines, was 369 lines)
+
+**Files Created**:
+- packages/server/src/game/__tests__/manager-moves.test.ts (279 lines)
+
+**Verification**: pnpm typecheck passes, all 991 unit tests pass (13 new in manager-moves.test.ts). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Implement GameManager player management
 
 **Feature Completed**: "Implement GameManager player management"

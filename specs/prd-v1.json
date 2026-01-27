@@ -1462,13 +1462,13 @@
       "Implement submitStarvationChoice(gameId, playerId, pieceId): send STARVATION_CHOICE",
       "Subscribe to actor state changes for event emission"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
     "description": "Unit tests for GameManager move execution",
     "steps": ["Add unit tests for makeMove", "Add unit tests for submitStarvationChoice"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

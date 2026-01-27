@@ -1,8 +1,8 @@
 import { createActor, type Actor, type Subscription } from 'xstate';
 import { gameMachine } from './machine';
 import type { GameMachineContext, GameMachineInput } from './types';
-import type { GameConfig } from '@jarls/shared';
-import { generateId } from '@jarls/shared';
+import type { GameConfig, MoveCommand, MoveResult } from '@jarls/shared';
+import { generateId, applyMove } from '@jarls/shared';
 import { saveSnapshot, saveEvent, loadActiveSnapshots } from './persistence';
 
 /** Summary of a game for listing purposes */
@@ -327,6 +327,93 @@ export class GameManager {
     managed.actor.send({
       type: 'START_GAME',
       playerId,
+    });
+  }
+
+  /**
+   * Execute a move in a game.
+   * Validates preconditions, applies the move using shared logic to get the result,
+   * then sends MAKE_MOVE to the actor to update the state machine.
+   * Returns the MoveResult with success/failure, new state, and events.
+   * Throws if the game doesn't exist or is not in a playing state.
+   */
+  makeMove(gameId: string, playerId: string, command: MoveCommand): MoveResult {
+    const managed = this.games.get(gameId);
+    if (!managed) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+
+    const snapshot = managed.actor.getSnapshot();
+    const stateName = getStateName(snapshot.value);
+    if (stateName !== 'playing') {
+      throw new Error(`Cannot make move in state: ${stateName}`);
+    }
+
+    const context = snapshot.context as GameMachineContext;
+    if (context.currentPlayerId !== playerId) {
+      return {
+        success: false,
+        error: 'Not your turn',
+        newState: context,
+        events: [],
+      };
+    }
+
+    // Compute the result using shared logic (same as the machine guard/action)
+    const result = applyMove(context, playerId, command);
+
+    if (result.success) {
+      // Send the event to the actor to update the state machine
+      managed.actor.send({
+        type: 'MAKE_MOVE',
+        playerId,
+        command,
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Submit a starvation choice for a player.
+   * Sends STARVATION_CHOICE to the actor.
+   * Throws if the game doesn't exist or is not in the starvation state.
+   */
+  submitStarvationChoice(gameId: string, playerId: string, pieceId: string): void {
+    const managed = this.games.get(gameId);
+    if (!managed) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+
+    const snapshot = managed.actor.getSnapshot();
+    const stateName = getStateName(snapshot.value);
+    if (stateName !== 'starvation') {
+      throw new Error(`Cannot submit starvation choice in state: ${stateName}`);
+    }
+
+    const context = snapshot.context as GameMachineContext;
+
+    // Validate the player has candidates
+    const playerCandidates = context.starvationCandidates.find((c) => c.playerId === playerId);
+    if (!playerCandidates || playerCandidates.candidates.length === 0) {
+      throw new Error(`Player has no starvation candidates: ${playerId}`);
+    }
+
+    // Validate the selected piece is a valid candidate
+    const isValidCandidate = playerCandidates.candidates.some((c) => c.id === pieceId);
+    if (!isValidCandidate) {
+      throw new Error(`Invalid starvation candidate: ${pieceId}`);
+    }
+
+    // Check if the player already submitted a choice
+    if (context.starvationChoices.some((sc) => sc.playerId === playerId)) {
+      throw new Error(`Player already submitted starvation choice: ${playerId}`);
+    }
+
+    managed.actor.send({
+      type: 'STARVATION_CHOICE',
+      playerId,
+      pieceId,
     });
   }
 
