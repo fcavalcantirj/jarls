@@ -1378,7 +1378,7 @@
       "Test saveSnapshot creates and updates records",
       "Test loadSnapshot returns correct data"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

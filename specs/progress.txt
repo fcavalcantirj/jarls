@@ -1,5 +1,24 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Integration tests for persistence
+
+**Feature Completed**: "Integration tests for persistence"
+
+**Work Done**:
+- Created `packages/server/src/game/__tests__/persistence.integration.test.ts` with 10 integration tests against a real PostgreSQL database:
+  - saveSnapshot: creates record, updates with version increment, throws VersionConflictError on concurrent update
+  - loadSnapshot: returns saved data, returns null for non-existent game, returns updated data after version bumps
+  - saveEvent + loadEvents: persists and loads events in order, empty array for no events, default empty data, isolates events between games
+- Tests use a direct Pool connection to the test database, mock the db module to route queries through it
+- Tests clean up `test-%` prefixed data after each test via afterEach hook
+
+**Files Created**:
+- packages/server/src/game/__tests__/persistence.integration.test.ts (185 lines)
+
+**Verification**: pnpm typecheck passes, all 943 tests pass (10 new). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Implement saveEvent and loadEvents
 
 **Feature Completed**: "Implement saveEvent and loadEvents"
