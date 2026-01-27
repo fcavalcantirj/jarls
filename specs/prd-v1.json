@@ -1140,7 +1140,7 @@
       "Define gameMachine with initial 'lobby' state",
       "Add guard canStartGame: context.players.length >= 2"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

@@ -3149,3 +3149,30 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - packages/server/src/game/types.ts (added event types and union)
 - specs/prd-v1.json (marked task as passes: true)
 - specs/progress.txt (this entry)
+
+---
+
+### 2026-01-27: State Machine - Game Machine Skeleton with Lobby State
+
+**Feature Completed**: "Create game machine skeleton with lobby state"
+
+**Work Done**:
+- Created packages/server/src/game/machine.ts with XState v5 createMachine
+- Defined gameMachine with initial 'lobby' state
+- Implemented lobby state event handlers:
+  - PLAYER_JOINED: adds player to context.players (with color assignment), guarded by isLobbyFull
+  - PLAYER_LEFT: removes player from context.players
+  - START_GAME: transitions to 'setup' state, guarded by canStartGame (>= 2 players)
+- Added canStartGame guard: context.players.length >= 2
+- Added isLobbyFull guard: context.players.length >= config.playerCount
+- Context factory initializes full GameMachineContext from GameMachineInput
+- Placeholder states: setup, playing, starvation, paused, ended (final)
+- Typecheck passes, all 844 tests pass (31 suites)
+- File is 95 lines (well under 800 line limit)
+
+**Files Created**:
+- packages/server/src/game/machine.ts
+
+**Files Modified**:
+- specs/prd-v1.json (marked task as passes: true)
+- specs/progress.txt (this entry)
