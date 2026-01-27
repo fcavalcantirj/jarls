@@ -1,5 +1,39 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Implement starvation choice handler
+
+**Feature Completed**: "Implement starvation choice handler"
+
+**Work Done**:
+- Added `allStarvationChoicesMade` guard to check if all players with candidates have submitted a choice
+- Added `recordStarvationChoice` action to accumulate player choices (with duplicate prevention)
+- Added `resolveStarvationChoices` action that calls `resolveStarvation()` from shared and updates context
+- Added `resolving` substate to the starvation compound state:
+  - Entry action calls `resolveStarvationChoices`
+  - If `winnerId !== null`, transitions to `#game.ended`
+  - Otherwise transitions back to `#game.playing.awaitingMove`
+- Updated `awaitingChoices` substate with:
+  - `always` transition to `resolving` when `allStarvationChoicesMade` guard passes
+  - `STARVATION_CHOICE` event handler to record choices
+- Imported `resolveStarvation` from `@jarls/shared` in machine.ts
+- Added 8 new tests in starvation-state.test.ts:
+  - Records a starvation choice from a player
+  - Ignores duplicate choices from the same player
+  - Resolves and returns to playing after all choices are made
+  - Removes chosen warriors after resolution
+  - Resets roundsSinceElimination to 0 after resolution
+  - Clears starvation state after resolution
+  - Stays in awaitingChoices until all players with candidates have chosen
+  - Transitions to ended if starvation causes last standing victory
+
+**Files Modified**:
+- packages/server/src/game/machine.ts (added guard, actions, starvation state handlers)
+- packages/server/src/game/__tests__/starvation-state.test.ts (added 8 new tests)
+
+**Verification**: pnpm typecheck passes, all 901 tests pass (8 new). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Add starvation state structure
 
 **Feature Completed**: "Add starvation state structure"

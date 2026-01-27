@@ -1299,7 +1299,7 @@
       "Add guard allChoicesMade: all players with candidates have chosen",
       "When all choices made: call resolveStarvation()"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

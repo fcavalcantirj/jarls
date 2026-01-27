@@ -6,6 +6,7 @@ import {
   applyMove,
   checkStarvationTrigger,
   calculateStarvationCandidates,
+  resolveStarvation,
 } from '@jarls/shared';
 
 /**
@@ -111,6 +112,15 @@ export const gameMachine = setup({
     isTurnTimerEnabled: ({ context }: { context: GameMachineContext }) => {
       return context.turnTimerMs !== null;
     },
+    allStarvationChoicesMade: ({ context }: { context: GameMachineContext }) => {
+      // Check if all players who have candidates have submitted a choice
+      const playersWithCandidates = context.starvationCandidates.filter(
+        (c) => c.candidates.length > 0
+      );
+      return playersWithCandidates.every((pc) =>
+        context.starvationChoices.some((sc) => sc.playerId === pc.playerId)
+      );
+    },
   },
   actions: {
     autoSkipTurn: assign(({ context }) => {
@@ -122,6 +132,33 @@ export const gameMachine = setup({
       return {
         starvationCandidates: candidates,
         starvationChoices: [],
+      };
+    }),
+    recordStarvationChoice: assign(({ context, event }) => {
+      if (event.type !== 'STARVATION_CHOICE') return {};
+      // Don't record duplicate choices from the same player
+      if (context.starvationChoices.some((sc) => sc.playerId === event.playerId)) {
+        return {};
+      }
+      return {
+        starvationChoices: [
+          ...context.starvationChoices,
+          { playerId: event.playerId, pieceId: event.pieceId },
+        ],
+      };
+    }),
+    resolveStarvationChoices: assign(({ context }) => {
+      const gameState = contextToGameState(context);
+      const result = resolveStarvation(gameState, context.starvationChoices);
+      return {
+        pieces: result.newState.pieces,
+        players: result.newState.players,
+        roundsSinceElimination: result.newState.roundsSinceElimination,
+        winnerId: result.newState.winnerId,
+        winCondition: result.newState.winCondition,
+        phase: result.newState.phase,
+        starvationChoices: [],
+        starvationCandidates: [],
       };
     }),
     initializeBoard: assign(({ context }) => {
@@ -276,7 +313,29 @@ export const gameMachine = setup({
       entry: 'enterStarvation',
       initial: 'awaitingChoices',
       states: {
-        awaitingChoices: {},
+        awaitingChoices: {
+          always: {
+            guard: 'allStarvationChoicesMade',
+            target: 'resolving',
+          },
+          on: {
+            STARVATION_CHOICE: {
+              actions: 'recordStarvationChoice',
+            },
+          },
+        },
+        resolving: {
+          entry: 'resolveStarvationChoices',
+          always: [
+            {
+              guard: ({ context }) => context.winnerId !== null,
+              target: '#game.ended',
+            },
+            {
+              target: '#game.playing.awaitingMove',
+            },
+          ],
+        },
       },
     },
     paused: {},
