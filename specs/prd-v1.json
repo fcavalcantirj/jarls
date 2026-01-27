@@ -1557,7 +1557,7 @@
       "Implement createSession(gameId, playerId, playerName): generate 64-char token, store in Redis with 24h TTL",
       "Implement validateSession(token): get from Redis, return { gameId, playerId, playerName } or null"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",

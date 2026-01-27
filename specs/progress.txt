@@ -1,5 +1,29 @@
 ## Progress Log
 
+### 2026-01-27: Network - Implement session service
+
+**Feature Completed**: "Implement session service"
+
+**Work Done**:
+- Created `packages/server/src/services/session.ts` with:
+  - `createSession(gameId, playerId, playerName)`: generates 64-char hex token via `crypto.randomBytes(32)`, stores session data in Redis with 24h TTL
+  - `validateSession(token)`: retrieves session from Redis, returns `{ gameId, playerId, playerName }` or null
+  - `SessionData` interface exported
+- Created `packages/server/src/services/__tests__/session.test.ts` with 5 tests:
+  - Token is 64-char hex
+  - Session stored in Redis with correct TTL (86400s)
+  - Unique tokens per call
+  - Valid token returns session data
+  - Invalid/expired token returns null
+
+**Files Created**:
+- packages/server/src/services/session.ts (47 lines)
+- packages/server/src/services/__tests__/session.test.ts (79 lines)
+
+**Verification**: pnpm typecheck passes. 1038 tests total (1032 passing, 6 pre-existing integration test failures from database state issues). All new tests pass. All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Create error classes
 
 **Feature Completed**: "Create error classes"
