@@ -1,5 +1,28 @@
 ## Progress Log
 
+### 2026-01-27: Network - Implement game join and state endpoints
+
+**Feature Completed**: "Implement game join and state endpoints"
+
+**Work Done**:
+- Updated `packages/server/src/routes/games.ts` with two new endpoints:
+  - `GET /api/games/:id`: requires Bearer token auth via `authenticateSession` middleware, returns `{ state }` with game context from GameManager snapshot, returns 404 for non-existent games
+  - `POST /api/games/:id/join`: validates `playerName` (1-30 chars) with Zod, checks game exists (404 if not), calls `GameManager.join()` to add player, creates Redis session via `createSession()`, returns `{ sessionToken, playerId }`
+- Added `joinGameSchema` Zod validation for join endpoint body
+- Added imports for `authenticateSession`, `createSession`, and `GameNotFoundError`
+- Updated `packages/server/src/routes/__tests__/games.test.ts` with 11 new tests:
+  - GET /:id: 401 without auth, 401 with invalid token, 200 with valid auth returns state, 404 for non-existent game
+  - POST /:id/join: returns sessionToken and playerId, calls createSession with correct args, 400 for missing playerName, 400 for empty playerName, 404 for non-existent game, player appears in game after joining, error when game is full
+- Added mock for session service (`createSession`, `validateSession`) in test setup
+
+**Files Modified**:
+- packages/server/src/routes/games.ts (112 lines, was 60)
+- packages/server/src/routes/__tests__/games.test.ts (329 lines, was 155)
+
+**Verification**: pnpm typecheck passes. 1069 tests total (1062 passing, 7 pre-existing integration test failures from database state issues). All 22 route tests pass (11 original + 11 new). All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Implement game creation and listing endpoints
 
 **Feature Completed**: "Implement game creation and listing endpoints"

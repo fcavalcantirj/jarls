@@ -3,7 +3,7 @@ import request from 'supertest';
 import express from 'express';
 
 // Mock persistence before importing anything that uses GameManager
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const mockSaveSnapshotFn = jest
   .fn<(...args: any[]) => Promise<void>>()
   .mockResolvedValue(undefined);
@@ -18,6 +18,22 @@ const mockLoadActiveSnapshotsFn = jest
 const mockLoadSnapshotFn = jest.fn<(...args: any[]) => Promise<null>>().mockResolvedValue(null);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockLoadEventsFn = jest.fn<(...args: any[]) => Promise<never[]>>().mockResolvedValue([]);
+
+// Mock session service
+const mockCreateSessionFn = jest
+  .fn<(...args: any[]) => Promise<string>>()
+  .mockResolvedValue('mock-session-token-64chars');
+
+const mockValidateSessionFn = jest
+  .fn<(...args: any[]) => Promise<any>>()
+  .mockResolvedValue({ gameId: 'g1', playerId: 'p1', playerName: 'TestPlayer' });
+
+jest.unstable_mockModule('../../services/session', () => ({
+  createSession: mockCreateSessionFn,
+  validateSession: mockValidateSessionFn,
+  invalidateSession: jest.fn<(...args: any[]) => Promise<void>>().mockResolvedValue(undefined),
+  extendSession: jest.fn<(...args: any[]) => Promise<boolean>>().mockResolvedValue(true),
+}));
 
 jest.unstable_mockModule('../../game/persistence', () => ({
   saveSnapshot: mockSaveSnapshotFn,
@@ -150,6 +166,156 @@ describe('Game routes', () => {
       expect(game).toHaveProperty('maxPlayers');
       expect(game).toHaveProperty('players');
       expect(game.players).toBeInstanceOf(Array);
+    });
+  });
+
+  describe('GET /api/games/:id', () => {
+    it('returns 401 without auth header', async () => {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      const response = await request(app).get(`/api/games/${gameId}`);
+
+      expect(response.status).toBe(401);
+    });
+
+    it('returns 401 with invalid token', async () => {
+      mockValidateSessionFn.mockResolvedValueOnce(null);
+
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      const response = await request(app)
+        .get(`/api/games/${gameId}`)
+        .set('Authorization', 'Bearer invalid-token');
+
+      expect(response.status).toBe(401);
+    });
+
+    it('returns game state with valid auth', async () => {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      mockValidateSessionFn.mockResolvedValueOnce({
+        gameId,
+        playerId: 'p1',
+        playerName: 'TestPlayer',
+      });
+
+      const response = await request(app)
+        .get(`/api/games/${gameId}`)
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('state');
+      expect(response.body.state).toHaveProperty('config');
+      expect(response.body.state).toHaveProperty('players');
+    });
+
+    it('returns 404 for non-existent game', async () => {
+      mockValidateSessionFn.mockResolvedValueOnce({
+        gameId: 'nonexistent',
+        playerId: 'p1',
+        playerName: 'TestPlayer',
+      });
+
+      const response = await request(app)
+        .get('/api/games/nonexistent')
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe('POST /api/games/:id/join', () => {
+    it('joins a game and returns sessionToken and playerId', async () => {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      const response = await request(app)
+        .post(`/api/games/${gameId}/join`)
+        .send({ playerName: 'Viking1' });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('sessionToken');
+      expect(response.body).toHaveProperty('playerId');
+      expect(typeof response.body.sessionToken).toBe('string');
+      expect(typeof response.body.playerId).toBe('string');
+    });
+
+    it('calls createSession with correct args', async () => {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      mockCreateSessionFn.mockClear();
+
+      await request(app).post(`/api/games/${gameId}/join`).send({ playerName: 'Viking1' });
+
+      expect(mockCreateSessionFn).toHaveBeenCalledTimes(1);
+      const [calledGameId, calledPlayerId, calledName] = mockCreateSessionFn.mock.calls[0];
+      expect(calledGameId).toBe(gameId);
+      expect(typeof calledPlayerId).toBe('string');
+      expect(calledName).toBe('Viking1');
+    });
+
+    it('returns 400 for missing playerName', async () => {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      const response = await request(app).post(`/api/games/${gameId}/join`).send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error', 'VALIDATION_ERROR');
+    });
+
+    it('returns 400 for empty playerName', async () => {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      const response = await request(app)
+        .post(`/api/games/${gameId}/join`)
+        .send({ playerName: '' });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error', 'VALIDATION_ERROR');
+    });
+
+    it('returns 404 for non-existent game', async () => {
+      const response = await request(app)
+        .post('/api/games/nonexistent/join')
+        .send({ playerName: 'Viking1' });
+
+      expect(response.status).toBe(404);
+    });
+
+    it('player appears in game after joining', async () => {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      await request(app).post(`/api/games/${gameId}/join`).send({ playerName: 'Viking1' });
+
+      const listRes = await request(app).get('/api/games');
+      const game = listRes.body.games.find((g: { gameId: string }) => g.gameId === gameId);
+
+      expect(game.playerCount).toBe(1);
+      expect(game.players).toHaveLength(1);
+      expect(game.players[0].name).toBe('Viking1');
+    });
+
+    it('returns error when game is full', async () => {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      // Join two players (max for default 2-player game)
+      await request(app).post(`/api/games/${gameId}/join`).send({ playerName: 'Viking1' });
+      await request(app).post(`/api/games/${gameId}/join`).send({ playerName: 'Viking2' });
+
+      // Third player should fail
+      const response = await request(app)
+        .post(`/api/games/${gameId}/join`)
+        .send({ playerName: 'Viking3' });
+
+      expect(response.status).toBe(500);
     });
   });
 });

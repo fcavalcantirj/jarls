@@ -1600,7 +1600,7 @@
       "GET /api/games/:id: require auth, call GameManager.getState(), return state",
       "POST /api/games/:id/join: validate body (playerName), call GameManager.join(), create session, return { sessionToken, playerId }"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
