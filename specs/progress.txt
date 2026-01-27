@@ -1,5 +1,33 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Create AnimationSystem class
+
+**Features Completed**: "Create AnimationSystem class"
+
+**Work Done**:
+- Created AnimationSystem.ts in packages/client/src/components/Board/
+- Defined Animation type with pieceId, fromHex, toHex, duration, delay, and type fields
+- Defined AnimationType as 'move' | 'push' | 'elimination'
+- Implemented parseEvents(events) that converts GameEvent[] to Animation[] with proper sequencing:
+  - MOVE events become move animations (200ms, no delay)
+  - PUSH events become push animations (200ms, staggered by 80ms per depth level after move completes)
+  - ELIMINATED events become elimination animations (400ms, after all pushes complete)
+- Implemented getTotalDuration() to calculate full animation sequence length
+- Implemented getAnimationProgress() returning ease-out progress (0-1) for a given elapsed time
+- Implemented isComplete() to check if all animations have finished
+- Updated barrel export in index.ts
+
+**Files Created**:
+- packages/client/src/components/Board/AnimationSystem.ts (130 lines)
+
+**Files Modified**:
+- packages/client/src/components/Board/index.ts (7 -> 9 lines)
+- specs/prd-v1.json (marked 1 task as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (25 failed, 1168 passed).
+
+---
+
 ### 2026-01-27: Frontend - Integrate CombatPreview with hover
 
 **Features Completed**: "Integrate CombatPreview with hover"

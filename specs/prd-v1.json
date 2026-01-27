@@ -2125,7 +2125,7 @@
       "Define Animation type: { pieceId, fromHex, toHex, duration, delay, type }",
       "Implement parseEvents(events): convert GameEvents to Animation array"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
