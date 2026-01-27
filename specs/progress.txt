@@ -1,5 +1,30 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Implement saveSnapshot and loadSnapshot
+
+**Feature Completed**: "Implement saveSnapshot and loadSnapshot"
+
+**Work Done**:
+- Created `packages/server/src/game/persistence.ts` with:
+  - `saveSnapshot(gameId, state, version, status)`: Inserts new snapshot for version 1, updates with optimistic locking for subsequent versions
+  - `loadSnapshot(gameId)`: Loads a game snapshot from DB, returns null if not found
+  - `VersionConflictError` class for optimistic locking conflicts
+  - Version check: UPDATE uses `WHERE version = expectedVersion - 1` to prevent concurrent conflicts
+- Created `packages/server/src/game/__tests__/persistence.test.ts` with 12 unit tests covering:
+  - Insert on version 1, update with optimistic locking for version > 1
+  - VersionConflictError thrown when no rows affected
+  - Default status parameter, complex state JSON serialization
+  - loadSnapshot returning data or null
+  - VersionConflictError class properties
+
+**Files Created**:
+- packages/server/src/game/persistence.ts (106 lines)
+- packages/server/src/game/__tests__/persistence.test.ts (207 lines)
+
+**Verification**: pnpm typecheck passes, all 927 tests pass (12 new). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Implement reconnection handling + Unit tests for disconnection
 
 **Features Completed**: "Implement reconnection handling" and "Unit tests for disconnection"
