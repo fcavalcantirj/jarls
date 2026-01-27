@@ -2093,7 +2093,7 @@
       "On error: show error toast, restore selection",
       "Add touch event support (onTouchEnd) for mobile"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

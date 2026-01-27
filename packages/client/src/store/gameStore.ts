@@ -11,6 +11,7 @@ export interface GameStore {
   connectionStatus: ConnectionStatus;
   selectedPieceId: string | null;
   validMoves: ValidMove[];
+  errorMessage: string | null;
 
   // Actions
   setGameState: (state: GameState) => void;
@@ -20,6 +21,8 @@ export interface GameStore {
   selectPiece: (pieceId: string, moves: ValidMove[]) => void;
   clearSelection: () => void;
   clearGame: () => void;
+  setError: (message: string) => void;
+  clearError: () => void;
 }
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -30,6 +33,7 @@ export const useGameStore = create<GameStore>((set) => ({
   connectionStatus: 'disconnected',
   selectedPieceId: null,
   validMoves: [],
+  errorMessage: null,
 
   // Actions
   setGameState: (gameState) => set({ gameState }),
@@ -46,7 +50,10 @@ export const useGameStore = create<GameStore>((set) => ({
       connectionStatus: 'disconnected',
       selectedPieceId: null,
       validMoves: [],
+      errorMessage: null,
     }),
+  setError: (message) => set({ errorMessage: message }),
+  clearError: () => set({ errorMessage: null }),
 }));
 
 // Computed selectors

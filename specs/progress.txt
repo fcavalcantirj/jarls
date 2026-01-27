@@ -1,5 +1,27 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Add move execution error handling and touch
+
+**Features Completed**: "Add move execution error handling and touch"
+
+**Work Done**:
+- Added `errorMessage` state with `setError`/`clearError` actions to gameStore
+- On playTurn error callback: restores previous piece selection so player can retry, and shows error toast
+- Error toast auto-dismisses after 3 seconds
+- Added `onTouchEnd` handler to Board canvas for mobile touch support
+- Extracted shared `handleInteraction` function used by both mouse and touch handlers
+- Added `touchAction: 'none'` CSS to prevent browser default touch behavior
+- Wrapped canvas in a positioned div to support absolute-positioned error toast overlay
+
+**Files Modified**:
+- packages/client/src/store/gameStore.ts (67 -> 70 lines)
+- packages/client/src/components/Board/Board.tsx (163 -> 235 lines)
+- specs/prd-v1.json (marked 1 task as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (21 failed, 1172 passed).
+
+---
+
 ### 2026-01-27: Frontend - Implement move execution on click
 
 **Features Completed**: "Implement move execution on click"

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, type MouseEvent } from 'react';
+import { useRef, useEffect, useCallback, type MouseEvent, type TouchEvent } from 'react';
 import { isOnBoardAxial, getValidMoves } from '@jarls/shared';
 import { useGameStore, selectIsMyTurn } from '../../store/gameStore';
 import { BoardRenderer } from './BoardRenderer';
@@ -6,14 +6,18 @@ import type { RenderHighlights } from './BoardRenderer';
 import { pixelToHex } from '../../utils/hexMath';
 import { getSocket } from '../../socket/client';
 
+const ERROR_TOAST_DURATION_MS = 3000;
+
 export function Board() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<BoardRenderer | null>(null);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const gameState = useGameStore((s) => s.gameState);
   const selectedPieceId = useGameStore((s) => s.selectedPieceId);
   const validMoves = useGameStore((s) => s.validMoves);
   const playerId = useGameStore((s) => s.playerId);
+  const errorMessage = useGameStore((s) => s.errorMessage);
 
   // Initialize renderer on mount
   useEffect(() => {
@@ -77,25 +81,33 @@ export function Board() {
     return () => window.removeEventListener('resize', handleResize);
   }, [gameState, getHighlights]);
 
+  // Auto-clear error toast after duration
+  useEffect(() => {
+    if (!errorMessage) return;
+
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    errorTimerRef.current = setTimeout(() => {
+      useGameStore.getState().clearError();
+    }, ERROR_TOAST_DURATION_MS);
+
+    return () => {
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    };
+  }, [errorMessage]);
+
   const isMyTurn = useGameStore(selectIsMyTurn);
 
-  // Handle canvas click: convert to hex coordinates and detect piece
-  const handleClick = useCallback(
-    (event: MouseEvent<HTMLCanvasElement>) => {
-      const canvas = canvasRef.current;
+  // Core interaction logic shared by mouse and touch handlers
+  const handleInteraction = useCallback(
+    (canvasX: number, canvasY: number) => {
       const renderer = rendererRef.current;
-      if (!canvas || !renderer || !gameState) return;
+      if (!renderer || !gameState) return;
 
       const dims = renderer.getDimensions();
       if (!dims) return;
 
-      // Get click position relative to canvas
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-
       // Convert pixel coordinates to hex
-      const clickedHex = pixelToHex(x, y, dims.hexSize, dims.centerX, dims.centerY);
+      const clickedHex = pixelToHex(canvasX, canvasY, dims.hexSize, dims.centerX, dims.centerY);
 
       // Ignore clicks outside the board
       if (!isOnBoardAxial(clickedHex, gameState.config.boardRadius)) return;
@@ -108,6 +120,10 @@ export function Board() {
           (m) => m.destination.q === clickedHex.q && m.destination.r === clickedHex.r
         );
         if (targetMove) {
+          // Save selection info for potential restore on error
+          const prevPieceId = selectedPieceId;
+          const prevMoves = validMoves;
+
           // Clear selection immediately while waiting for server response
           store.clearSelection();
 
@@ -116,11 +132,13 @@ export function Board() {
             'playTurn',
             {
               gameId: gameState.id,
-              command: { pieceId: selectedPieceId, destination: targetMove.destination },
+              command: { pieceId: prevPieceId, destination: targetMove.destination },
             },
             (response) => {
               if (!response.success) {
-                console.error('Move failed:', response.error);
+                // Restore selection so the player can try again
+                store.selectPiece(prevPieceId, prevMoves);
+                store.setError(response.error ?? 'Move failed');
               }
             }
           );
@@ -147,16 +165,70 @@ export function Board() {
     [gameState, playerId, isMyTurn, selectedPieceId, validMoves]
   );
 
+  // Mouse click handler
+  const handleClick = useCallback(
+    (event: MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      handleInteraction(event.clientX - rect.left, event.clientY - rect.top);
+    },
+    [handleInteraction]
+  );
+
+  // Touch handler for mobile
+  const handleTouchEnd = useCallback(
+    (event: TouchEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const touch = event.changedTouches[0];
+      if (!touch) return;
+
+      // Prevent default to avoid mouse event firing after touch
+      event.preventDefault();
+
+      const rect = canvas.getBoundingClientRect();
+      handleInteraction(touch.clientX - rect.left, touch.clientY - rect.top);
+    },
+    [handleInteraction]
+  );
+
   return (
-    <canvas
-      ref={canvasRef}
-      onClick={handleClick}
-      style={{
-        display: 'block',
-        width: '100%',
-        height: '100%',
-        cursor: 'pointer',
-      }}
-    />
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <canvas
+        ref={canvasRef}
+        onClick={handleClick}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          cursor: 'pointer',
+          touchAction: 'none',
+        }}
+      />
+      {errorMessage && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 16,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#dc3545',
+            color: '#fff',
+            padding: '8px 16px',
+            borderRadius: 6,
+            fontSize: 14,
+            pointerEvents: 'none',
+            zIndex: 10,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {errorMessage}
+        </div>
+      )}
+    </div>
   );
 }
