@@ -1,5 +1,22 @@
 ## Progress Log
 
+### 2026-01-27: AI - Create Norse name generator
+
+**Features Completed**: "Create Norse name generator"
+
+**Work Done**:
+- Created `packages/server/src/ai/names.ts` with `generateNorseName()` function
+- 25 Norse first names (Bjorn, Ragnar, Sigurd, Freyja, Astrid, etc.)
+- 20 Norse epithets (the Bold, Ironside, Bloodaxe, Shieldbreaker, etc.)
+- Function returns a random combination like "Ragnar the Bold"
+
+**Files Created**:
+- packages/server/src/ai/names.ts (60 lines)
+
+**Verification**: pnpm typecheck passes. Pre-existing integration test failures unchanged (25 failed, 1126 passed).
+
+---
+
 ### 2026-01-27: AI - Implement HeuristicAI class
 
 **Features Completed**: "Add negative scoring factors" (already implemented), "Implement HeuristicAI class", "Unit tests for HeuristicAI"

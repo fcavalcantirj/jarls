@@ -1828,7 +1828,7 @@
       "Create packages/server/src/ai/names.ts with Norse name arrays",
       "Implement generateNorseName() function"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ai",
