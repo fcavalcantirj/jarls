@@ -517,6 +517,190 @@ describe('GameManager', () => {
     });
   });
 
+  describe('join', () => {
+    it('adds a player to the game and returns a player ID', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+
+      const playerId = manager.join(gameId, 'Alice');
+
+      expect(typeof playerId).toBe('string');
+      expect(playerId.length).toBeGreaterThan(0);
+
+      const snapshot = manager.getState(gameId);
+      expect(snapshot!.context.players).toHaveLength(1);
+      expect(snapshot!.context.players[0].name).toBe('Alice');
+      expect(snapshot!.context.players[0].id).toBe(playerId);
+    });
+
+    it('allows multiple players to join', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+
+      const p1 = manager.join(gameId, 'Alice');
+      const p2 = manager.join(gameId, 'Bob');
+
+      expect(p1).not.toBe(p2);
+
+      const snapshot = manager.getState(gameId);
+      expect(snapshot!.context.players).toHaveLength(2);
+    });
+
+    it('throws when game does not exist', () => {
+      manager = new GameManager();
+
+      expect(() => manager.join('non-existent', 'Alice')).toThrow('Game not found');
+    });
+
+    it('throws when game is full', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+
+      manager.join(gameId, 'Alice');
+      manager.join(gameId, 'Bob');
+
+      expect(() => manager.join(gameId, 'Charlie')).toThrow('Game is full');
+    });
+
+    it('throws when game is not in lobby state', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+
+      manager.join(gameId, 'Alice');
+      manager.join(gameId, 'Bob');
+      manager.start(gameId, manager.getState(gameId)!.context.players[0].id);
+
+      expect(() => manager.join(gameId, 'Charlie')).toThrow('Cannot join game in state');
+    });
+
+    it('assigns correct colors to players', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+
+      manager.join(gameId, 'Alice');
+      manager.join(gameId, 'Bob');
+
+      const snapshot = manager.getState(gameId);
+      expect(snapshot!.context.players[0].color).toBe('#e63946');
+      expect(snapshot!.context.players[1].color).toBe('#457b9d');
+    });
+  });
+
+  describe('leave', () => {
+    it('removes a player from the lobby', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+
+      const playerId = manager.join(gameId, 'Alice');
+      manager.leave(gameId, playerId);
+
+      const snapshot = manager.getState(gameId);
+      expect(snapshot!.context.players).toHaveLength(0);
+    });
+
+    it('allows other players to remain after one leaves', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+
+      const p1 = manager.join(gameId, 'Alice');
+      manager.join(gameId, 'Bob');
+      manager.leave(gameId, p1);
+
+      const snapshot = manager.getState(gameId);
+      expect(snapshot!.context.players).toHaveLength(1);
+      expect(snapshot!.context.players[0].name).toBe('Bob');
+    });
+
+    it('throws when game does not exist', () => {
+      manager = new GameManager();
+
+      expect(() => manager.leave('non-existent', 'p1')).toThrow('Game not found');
+    });
+
+    it('throws when player is not in the game', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+
+      expect(() => manager.leave(gameId, 'unknown-player')).toThrow('Player not found');
+    });
+
+    it('throws when game is not in lobby state', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+
+      const p1 = manager.join(gameId, 'Alice');
+      manager.join(gameId, 'Bob');
+      manager.start(gameId, p1);
+
+      expect(() => manager.leave(gameId, p1)).toThrow('Cannot leave game in state');
+    });
+  });
+
+  describe('start', () => {
+    it('starts the game when host requests it with enough players', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+
+      const p1 = manager.join(gameId, 'Alice');
+      manager.join(gameId, 'Bob');
+      manager.start(gameId, p1);
+
+      const snapshot = manager.getState(gameId);
+      // Game transitions lobby -> setup -> playing
+      expect(snapshot!.value).toEqual({ playing: 'awaitingMove' });
+      expect(snapshot!.context.phase).toBe('playing');
+      expect(snapshot!.context.pieces.length).toBeGreaterThan(0);
+    });
+
+    it('throws when game does not exist', () => {
+      manager = new GameManager();
+
+      expect(() => manager.start('non-existent', 'p1')).toThrow('Game not found');
+    });
+
+    it('throws when player is not the host', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+
+      manager.join(gameId, 'Alice');
+      const p2 = manager.join(gameId, 'Bob');
+
+      expect(() => manager.start(gameId, p2)).toThrow('Only the host can start');
+    });
+
+    it('throws when not enough players', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+
+      const p1 = manager.join(gameId, 'Alice');
+
+      expect(() => manager.start(gameId, p1)).toThrow('Not enough players');
+    });
+
+    it('throws when game is not in lobby state', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+
+      const p1 = manager.join(gameId, 'Alice');
+      manager.join(gameId, 'Bob');
+      manager.start(gameId, p1);
+
+      expect(() => manager.start(gameId, p1)).toThrow('Cannot start game in state');
+    });
+
+    it('sets the first player as the current player', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+
+      const p1 = manager.join(gameId, 'Alice');
+      manager.join(gameId, 'Bob');
+      manager.start(gameId, p1);
+
+      const snapshot = manager.getState(gameId);
+      expect(snapshot!.context.currentPlayerId).toBe(p1);
+    });
+  });
+
   describe('shutdown', () => {
     it('stops all actors and clears games', async () => {
       manager = new GameManager();

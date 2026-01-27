@@ -1,5 +1,27 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Implement GameManager player management
+
+**Feature Completed**: "Implement GameManager player management"
+
+**Work Done**:
+- Added `join(gameId, playerName)` method to GameManager: validates game exists and is in lobby state, checks game isn't full, generates unique player ID, sends PLAYER_JOINED event to actor, returns player ID
+- Added `leave(gameId, playerId)` method: validates game exists, is in lobby, and player exists, sends PLAYER_LEFT event
+- Added `start(gameId, playerId)` method: validates game exists, is in lobby, player is host (first to join), and enough players present, sends START_GAME event
+- All methods include proper error handling with descriptive error messages
+- Added 17 unit tests covering:
+  - **join** (6 tests): successful join, multiple players, game not found, game full, wrong state, correct colors
+  - **leave** (5 tests): successful leave, others remain, game not found, player not found, wrong state
+  - **start** (6 tests): successful start, game not found, not host, not enough players, wrong state, first player is current player
+
+**Files Modified**:
+- packages/server/src/game/manager.ts (369 lines, was 275 lines)
+- packages/server/src/game/__tests__/manager.test.ts (717 lines, was 534 lines)
+
+**Verification**: pnpm typecheck passes, all 998 tests pass (17 new in manager.test.ts). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Integration tests for persistence with GameManager
 
 **Feature Completed**: "Integration tests for persistence with GameManager"

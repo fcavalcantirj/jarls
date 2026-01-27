@@ -1446,13 +1446,13 @@
       "Implement leave(gameId, playerId): send PLAYER_LEFT",
       "Implement start(gameId, playerId): validate is host, send START_GAME"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
     "description": "Unit tests for GameManager player management",
     "steps": ["Add unit tests for join", "Add unit tests for leave", "Add unit tests for start"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

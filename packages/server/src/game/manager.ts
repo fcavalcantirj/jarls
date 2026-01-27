@@ -236,6 +236,101 @@ export class GameManager {
   }
 
   /**
+   * Join a game by adding a player to the lobby.
+   * Generates a unique player ID, sends PLAYER_JOINED to the actor,
+   * and returns the generated player ID.
+   * Throws if the game doesn't exist or is not in the lobby state.
+   */
+  join(gameId: string, playerName: string): string {
+    const managed = this.games.get(gameId);
+    if (!managed) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+
+    const snapshot = managed.actor.getSnapshot();
+    const stateName = getStateName(snapshot.value);
+    if (stateName !== 'lobby') {
+      throw new Error(`Cannot join game in state: ${stateName}`);
+    }
+
+    const context = snapshot.context as GameMachineContext;
+    if (context.players.length >= context.config.playerCount) {
+      throw new Error('Game is full');
+    }
+
+    const playerId = generateId();
+    managed.actor.send({
+      type: 'PLAYER_JOINED',
+      playerId,
+      playerName,
+    });
+
+    return playerId;
+  }
+
+  /**
+   * Remove a player from the game lobby.
+   * Sends PLAYER_LEFT to the actor.
+   * Throws if the game doesn't exist or is not in the lobby state.
+   */
+  leave(gameId: string, playerId: string): void {
+    const managed = this.games.get(gameId);
+    if (!managed) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+
+    const snapshot = managed.actor.getSnapshot();
+    const stateName = getStateName(snapshot.value);
+    if (stateName !== 'lobby') {
+      throw new Error(`Cannot leave game in state: ${stateName}`);
+    }
+
+    const context = snapshot.context as GameMachineContext;
+    const playerExists = context.players.some((p) => p.id === playerId);
+    if (!playerExists) {
+      throw new Error(`Player not found in game: ${playerId}`);
+    }
+
+    managed.actor.send({
+      type: 'PLAYER_LEFT',
+      playerId,
+    });
+  }
+
+  /**
+   * Start a game. Only the host (first player to join) can start.
+   * Sends START_GAME to the actor which transitions from lobby -> setup -> playing.
+   * Throws if the game doesn't exist, is not in lobby, player is not host,
+   * or there aren't enough players.
+   */
+  start(gameId: string, playerId: string): void {
+    const managed = this.games.get(gameId);
+    if (!managed) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+
+    const snapshot = managed.actor.getSnapshot();
+    const stateName = getStateName(snapshot.value);
+    if (stateName !== 'lobby') {
+      throw new Error(`Cannot start game in state: ${stateName}`);
+    }
+
+    const context = snapshot.context as GameMachineContext;
+    if (context.players.length === 0 || context.players[0].id !== playerId) {
+      throw new Error('Only the host can start the game');
+    }
+
+    if (context.players.length < 2) {
+      throw new Error('Not enough players to start the game');
+    }
+
+    managed.actor.send({
+      type: 'START_GAME',
+      playerId,
+    });
+  }
+
+  /**
    * Get the actor for a game. Used internally and for testing.
    */
   getActor(gameId: string): GameActor | undefined {
