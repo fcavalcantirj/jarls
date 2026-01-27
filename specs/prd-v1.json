@@ -1547,7 +1547,7 @@
       "Hide stack traces in production",
       "Log errors with context"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",

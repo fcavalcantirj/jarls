@@ -3836,3 +3836,28 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - specs/progress.txt (this entry)
 
 **Verification**: pnpm typecheck passes. 1033 tests total (1028 passing, 5 pre-existing integration test failures from database state issues). All files under 800 lines.
+
+---
+
+### 2026-01-27: Network - Create error middleware
+
+**Feature Completed**: "Create error middleware"
+
+**Work Done**:
+- Created `packages/server/src/middleware/error.ts` with:
+  - Express error middleware that catches all errors
+  - `GameError` instances return `{ error: code, message }` with proper status code
+  - Unknown errors return `{ error: 'INTERNAL_ERROR', message, details? }` with 500 status
+  - Stack traces and error details hidden in production (only `message: 'Internal server error'`)
+  - All errors logged with timestamp, method, URL, and context
+- Wired error middleware into `server.ts` (registered after all routes)
+
+**Files Created**:
+- packages/server/src/middleware/error.ts (34 lines)
+
+**Files Modified**:
+- packages/server/src/server.ts (41 lines, was 37 lines) - imported and registered error middleware
+- specs/prd-v1.json (marked task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. 1033 tests total (1028 passing, 5 pre-existing integration test failures from database state issues). All files under 800 lines.
