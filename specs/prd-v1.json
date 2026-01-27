@@ -1407,7 +1407,7 @@
       "Add integration tests: create game persists to DB",
       "Add integration tests: recover loads games from DB"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

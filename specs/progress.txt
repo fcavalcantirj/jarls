@@ -1,5 +1,24 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Integration tests for persistence with GameManager
+
+**Feature Completed**: "Integration tests for persistence with GameManager"
+
+**Work Done**:
+- Created `manager.integration.test.ts` with 10 integration tests using a real PostgreSQL database
+- Tests cover two main areas:
+  - **Create game persists to DB** (5 tests): initial snapshot saved, GAME_CREATED event saved, XState persisted snapshot structure validated, state transitions persisted on game state changes, multiple games have independent snapshots
+  - **Recover loads games from DB** (5 tests): lobby game recovery, playing game recovery with pieces/players, ended games not recovered, recovered actor responds to events, skip already-loaded games during recover
+- Used same test pool pattern as existing `persistence.integration.test.ts` (mock `../../db` module to route through test pool)
+- Cleanup removes test data after each test using timestamp-based cleanup for dynamically generated IDs
+
+**Files Created**:
+- packages/server/src/game/__tests__/manager.integration.test.ts (299 lines)
+
+**Verification**: pnpm typecheck passes, all 981 tests pass (10 new in manager.integration.test.ts). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Implement GameManager recover
 
 **Feature Completed**: "Implement GameManager recover"
