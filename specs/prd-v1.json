@@ -730,7 +730,7 @@
       "Check all player's pieces for reachable hexes",
       "Return true if any piece has valid moves"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
@@ -739,7 +739,7 @@
       "If hasLegalMoves returns true, player MUST move",
       "If hasLegalMoves returns false (extremely rare), allow turn skip"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
@@ -748,7 +748,7 @@
       "Unit tests: cannot skip when legal moves exist",
       "Unit tests: can skip when completely boxed in by shields/edges/pieces"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

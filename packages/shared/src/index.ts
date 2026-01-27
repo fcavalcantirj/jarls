@@ -122,5 +122,6 @@ export {
   checkWinConditions,
   getReachableHexes,
   getValidMoves,
+  hasLegalMoves,
   applyMove,
 } from './move.js';

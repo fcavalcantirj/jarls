@@ -436,6 +436,32 @@ export function getValidMoves(state: GameState, pieceId: string): ValidMove[] {
 }
 
 /**
+ * Check if a player has any legal moves available.
+ * Returns true if any of the player's pieces can move to at least one valid destination.
+ *
+ * This is used to enforce the no-pass rule: if a player has legal moves, they MUST move.
+ * If they have no legal moves (extremely rare - completely boxed in), they may skip their turn.
+ *
+ * @param state - The current game state
+ * @param playerId - The ID of the player to check
+ * @returns true if the player has at least one legal move
+ */
+export function hasLegalMoves(state: GameState, playerId: string): boolean {
+  // Get all pieces belonging to this player
+  const playerPieces = state.pieces.filter((p) => p.playerId === playerId);
+
+  // Check if any piece has at least one reachable hex
+  for (const piece of playerPieces) {
+    const reachable = getReachableHexes(state, piece.id);
+    if (reachable.length > 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Get the next player in turn order who is not eliminated.
  * Wraps around to the first player after the last player.
  *
