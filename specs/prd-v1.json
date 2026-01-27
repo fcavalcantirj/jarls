@@ -1016,7 +1016,7 @@
       "Add StarvationResult type: { newState, events, gameEnded, winnerId }",
       "Export types from @jarls/shared"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

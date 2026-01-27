@@ -45,6 +45,8 @@ export type {
   ReachableHex,
   PlayerStarvationCandidates,
   StarvationCandidates,
+  StarvationChoice,
+  StarvationResult,
 } from './types.js';
 
 export const VERSION = '0.1.0';

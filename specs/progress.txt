@@ -2720,3 +2720,24 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - packages/shared/src/starvation.ts (added calculateStarvationCandidates function)
 - packages/shared/src/index.ts (added re-exports for new types and function)
 - specs/prd-v1.json (marked 3 tasks as passes: true)
+
+---
+
+### 2026-01-27: Core Logic - Define StarvationChoice type and function signature
+
+**Feature Completed**: "Define StarvationChoice type and function signature"
+
+**Work Done**:
+- Added `StarvationChoice` interface to types.ts: `{ playerId: string, pieceId: string }`
+- Added `StarvationResult` interface to types.ts: `{ newState: GameState, events: GameEvent[], gameEnded: boolean, winnerId: string | null }`
+- Exported both types from index.ts
+
+**Verification**:
+- All 810 tests pass across 27 test suites
+- pnpm typecheck passes
+- types.ts at ~435 lines (well under 800)
+
+**Files Modified**:
+- packages/shared/src/types.ts (added StarvationChoice, StarvationResult interfaces)
+- packages/shared/src/index.ts (added re-exports for new types)
+- specs/prd-v1.json (marked task as passes: true)
