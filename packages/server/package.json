@@ -24,6 +24,7 @@
     "ioredis": "^5.9.2",
     "node-pg-migrate": "^8.0.4",
     "pg": "^8.17.2",
+    "socket.io": "^4.8.3",
     "xstate": "5",
     "zod": "^4.3.6"
   },

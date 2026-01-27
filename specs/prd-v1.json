@@ -1627,7 +1627,7 @@
       "Create and configure Socket.IO server",
       "Attach to HTTP server from Express"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",

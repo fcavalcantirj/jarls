@@ -1,5 +1,27 @@
 ## Progress Log
 
+### 2026-01-27: Network - Set up Socket.IO server
+
+**Feature Completed**: "Set up Socket.IO server"
+
+**Work Done**:
+- Installed `socket.io` package in `@jarls/server`
+- Created `packages/server/src/socket/server.ts` with `createSocketServer()` function
+- Socket.IO server configured with CORS matching Express (localhost:5173)
+- Updated `packages/server/src/server.ts` to attach Socket.IO to the HTTP server
+- `createServer()` now returns `{ httpServer, io }` for access to both instances
+
+**Files Created**:
+- packages/server/src/socket/server.ts (13 lines)
+
+**Files Modified**:
+- packages/server/src/server.ts (added Socket.IO import and integration)
+- packages/server/package.json (added socket.io dependency)
+
+**Verification**: pnpm typecheck passes. All non-integration tests pass (1089/1102). Pre-existing integration test failures unchanged. All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Integration tests for REST API endpoints
 
 **Feature Completed**: "Integration tests for REST API endpoints"
