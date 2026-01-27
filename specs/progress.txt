@@ -2908,3 +2908,22 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 **Files Modified**:
 - packages/server/package.json (added node-pg-migrate, pg deps + migration scripts)
 - package.json (added db:migrate, db:rollback, db:create-migration scripts)
+
+---
+
+### 2026-01-27: Infrastructure - Database migration for game tables
+
+**Feature Completed**: "Database migration for game tables"
+
+**Work Done**:
+- Created migration `1769501189364_game-tables.js` with up/down functions
+- `game_snapshots` table: game_id (varchar PK), state_snapshot (JSONB), version (INT, default 1), status (VARCHAR, default 'lobby'), created_at, updated_at
+- `game_events` table: event_id (serial PK), game_id (FK to game_snapshots, CASCADE delete), event_type (VARCHAR), event_data (JSONB, default '{}'), created_at
+- Added indexes: game_snapshots.status, game_events.game_id, game_events.event_type, game_events.(game_id, created_at)
+- Verified migration runs successfully against PostgreSQL 16
+- Verified rollback drops both tables cleanly
+- All existing tests pass (29 suites, 833 tests)
+- Typecheck passes for all packages
+
+**Files Created**:
+- packages/server/migrations/1769501189364_game-tables.js

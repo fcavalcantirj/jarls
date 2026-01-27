@@ -376,7 +376,7 @@
       "Add indexes for foreign keys and common queries",
       "Run migrations and verify tables exist"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
