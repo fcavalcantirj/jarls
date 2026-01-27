@@ -1,5 +1,29 @@
 ## Progress Log
 
+### 2026-01-27: Network - Implement auth middleware
+
+**Feature Completed**: "Implement auth middleware"
+
+**Work Done**:
+- Created `packages/server/src/middleware/auth.ts` with:
+  - `authenticateSession` middleware: extracts Bearer token from Authorization header, validates via `validateSession()`, attaches `SessionData` to `req.session`
+  - Throws `UnauthorizedError` for missing header, invalid format, empty token, or expired/invalid session
+  - Uses Express global type augmentation to add `session?: SessionData` to `Request`
+- Created `packages/server/src/middleware/__tests__/auth.test.ts` with 5 tests:
+  - Missing Authorization header returns UnauthorizedError
+  - Non-Bearer Authorization header returns UnauthorizedError
+  - Empty token after Bearer returns UnauthorizedError
+  - Invalid/expired token returns UnauthorizedError
+  - Valid token attaches session data to req and calls next()
+
+**Files Created**:
+- packages/server/src/middleware/auth.ts (45 lines)
+- packages/server/src/middleware/__tests__/auth.test.ts (95 lines)
+
+**Verification**: pnpm typecheck passes. 1047 tests total (1042 passing, 5 pre-existing integration test failures from database state issues). All new tests pass. All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Implement session service
 
 **Feature Completed**: "Implement session service"

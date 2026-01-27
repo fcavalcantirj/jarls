@@ -1575,13 +1575,13 @@
       "Create packages/server/src/middleware/auth.ts",
       "Implement authenticateSession middleware: extract Bearer token, validate, attach to req"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
     "description": "Unit tests for session service and auth middleware",
     "steps": ["Add unit tests for session service", "Add unit tests for auth middleware"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
