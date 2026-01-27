@@ -1,5 +1,24 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Add BoardRenderer resize handling
+
+**Features Completed**: "Add BoardRenderer resize handling"
+
+**Work Done**:
+- Added `boardRadius` private field to `BoardRenderer` to track the current board radius
+- `drawGrid()` now stores the board radius for use during resize
+- Added `handleResize(canvasWidth, canvasHeight)` method that:
+  - Updates the canvas element dimensions
+  - Recalculates hex sizing and center positioning via `calculateDimensions()`
+  - Returns the new `BoardDimensions` or `null` if no board radius has been set yet
+
+**Files Modified**:
+- packages/client/src/components/Board/BoardRenderer.ts (142 -> 157 lines)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (23 failed, 1170 passed).
+
+---
+
 ### 2026-01-27: Frontend - Implement hex grid drawing
 
 **Features Completed**: "Implement hex grid drawing"

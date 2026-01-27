@@ -1989,7 +1989,7 @@
     "category": "frontend",
     "description": "Add BoardRenderer resize handling",
     "steps": ["Add resize handling to recalculate dimensions"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

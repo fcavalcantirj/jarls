@@ -34,6 +34,7 @@ export interface BoardDimensions {
 export class BoardRenderer {
   private ctx: CanvasRenderingContext2D;
   private dimensions: BoardDimensions | null = null;
+  private boardRadius: number | null = null;
 
   constructor(ctx: CanvasRenderingContext2D) {
     this.ctx = ctx;
@@ -123,11 +124,27 @@ export class BoardRenderer {
   }
 
   /**
+   * Handle canvas resize by recalculating dimensions for the current board radius.
+   * Updates the canvas element size and recalculates hex sizing/positioning.
+   * Returns the new dimensions, or null if no board radius has been set.
+   */
+  handleResize(canvasWidth: number, canvasHeight: number): BoardDimensions | null {
+    if (this.boardRadius === null) return null;
+
+    const canvas = this.ctx.canvas;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
+    return this.calculateDimensions(this.boardRadius, canvasWidth, canvasHeight);
+  }
+
+  /**
    * Draw the full hex grid for a board of the given radius.
    * The Throne hex at (0,0) is highlighted in gold.
    * All other hexes use the default dark fill with subtle gray borders.
    */
   drawGrid(boardRadius: number): void {
+    this.boardRadius = boardRadius;
     const hexes = generateAllBoardHexesAxial(boardRadius);
 
     for (const hex of hexes) {
