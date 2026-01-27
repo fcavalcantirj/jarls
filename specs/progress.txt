@@ -1,5 +1,26 @@
 ## Progress Log
 
+### 2026-01-27: Network - Define Socket.IO event types
+
+**Feature Completed**: "Define Socket.IO event types"
+
+**Work Done**:
+- Created `packages/server/src/socket/types.ts` with fully typed Socket.IO event interfaces
+- **ClientToServerEvents**: joinGame, playTurn, startGame, starvationChoice (all with callback responses)
+- **ServerToClientEvents**: gameState, turnPlayed, gameEnded, playerJoined, playerLeft, starvationRequired, error
+- Defined payload types for all events: JoinGamePayload, PlayTurnPayload, StartGamePayload, StarvationChoicePayload
+- Defined response data types: TurnPlayedData, GameEndedData, PlayerJoinedData, PlayerLeftData, StarvationRequiredData, SocketErrorData
+- Defined callback response types: JoinGameResponse, PlayTurnResponse, StartGameResponse, StarvationChoiceResponse
+- Defined SocketData interface for per-socket session data (gameId, playerId, playerName, sessionToken)
+- Defined InterServerEvents for future scalability
+
+**Files Created**:
+- packages/server/src/socket/types.ts (131 lines)
+
+**Verification**: pnpm typecheck passes. All tests pass (1092/1102, 10 pre-existing integration test failures unchanged). All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Set up Socket.IO server
 
 **Feature Completed**: "Set up Socket.IO server"

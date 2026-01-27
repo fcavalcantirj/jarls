@@ -1637,7 +1637,7 @@
       "Define ClientToServerEvents: joinGame, playTurn, startGame, starvationChoice, disconnect",
       "Define ServerToClientEvents: gameState, turnPlayed, gameEnded, playerJoined, playerLeft, starvationRequired, error"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
