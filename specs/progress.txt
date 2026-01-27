@@ -1,5 +1,29 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Implement saveEvent and loadEvents
+
+**Feature Completed**: "Implement saveEvent and loadEvents"
+
+**Work Done**:
+- Added `saveEvent(gameId, eventType, eventData)` to `packages/server/src/game/persistence.ts`:
+  - Inserts into `game_events` table with game_id, event_type, and JSONB event_data
+  - Defaults eventData to empty object when not provided
+- Added `loadEvents(gameId)` to `packages/server/src/game/persistence.ts`:
+  - Selects all events for a game ordered by created_at ASC, event_id ASC
+  - Returns array of `GameEventRecord` objects with camelCase field names
+- Added `GameEventRecord` export interface and internal `GameEventRow` interface
+- Added 6 unit tests covering:
+  - saveEvent: insert with data, default empty data, complex JSON serialization
+  - loadEvents: returns ordered events, empty array for no events, correct query parameters
+
+**Files Modified**:
+- packages/server/src/game/persistence.ts (167 lines, was 103)
+- packages/server/src/game/__tests__/persistence.test.ts (350 lines, was 206)
+
+**Verification**: pnpm typecheck passes, all 933 tests pass (6 new). All files under 800 lines.
+
+---
+
 ### 2026-01-27: State Machine - Implement saveSnapshot and loadSnapshot
 
 **Feature Completed**: "Implement saveSnapshot and loadSnapshot"

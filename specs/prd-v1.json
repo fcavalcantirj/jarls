@@ -1368,7 +1368,7 @@
       "Implement loadEvents(gameId): SELECT all events ordered by created_at",
       "Export all functions"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

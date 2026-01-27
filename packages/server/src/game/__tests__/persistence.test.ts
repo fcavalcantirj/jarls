@@ -9,7 +9,8 @@ jest.unstable_mockModule('../../db', () => ({
 }));
 
 // Import after mocking
-const { saveSnapshot, loadSnapshot, VersionConflictError } = await import('../persistence');
+const { saveSnapshot, loadSnapshot, VersionConflictError, saveEvent, loadEvents } =
+  await import('../persistence');
 
 describe('game persistence', () => {
   beforeEach(() => {
@@ -200,6 +201,150 @@ describe('game persistence', () => {
     it('is an instance of Error', () => {
       const error = new VersionConflictError('game-1', 1);
       expect(error).toBeInstanceOf(Error);
+    });
+  });
+
+  describe('saveEvent', () => {
+    it('inserts an event with game ID, type, and data', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [],
+        rowCount: 1,
+        command: 'INSERT',
+        oid: 0,
+        fields: [],
+      } as unknown as QueryResult);
+
+      const eventData = { pieceId: 'p1', from: { q: 0, r: 1 }, to: { q: 1, r: 0 } };
+      await saveEvent('game-1', 'MOVE', eventData);
+
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO game_events'), [
+        'game-1',
+        'MOVE',
+        JSON.stringify(eventData),
+      ]);
+    });
+
+    it('defaults eventData to empty object when not provided', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [],
+        rowCount: 1,
+        command: 'INSERT',
+        oid: 0,
+        fields: [],
+      } as unknown as QueryResult);
+
+      await saveEvent('game-1', 'TURN_SKIPPED');
+
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO game_events'), [
+        'game-1',
+        'TURN_SKIPPED',
+        JSON.stringify({}),
+      ]);
+    });
+
+    it('serializes complex event data as JSON', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [],
+        rowCount: 1,
+        command: 'INSERT',
+        oid: 0,
+        fields: [],
+      } as unknown as QueryResult);
+
+      const complexData = {
+        chain: [
+          { pieceId: 'w1', from: { q: 0, r: 0 }, to: { q: 1, r: 0 } },
+          { pieceId: 'w2', from: { q: 1, r: 0 }, to: { q: 2, r: 0 } },
+        ],
+        eliminated: ['w3'],
+      };
+      await saveEvent('game-1', 'PUSH', complexData);
+
+      const callArgs = mockQuery.mock.calls[0] as unknown[];
+      expect((callArgs[1] as unknown[])[2]).toBe(JSON.stringify(complexData));
+    });
+  });
+
+  describe('loadEvents', () => {
+    it('returns events ordered by created_at for a game', async () => {
+      const time1 = new Date('2026-01-01T00:00:00Z');
+      const time2 = new Date('2026-01-01T00:01:00Z');
+
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          {
+            event_id: 1,
+            game_id: 'game-1',
+            event_type: 'MOVE',
+            event_data: { pieceId: 'p1' },
+            created_at: time1,
+          },
+          {
+            event_id: 2,
+            game_id: 'game-1',
+            event_type: 'PUSH',
+            event_data: { pieceId: 'p2' },
+            created_at: time2,
+          },
+        ],
+        rowCount: 2,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      } as unknown as QueryResult);
+
+      const events = await loadEvents('game-1');
+
+      expect(events).toEqual([
+        {
+          eventId: 1,
+          gameId: 'game-1',
+          eventType: 'MOVE',
+          eventData: { pieceId: 'p1' },
+          createdAt: time1,
+        },
+        {
+          eventId: 2,
+          gameId: 'game-1',
+          eventType: 'PUSH',
+          eventData: { pieceId: 'p2' },
+          createdAt: time2,
+        },
+      ]);
+    });
+
+    it('returns empty array when no events exist', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [],
+        rowCount: 0,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      } as unknown as QueryResult);
+
+      const events = await loadEvents('nonexistent-game');
+
+      expect(events).toEqual([]);
+    });
+
+    it('queries with the correct game ID and ordering', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [],
+        rowCount: 0,
+        command: 'SELECT',
+        oid: 0,
+        fields: [],
+      } as unknown as QueryResult);
+
+      await loadEvents('my-game-id');
+
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('FROM game_events'), [
+        'my-game-id',
+      ]);
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.stringContaining('ORDER BY created_at ASC'),
+        expect.anything()
+      );
     });
   });
 });

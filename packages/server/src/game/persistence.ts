@@ -1,6 +1,28 @@
 import { query } from '../db';
 
 /**
+ * Row shape returned from game_events table.
+ */
+interface GameEventRow {
+  event_id: number;
+  game_id: string;
+  event_type: string;
+  event_data: unknown;
+  created_at: Date;
+}
+
+/**
+ * Event data returned by loadEvents.
+ */
+export interface GameEventRecord {
+  eventId: number;
+  gameId: string;
+  eventType: string;
+  eventData: unknown;
+  createdAt: Date;
+}
+
+/**
  * Row shape returned from game_snapshots table.
  */
 interface GameSnapshotRow {
@@ -99,4 +121,47 @@ export async function loadSnapshot(gameId: string): Promise<GameSnapshot | null>
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+/**
+ * Save a game event to the database.
+ *
+ * @param gameId - The game this event belongs to
+ * @param eventType - The event type string (e.g. 'MOVE', 'PUSH', 'ELIMINATED')
+ * @param eventData - The event payload (serialized as JSONB)
+ */
+export async function saveEvent(
+  gameId: string,
+  eventType: string,
+  eventData: unknown = {}
+): Promise<void> {
+  await query(
+    `INSERT INTO game_events (game_id, event_type, event_data)
+     VALUES ($1, $2, $3)`,
+    [gameId, eventType, JSON.stringify(eventData)]
+  );
+}
+
+/**
+ * Load all events for a game, ordered by creation time (ascending).
+ *
+ * @param gameId - The unique game identifier
+ * @returns Array of event records, ordered by created_at ASC
+ */
+export async function loadEvents(gameId: string): Promise<GameEventRecord[]> {
+  const result = await query<GameEventRow>(
+    `SELECT event_id, game_id, event_type, event_data, created_at
+     FROM game_events
+     WHERE game_id = $1
+     ORDER BY created_at ASC, event_id ASC`,
+    [gameId]
+  );
+
+  return result.rows.map((row) => ({
+    eventId: row.event_id,
+    gameId: row.game_id,
+    eventType: row.event_type,
+    eventData: row.event_data,
+    createdAt: row.created_at,
+  }));
 }
