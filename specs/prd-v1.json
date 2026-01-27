@@ -386,7 +386,7 @@
       "Add index on game_id for session lookups",
       "Run migration and verify table exists"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

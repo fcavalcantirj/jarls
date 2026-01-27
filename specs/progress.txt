@@ -2927,3 +2927,27 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Created**:
 - packages/server/migrations/1769501189364_game-tables.js
+
+---
+
+### 2026-01-27: Infrastructure - Database migration for player sessions table
+
+**Feature Completed**: "Database migration for player sessions table"
+
+**Work Done**:
+- Created migration `1769510708642_player-sessions.js` using `node-pg-migrate`
+- `player_sessions` table with columns:
+  - `token` (varchar(64), PRIMARY KEY) - session token
+  - `game_id` (varchar(36), FK to game_snapshots, CASCADE delete)
+  - `player_id` (varchar(36), NOT NULL)
+  - `player_name` (varchar(100), NOT NULL)
+  - `expires_at` (timestamptz, NOT NULL)
+  - `created_at` (timestamptz, default now())
+- Added index on `game_id` for session lookups
+- Verified migration runs successfully against PostgreSQL 16
+- Verified rollback drops the table cleanly
+- All existing tests pass (29 suites, 833 tests)
+- Typecheck passes for all packages
+
+**Files Created**:
+- packages/server/migrations/1769510708642_player-sessions.js
