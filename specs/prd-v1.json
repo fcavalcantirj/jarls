@@ -983,7 +983,7 @@
       "Add StarvationCandidates type: { playerId: string, candidates: Piece[], maxDistance: number }[]",
       "Export type from @jarls/shared"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
@@ -995,7 +995,7 @@
       "Find max distance for that player",
       "Return all Warriors at max distance (ties possible)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
@@ -1006,7 +1006,7 @@
       "Add unit tests: tie scenario with 2 warriors equidistant",
       "Add unit tests: player with no warriors returns empty candidates"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

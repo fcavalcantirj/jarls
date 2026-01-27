@@ -43,6 +43,8 @@ export type {
   WinCondition,
   WinConditionsResult,
   ReachableHex,
+  PlayerStarvationCandidates,
+  StarvationCandidates,
 } from './types.js';
 
 export const VERSION = '0.1.0';
@@ -128,4 +130,4 @@ export {
 
 // Re-export starvation functions and types
 export type { StarvationTriggerResult } from './starvation.js';
-export { checkStarvationTrigger } from './starvation.js';
+export { checkStarvationTrigger, calculateStarvationCandidates } from './starvation.js';

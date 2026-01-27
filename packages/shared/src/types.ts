@@ -385,6 +385,27 @@ export interface WinConditionsResult {
 // Reachable Hex Types
 // ============================================================================
 
+// ============================================================================
+// Starvation Candidate Types
+// ============================================================================
+
+/** Starvation candidates for a single player */
+export interface PlayerStarvationCandidates {
+  /** The player whose warriors are candidates */
+  playerId: string;
+  /** Warriors that are candidates for starvation (at max distance from Throne) */
+  candidates: Piece[];
+  /** The maximum distance from the Throne among this player's warriors */
+  maxDistance: number;
+}
+
+/** Starvation candidates for all players */
+export type StarvationCandidates = PlayerStarvationCandidates[];
+
+// ============================================================================
+// Reachable Hex Types
+// ============================================================================
+
 /** Result of finding reachable hexes for a piece */
 export interface ReachableHex {
   /** The destination hex position */

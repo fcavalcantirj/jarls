@@ -2684,3 +2684,39 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 **Files Modified**:
 - packages/shared/src/index.ts (added starvation re-exports)
 - specs/prd-v1.json (marked 2 tasks as passes: true)
+---
+
+### 2026-01-27: Core Logic - StarvationCandidates type and calculateStarvationCandidates
+
+**Features Completed**:
+- "Define StarvationCandidates type"
+- "Implement calculateStarvationCandidates function"
+- "Unit tests for calculateStarvationCandidates"
+
+**Work Done**:
+- Added `PlayerStarvationCandidates` interface and `StarvationCandidates` type to types.ts
+- Implemented `calculateStarvationCandidates(state)` in starvation.ts:
+  - Groups Warriors by player, skipping eliminated players
+  - Calculates hex distance from Throne (0,0) for each Warrior
+  - Returns all Warriors at max distance as candidates (handles ties)
+  - Players with no Warriors get empty candidates with maxDistance 0
+- Created `__tests__/starvation-candidates.test.ts` with 5 tests:
+  - Single warrior per player
+  - Multiple warriors, clear furthest
+  - Tie scenario with 2 equidistant warriors
+  - Player with no warriors returns empty candidates
+  - Eliminated players are excluded
+
+**Verification**:
+- All 810 tests pass across 27 test suites
+- pnpm typecheck passes
+- starvation.ts at 105 lines, types.ts at 419 lines (well under 800)
+
+**Files Created**:
+- packages/shared/src/__tests__/starvation-candidates.test.ts
+
+**Files Modified**:
+- packages/shared/src/types.ts (added PlayerStarvationCandidates, StarvationCandidates)
+- packages/shared/src/starvation.ts (added calculateStarvationCandidates function)
+- packages/shared/src/index.ts (added re-exports for new types and function)
+- specs/prd-v1.json (marked 3 tasks as passes: true)

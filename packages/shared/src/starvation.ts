@@ -1,7 +1,8 @@
 // @jarls/shared - Starvation mechanics
 // Implements the Starvation Rule for stalemate prevention.
 
-import type { GameState } from './types.js';
+import type { GameState, StarvationCandidates } from './types.js';
+import { hexDistanceAxial } from './hex.js';
 
 // ============================================================================
 // Starvation Trigger
@@ -40,4 +41,59 @@ export function checkStarvationTrigger(state: GameState): StarvationTriggerResul
   }
 
   return { triggered: false, isInitial: false };
+}
+
+// ============================================================================
+// Starvation Candidates
+// ============================================================================
+
+/** The Throne position (center of the board) */
+const THRONE: { q: number; r: number } = { q: 0, r: 0 };
+
+/**
+ * Calculate starvation candidates for all active players.
+ *
+ * For each player, find the Warriors that are furthest from the Throne.
+ * These are the candidates that can be sacrificed during starvation.
+ * If multiple Warriors are equidistant (tied for furthest), all are candidates.
+ *
+ * Players with no Warriors return an empty candidates array.
+ */
+export function calculateStarvationCandidates(state: GameState): StarvationCandidates {
+  const result: StarvationCandidates = [];
+
+  for (const player of state.players) {
+    if (player.isEliminated) continue;
+
+    const warriors = state.pieces.filter((p) => p.type === 'warrior' && p.playerId === player.id);
+
+    if (warriors.length === 0) {
+      result.push({
+        playerId: player.id,
+        candidates: [],
+        maxDistance: 0,
+      });
+      continue;
+    }
+
+    // Find max distance from Throne
+    let maxDistance = 0;
+    for (const w of warriors) {
+      const dist = hexDistanceAxial(w.position, THRONE);
+      if (dist > maxDistance) {
+        maxDistance = dist;
+      }
+    }
+
+    // Collect all warriors at max distance
+    const candidates = warriors.filter((w) => hexDistanceAxial(w.position, THRONE) === maxDistance);
+
+    result.push({
+      playerId: player.id,
+      candidates,
+      maxDistance,
+    });
+  }
+
+  return result;
 }
