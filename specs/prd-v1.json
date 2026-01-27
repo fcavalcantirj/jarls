@@ -2041,7 +2041,7 @@
       "Connect to gameStore for state",
       "Initialize renderer on mount"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

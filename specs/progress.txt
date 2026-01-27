@@ -1,5 +1,26 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Create React Board component
+
+**Features Completed**: "Create React Board component"
+
+**Work Done**:
+- Created `src/components/Board/Board.tsx` React component
+- Canvas ref with BoardRenderer instance initialized on mount
+- Connected to gameStore for gameState, selectedPieceId, validMoves, playerId
+- Builds RenderHighlights from store state (selected piece position, valid moves, current player)
+- Re-renders on state changes via useEffect watching gameState, selectedPieceId, validMoves, playerId
+- Handles window resize: resizes canvas to parent dimensions, recalculates renderer dimensions, re-renders
+- Updated barrel export in `components/Board/index.ts` to export Board component
+
+**Files Modified**:
+- packages/client/src/components/Board/Board.tsx (new, 86 lines)
+- packages/client/src/components/Board/index.ts (added Board export)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (23 failed, 1170 passed).
+
+---
+
 ### 2026-01-27: Frontend - Implement highlight integration
 
 **Features Completed**: "Implement highlight integration"
