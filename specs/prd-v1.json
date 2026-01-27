@@ -1172,13 +1172,13 @@
       "Merge generated state into context",
       "Set context.phase = 'playing'"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
     "description": "Setup state transition to playing",
     "steps": ["Use 'always' transition to immediately go to 'playing' state"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
@@ -1188,7 +1188,7 @@
       "Add unit tests: correct number of pieces placed",
       "Add unit tests: transitions to playing automatically"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

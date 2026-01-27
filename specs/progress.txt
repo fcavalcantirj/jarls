@@ -3198,3 +3198,31 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 **Files Modified**:
 - specs/prd-v1.json (marked 2 tasks as passes: true)
 - specs/progress.txt (this entry)
+
+---
+
+### 2026-01-27: State Machine - Setup State with Board Generation and Auto-Transition
+
+**Features Completed**:
+- "Implement setup state that initializes board"
+- "Setup state transition to playing"
+- "Unit tests for setup state"
+
+**Work Done**:
+- Implemented setup state entry action in XState game machine
+- Entry action calls createInitialState() from @jarls/shared to generate board
+- Maps generated player IDs back to existing lobby player IDs so pieces reference the correct players
+- Sets phase to 'playing' and currentPlayerId to first player
+- Added 'always' transition that immediately moves from setup to playing state
+- Created 7 unit tests covering: piece generation, correct piece counts (5 shields, 2 jarls, 10 warriors), player ID mapping, shield ownership, auto-transition to playing, phase update, currentPlayerId assignment
+- Updated existing lobby test to expect 'playing' state after START_GAME (since setup now auto-transitions)
+- Typecheck passes, all 864 tests pass (33 suites)
+
+**Files Created**:
+- packages/server/src/game/__tests__/setup.test.ts
+
+**Files Modified**:
+- packages/server/src/game/machine.ts (added setup state with entry action and always transition)
+- packages/server/src/game/__tests__/lobby.test.ts (updated test expectation for auto-transition)
+- specs/prd-v1.json (marked 3 tasks as passes: true)
+- specs/progress.txt (this entry)

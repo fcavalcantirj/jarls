@@ -1,6 +1,7 @@
 import { createMachine, assign } from 'xstate';
 import type { GameMachineContext, GameMachineEvent, GameMachineInput } from './types';
-import type { Player } from '@jarls/shared';
+import type { Piece, Player } from '@jarls/shared';
+import { createInitialState } from '@jarls/shared';
 
 /**
  * Guard: Can the game start?
@@ -79,7 +80,35 @@ export const gameMachine = createMachine({
         },
       },
     },
-    setup: {},
+    setup: {
+      entry: assign(({ context }) => {
+        // Generate board using shared logic
+        const playerNames = context.players.map((p) => p.name);
+        const generated = createInitialState(playerNames, context.turnTimerMs);
+
+        // Map generated player IDs to the existing lobby player IDs
+        const idMap = new Map<string, string>();
+        for (let i = 0; i < generated.players.length; i++) {
+          idMap.set(generated.players[i].id, context.players[i].id);
+        }
+
+        // Remap piece playerIds to match existing lobby players
+        const pieces: Piece[] = generated.pieces.map((piece) => ({
+          ...piece,
+          playerId: piece.playerId ? (idMap.get(piece.playerId) ?? piece.playerId) : null,
+        }));
+
+        return {
+          ...context,
+          pieces,
+          phase: 'playing' as const,
+          currentPlayerId: context.players[0].id,
+        };
+      }),
+      always: {
+        target: 'playing',
+      },
+    },
     playing: {},
     starvation: {},
     paused: {},
