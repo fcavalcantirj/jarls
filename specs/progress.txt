@@ -1,5 +1,32 @@
 ## Progress Log
 
+### 2026-01-27: AI - Implement RandomAI class
+
+**Features Completed**: "Implement RandomAI class", "Add AI thinking delay and export", "Unit tests for RandomAI"
+
+**Work Done**:
+- Created `packages/server/src/ai/random.ts` with `RandomAI` class implementing the `AIPlayer` interface
+- `generateMove`: collects all valid moves for all player pieces via `getValidMoves`, picks one at random
+- `makeStarvationChoice`: finds candidates for the player, picks one at random
+- Configurable thinking delay (default 500-1500ms random) via constructor params
+- Throws descriptive errors when no valid moves or candidates exist
+- Created `packages/server/src/ai/__tests__/random.test.ts` with 7 unit tests:
+  - Difficulty is set to 'random'
+  - Returns valid moves for current player
+  - Returned move belongs to specified player
+  - Throws when no valid moves available
+  - Produces non-deterministic results over multiple calls
+  - Returns valid starvation choice
+  - Throws when no starvation candidates exist
+
+**Files Created**:
+- packages/server/src/ai/random.ts (65 lines)
+- packages/server/src/ai/__tests__/random.test.ts (108 lines)
+
+**Verification**: pnpm typecheck passes. All 7 new tests pass. Pre-existing integration test failures unchanged.
+
+---
+
 ### 2026-01-27: AI - Define AI types and interface
 
 **Features Completed**: "Define AI types and interface"

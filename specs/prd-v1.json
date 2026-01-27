@@ -1769,19 +1769,19 @@
       "generateMove: get all pieces for playerId, get valid moves for each, pick random move",
       "makeStarvationChoice: pick random candidate"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ai",
     "description": "Add AI thinking delay and export",
     "steps": ["Add configurable thinking delay (500-1500ms random)", "Export RandomAI"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ai",
     "description": "Unit tests for RandomAI",
     "steps": ["Add unit tests: returned move is always valid"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ai",
