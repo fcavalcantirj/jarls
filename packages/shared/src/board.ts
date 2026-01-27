@@ -704,6 +704,7 @@ export function createInitialState(
     name,
     color: PLAYER_COLORS[index],
     isEliminated: false,
+    roundsSinceLastWarrior: null,
   }));
 
   // Calculate starting positions for Jarls

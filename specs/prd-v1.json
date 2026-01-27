@@ -1058,7 +1058,7 @@
       "When player loses last Warrior, start 5-round grace period",
       "Add JARL_STARVED event type to GameEvent union"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
@@ -1069,7 +1069,7 @@
       "Generate JARL_STARVED event",
       "Check for last standing victory after Jarl elimination"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
@@ -1078,7 +1078,7 @@
       "Unit tests: Jarl survives during 5-round grace period",
       "Unit tests: Jarl eliminated after grace period expires"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

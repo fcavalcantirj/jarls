@@ -2786,3 +2786,42 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 
 **Files Created**:
 - packages/shared/src/__tests__/starvation-resolution.test.ts
+
+---
+
+### 2026-01-27: Core Logic - Jarl Starvation Grace Period
+
+**Features Completed**:
+- "Add Jarl starvation grace period tracking"
+- "Implement Jarl elimination after grace period"
+- "Unit tests for Jarl starvation grace period"
+
+**Work Done**:
+- Added `roundsSinceLastWarrior` optional field to `Player` interface in types.ts
+- Added `JarlStarvedEvent` type to GameEvent union for Jarl starvation events
+- Extended `EliminatedEvent.cause` to include `'jarlStarvation'`
+- Updated `createInitialState` in board.ts to initialize `roundsSinceLastWarrior: null`
+- Modified `resolveStarvation` in starvation.ts to:
+  - First eliminate Jarls whose grace period has expired (roundsSinceLastWarrior >= 5)
+  - Then perform normal warrior starvation
+  - Track grace period onset when a player loses their last warrior (set to 0)
+  - Check for last standing victory after all eliminations
+- Added `incrementJarlGracePeriods` function to starvation.ts for per-round counter increment
+- Exported new function and type from index.ts
+- All 833 tests pass, typecheck clean
+
+**Verification**:
+- `pnpm typecheck` passes (all 3 packages)
+- `pnpm test` passes (29 test suites, 833 tests)
+- starvation.ts at 364 lines (well under 800)
+- starvation-jarl-grace.test.ts at ~270 lines (well under 800)
+
+**Files Modified**:
+- packages/shared/src/types.ts (added roundsSinceLastWarrior to Player, JarlStarvedEvent type, updated GameEvent union and EliminatedEvent cause)
+- packages/shared/src/board.ts (initialize roundsSinceLastWarrior in createInitialState)
+- packages/shared/src/starvation.ts (added eliminateStarvedJarls, modified resolveStarvation, added incrementJarlGracePeriods)
+- packages/shared/src/index.ts (added JarlStarvedEvent and incrementJarlGracePeriods exports)
+- specs/prd-v1.json (marked 3 tasks as passes: true)
+
+**Files Created**:
+- packages/shared/src/__tests__/starvation-jarl-grace.test.ts

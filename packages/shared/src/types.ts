@@ -55,6 +55,13 @@ export interface Player {
   name: string;
   color: string;
   isEliminated: boolean;
+  /**
+   * Tracks how many rounds since this player lost their last Warrior.
+   * null/undefined = player still has Warriors (or has never had them removed).
+   * When a player loses their last Warrior, this is set to 0 and increments each round.
+   * After 5 rounds, the Jarl is eliminated via starvation.
+   */
+  roundsSinceLastWarrior?: number | null;
 }
 
 // ============================================================================
@@ -164,6 +171,7 @@ export type GameEvent =
   | GameEndedEvent
   | StarvationTriggeredEvent
   | StarvationResolvedEvent
+  | JarlStarvedEvent
   | PlayerJoinedEvent
   | PlayerLeftEvent;
 
@@ -192,7 +200,7 @@ export interface EliminatedEvent {
   pieceId: string;
   playerId: string | null;
   position: AxialCoord;
-  cause: 'edge' | 'starvation';
+  cause: 'edge' | 'starvation' | 'jarlStarvation';
 }
 
 /** Event: A turn ended */
@@ -221,6 +229,14 @@ export interface StarvationTriggeredEvent {
 export interface StarvationResolvedEvent {
   type: 'STARVATION_RESOLVED';
   sacrifices: Map<string, string>; // playerId -> sacrificed pieceId
+}
+
+/** Event: A Jarl was eliminated due to starvation (no Warriors for 5+ rounds) */
+export interface JarlStarvedEvent {
+  type: 'JARL_STARVED';
+  pieceId: string;
+  playerId: string;
+  position: AxialCoord;
 }
 
 /** Event: A player joined the game */

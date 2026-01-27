@@ -25,6 +25,7 @@ export type {
   GameEndedEvent,
   StarvationTriggeredEvent,
   StarvationResolvedEvent,
+  JarlStarvedEvent,
   PlayerJoinedEvent,
   PlayerLeftEvent,
   MoveValidationError,
@@ -136,4 +137,5 @@ export {
   checkStarvationTrigger,
   calculateStarvationCandidates,
   resolveStarvation,
+  incrementJarlGracePeriods,
 } from './starvation.js';

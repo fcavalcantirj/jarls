@@ -4,6 +4,7 @@
 import type {
   GameState,
   GameEvent,
+  Player,
   StarvationCandidates,
   StarvationChoice,
   StarvationResult,
@@ -110,25 +111,89 @@ export function calculateStarvationCandidates(state: GameState): StarvationCandi
 // ============================================================================
 
 /**
- * Resolve starvation by removing chosen warriors and checking for game end.
+ * Check if a player has any Warriors remaining in the given pieces array.
+ */
+function playerHasWarriors(pieces: GameState['pieces'], playerId: string): boolean {
+  return pieces.some((p) => p.type === 'warrior' && p.playerId === playerId);
+}
+
+/**
+ * Eliminate Jarls whose grace period has expired (no Warriors for 5+ rounds).
  *
- * Each player with warriors must choose one warrior to sacrifice. The chosen
- * warrior must be a valid candidate (at max distance from Throne).
+ * During a starvation trigger, any player who has no Warriors and whose
+ * roundsSinceLastWarrior >= 5 has their Jarl immediately eliminated.
  *
- * After removing warriors:
- * - roundsSinceElimination resets to 0
- * - Check for last standing victory (if a Jarl's last warrior was removed,
- *   the Jarl stays but could be eliminated later via Jarl starvation)
+ * @returns Updated pieces, players, and events from Jarl eliminations
+ */
+function eliminateStarvedJarls(
+  pieces: GameState['pieces'],
+  players: Player[]
+): { pieces: GameState['pieces']; players: Player[]; events: GameEvent[] } {
+  const events: GameEvent[] = [];
+  const jarlIdsToRemove = new Set<string>();
+  const eliminatedPlayerIds = new Set<string>();
+
+  for (const player of players) {
+    if (player.isEliminated) continue;
+    if (player.roundsSinceLastWarrior == null) continue;
+
+    // Grace period: 5 rounds after losing last warrior
+    if (player.roundsSinceLastWarrior >= 5) {
+      // Check they still have no warriors
+      if (!playerHasWarriors(pieces, player.id)) {
+        // Find and eliminate the Jarl
+        const jarl = pieces.find((p) => p.type === 'jarl' && p.playerId === player.id);
+        if (jarl) {
+          jarlIdsToRemove.add(jarl.id);
+          eliminatedPlayerIds.add(player.id);
+          events.push({
+            type: 'JARL_STARVED',
+            pieceId: jarl.id,
+            playerId: player.id,
+            position: jarl.position,
+          });
+        }
+      }
+    }
+  }
+
+  const newPieces = pieces.filter((p) => !jarlIdsToRemove.has(p.id));
+  const newPlayers = players.map((p) =>
+    eliminatedPlayerIds.has(p.id) ? { ...p, isEliminated: true } : p
+  );
+
+  return { pieces: newPieces, players: newPlayers, events };
+}
+
+/**
+ * Resolve starvation by removing chosen warriors, eliminating starved Jarls,
+ * and checking for game end.
+ *
+ * Resolution order:
+ * 1. Eliminate Jarls whose grace period has expired (no Warriors for 5+ rounds)
+ * 2. Remove chosen warriors from players who still have warriors
+ * 3. Track grace period for players who just lost their last warrior
+ * 4. Reset roundsSinceElimination counter
+ * 5. Check for last standing victory
  *
  * @param state - The current game state
  * @param choices - Each player's choice of which warrior to sacrifice
  * @returns StarvationResult with new state, events, and game end info
  */
 export function resolveStarvation(state: GameState, choices: StarvationChoice[]): StarvationResult {
-  // Calculate current candidates for validation
-  const allCandidates = calculateStarvationCandidates(state);
-
   const events: GameEvent[] = [];
+
+  // Step 1: Eliminate Jarls whose grace period has expired
+  const jarlResult = eliminateStarvedJarls(state.pieces, state.players);
+  let currentPieces = jarlResult.pieces;
+  let currentPlayers = jarlResult.players;
+  events.push(...jarlResult.events);
+
+  // Step 2: Normal warrior starvation for remaining active players
+  // Recalculate candidates with updated pieces (after Jarl eliminations)
+  const tempState: GameState = { ...state, pieces: currentPieces, players: currentPlayers };
+  const allCandidates = calculateStarvationCandidates(tempState);
+
   const piecesToRemove: Set<string> = new Set();
 
   // Validate and collect each choice
@@ -192,15 +257,39 @@ export function resolveStarvation(state: GameState, choices: StarvationChoice[])
     }
   }
 
-  // Remove pieces and reset counter
-  const newPieces = state.pieces.filter((p) => !piecesToRemove.has(p.id));
+  // Remove warrior pieces
+  currentPieces = currentPieces.filter((p) => !piecesToRemove.has(p.id));
+
+  // Step 3: Update roundsSinceLastWarrior for players who just lost their last warrior
+  currentPlayers = currentPlayers.map((player) => {
+    if (player.isEliminated) return player;
+
+    // Check warriors before this starvation resolution (using original state pieces)
+    const hadWarriorsBefore = playerHasWarriors(state.pieces, player.id);
+    const hasWarriorsNow = playerHasWarriors(currentPieces, player.id);
+
+    if (!hasWarriorsNow && hadWarriorsBefore) {
+      // Player just lost their last warrior - start grace period
+      return { ...player, roundsSinceLastWarrior: 0 };
+    }
+
+    if (hasWarriorsNow && player.roundsSinceLastWarrior != null) {
+      // Player somehow regained warriors (shouldn't happen, but be safe) - clear tracker
+      return { ...player, roundsSinceLastWarrior: null };
+    }
+
+    return player;
+  });
+
+  // Build new state
   const newState: GameState = {
     ...state,
-    pieces: newPieces,
+    pieces: currentPieces,
+    players: currentPlayers,
     roundsSinceElimination: 0,
   };
 
-  // Check for last standing victory
+  // Step 4: Check for last standing victory
   const lastStanding = checkLastStanding(newState);
   if (lastStanding.isVictory && lastStanding.winnerId) {
     const endedState: GameState = {
@@ -230,4 +319,45 @@ export function resolveStarvation(state: GameState, choices: StarvationChoice[])
     gameEnded: false,
     winnerId: null,
   };
+}
+
+// ============================================================================
+// Jarl Grace Period Tracking
+// ============================================================================
+
+/**
+ * Increment the roundsSinceLastWarrior counter for all players who have no Warriors.
+ * This should be called once per round (after all players have moved).
+ *
+ * Players who still have Warriors are unaffected.
+ * Players who already have a counter get it incremented.
+ * Players who just lost their last Warrior should have had their counter
+ * set to 0 by resolveStarvation; this function increments it each round.
+ */
+export function incrementJarlGracePeriods(state: GameState): GameState {
+  const newPlayers = state.players.map((player) => {
+    if (player.isEliminated) return player;
+
+    const hasWarriors = playerHasWarriors(state.pieces, player.id);
+
+    if (hasWarriors) {
+      // Player has warriors - no grace period tracking needed
+      // Reset if somehow set (e.g., warrior was regained)
+      if (player.roundsSinceLastWarrior != null) {
+        return { ...player, roundsSinceLastWarrior: null };
+      }
+      return player;
+    }
+
+    // Player has no warriors
+    if (player.roundsSinceLastWarrior == null) {
+      // First round without warriors (not set by resolveStarvation) - start tracking
+      return { ...player, roundsSinceLastWarrior: 1 };
+    }
+
+    // Increment existing counter
+    return { ...player, roundsSinceLastWarrior: player.roundsSinceLastWarrior + 1 };
+  });
+
+  return { ...state, players: newPlayers };
 }
