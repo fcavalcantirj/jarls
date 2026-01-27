@@ -1728,7 +1728,7 @@
       "Initialize database pool",
       "Initialize Redis client"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
@@ -1739,7 +1739,7 @@
       "Initialize GameManager",
       "Call GameManager.recover() to load active games"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
@@ -1749,7 +1749,7 @@
       "Add graceful shutdown handling (close connections)",
       "Update package.json start script"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ai",

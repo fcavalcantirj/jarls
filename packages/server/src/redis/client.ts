@@ -30,21 +30,4 @@ export async function closeRedis(): Promise<void> {
   await redis.quit();
 }
 
-function handleShutdown(signal: string) {
-  console.log(`Received ${signal}. Closing Redis connection...`);
-  redis
-    .quit()
-    .then(() => {
-      console.log('Redis connection closed.');
-      process.exit(0);
-    })
-    .catch((err) => {
-      console.error('Error closing Redis connection:', err);
-      process.exit(1);
-    });
-}
-
-process.on('SIGINT', () => handleShutdown('SIGINT'));
-process.on('SIGTERM', () => handleShutdown('SIGTERM'));
-
 export { redis };

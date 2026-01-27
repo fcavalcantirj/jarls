@@ -1,5 +1,29 @@
 ## Progress Log
 
+### 2026-01-27: Network - Server entry point (config loading, app wiring, startup/shutdown)
+
+**Features Completed**: "Create server entry point config loading", "Create server entry point app wiring", "Create server entry point startup and shutdown"
+
+**Work Done**:
+- Rewrote `packages/server/src/index.ts` from a demo placeholder to a proper server entry point
+- Loads environment config via `config/env.ts` (Zod-validated DATABASE_URL, REDIS_URL, PORT, NODE_ENV)
+- Initializes database pool and Redis client via side-effect imports
+- Creates Express app + HTTP server with Socket.IO via `createServer()` from `server.ts`
+- Calls `gameManager.recover()` on startup to restore active games from database
+- Starts HTTP server listening on configured PORT
+- Implements coordinated graceful shutdown on SIGINT/SIGTERM: stops HTTP server, shuts down GameManager, closes DB pool, closes Redis
+- Removed duplicate SIGINT/SIGTERM handlers from `db/pool.ts` and `redis/client.ts` that were calling `process.exit()` independently (shutdown is now coordinated from index.ts)
+- `package.json` start script already pointed to `dist/index.js` — no changes needed
+
+**Files Modified**:
+- packages/server/src/index.ts (30 → 59 lines, complete rewrite)
+- packages/server/src/db/pool.ts (63 → 49 lines, removed duplicate shutdown handlers)
+- packages/server/src/redis/client.ts (50 → 37 lines, removed duplicate shutdown handlers)
+
+**Verification**: pnpm typecheck passes. All 839 shared tests pass. Server health unit test passes. Integration tests have pre-existing DB connection failures (unrelated to changes). All files well under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Socket.IO connection management + integration tests
 
 **Features Completed**: "Implement Socket.IO connection management" and "Integration tests for connection management"
