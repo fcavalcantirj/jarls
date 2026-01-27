@@ -2479,3 +2479,32 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 **Files Modified**:
 - packages/shared/src/index.test.ts (removed extracted tests, now ~2106 lines)
 - specs/prd-v1.json (marked feature as complete)
+
+### 2026-01-27: Infrastructure - Extract victory.test.ts from index.test.ts
+
+**Feature Completed**: "Extract victory.test.ts from index.test.ts (max 800 lines)"
+
+**Work Done**:
+- Extracted checkThroneVictory, eliminatePlayer, checkLastStanding, checkWinConditions tests from index.test.ts
+- Split into 3 files to stay under 800-line limit:
+  - victory-throne.test.ts: checkThroneVictory tests (309 lines)
+  - victory-elimination.test.ts: eliminatePlayer tests (317 lines)
+  - victory-laststanding.test.ts: checkLastStanding + checkWinConditions tests (517 lines)
+- Cleaned up unused imports in index.test.ts
+- index.test.ts reduced from ~2106 lines to 956 lines
+
+**Verification**:
+- `pnpm typecheck` passes for all packages
+- `pnpm test victory` passes (62 tests across 3 files)
+- `pnpm test index.test.ts` passes (75 remaining tests)
+- All new files under 800 lines
+
+**Files Created**:
+- packages/shared/src/__tests__/victory-throne.test.ts (309 lines)
+- packages/shared/src/__tests__/victory-elimination.test.ts (317 lines)
+- packages/shared/src/__tests__/victory-laststanding.test.ts (517 lines)
+
+**Files Modified**:
+- packages/shared/src/index.test.ts (removed victory tests, now 956 lines)
+- specs/prd-v1.json (marked feature as complete)
+- CLAUDE.md (marked victory extraction as done)

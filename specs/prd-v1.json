@@ -296,7 +296,7 @@
       "Import from ../move.ts or relevant module",
       "Verify tests pass and file is under 800 lines"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
@@ -311,13 +311,27 @@
   },
   {
     "category": "infrastructure",
-    "description": "Finalize index.test.ts - should be empty or minimal (max 200 lines)",
+    "description": "Finalize index.test.ts - should be empty or minimal (max ~800 lines)",
     "steps": [
       "Review remaining tests in index.test.ts",
       "Move any remaining tests to appropriate files",
-      "Delete index.test.ts if empty, or keep only integration tests (max 200 lines)",
+      "Delete index.test.ts if empty, or keep only integration tests (max ~800 lines)",
       "Run full test suite: pnpm test",
-      "Verify all tests pass"
+      "Verify all tests pass",
+      "Verify all code files are under 800 lines where applicable (documentation allowed)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Verify no files exceed 800 lines (apart from documentation)",
+    "steps": [
+      "Review remaining files to check if anyone if way bigger than 800 lines",
+      "Think very hard if any of them can be split further",
+      "If they can be split, do so, without breaking logical cohesion",
+      "Run full test suite: pnpm test",
+      "Verify all tests pass",
+      "Verify all code files are under 800 lines where applicable (documentation allowed)"
     ],
     "passes": false
   },

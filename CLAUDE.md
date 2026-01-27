@@ -23,7 +23,7 @@ The following infrastructure tasks in `specs/prd-v1.json` are **BLOCKING** and m
 - ✅ "Extract push-complex.test.ts from index.test.ts" - DONE (split into push-chain.test.ts, push-edge.test.ts, push-compression.test.ts, push-resolution.test.ts)
 - ✅ "Extract move-validation.test.ts from index.test.ts" - DONE
 - ❌ "Extract move-execution.test.ts from index.test.ts" - **BLOCKING**
-- ❌ "Extract victory.test.ts from index.test.ts" - **BLOCKING**
+- ✅ "Extract victory.test.ts from index.test.ts" - DONE (split into victory-throne.test.ts, victory-elimination.test.ts, victory-laststanding.test.ts)
 - ❌ "Extract utils.test.ts from index.test.ts" - **BLOCKING**
 - ❌ "Finalize index.test.ts" - **BLOCKING**
 
