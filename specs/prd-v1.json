@@ -234,6 +234,17 @@
   },
   {
     "category": "infrastructure",
+    "description": "Re-split combat-calculation.test.ts (1347 lines) into combat-attack.test.ts and combat-defense.test.ts (max 800 lines each)",
+    "steps": [
+      "Create __tests__/combat-attack.test.ts (~650 lines: calculateAttack tests)",
+      "Create __tests__/combat-defense.test.ts (~650 lines: calculateDefense, calculateCombat tests)",
+      "Delete original combat-calculation.test.ts after extraction",
+      "Verify tests pass and each file is under 800 lines"
+    ],
+    "passes": true
+  },
+  {
+    "category": "infrastructure",
     "description": "Extract push-simple.test.ts from index.test.ts (max 800 lines)",
     "steps": [
       "Create __tests__/push-simple.test.ts",

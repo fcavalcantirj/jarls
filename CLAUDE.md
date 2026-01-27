@@ -17,8 +17,8 @@ The following infrastructure tasks in `specs/prd-v1.json` are **BLOCKING** and m
 - ✅ "Split shared/src/index.test.ts - create test directory" - DONE
 - ✅ "Re-split hex.test.ts" - DONE
 - ✅ "Re-split board.test.ts" - DONE
-- ❌ "Extract combat-strength.test.ts from index.test.ts" - **BLOCKING**
-- ❌ "Extract combat-calculation.test.ts from index.test.ts" - **BLOCKING**
+- ✅ "Extract combat-strength.test.ts from index.test.ts" - DONE
+- ✅ "Extract combat-calculation.test.ts from index.test.ts" - DONE (split into combat-attack.test.ts, combat-defense.test.ts, combat-resolution.test.ts)
 - ❌ "Extract push-simple.test.ts from index.test.ts" - **BLOCKING**
 - ❌ "Extract push-complex.test.ts from index.test.ts" - **BLOCKING**
 - ❌ "Extract move-validation.test.ts from index.test.ts" - **BLOCKING**
