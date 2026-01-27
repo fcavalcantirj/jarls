@@ -1,5 +1,33 @@
 ## Progress Log
 
+### 2026-01-27: AI - Implement HeuristicAI class
+
+**Features Completed**: "Add negative scoring factors" (already implemented), "Implement HeuristicAI class", "Unit tests for HeuristicAI"
+
+**Work Done**:
+- Confirmed "Add negative scoring factors" was already implemented in heuristic.ts, marked as passing
+- Created `packages/server/src/ai/heuristic-ai.ts` with `HeuristicAI` class implementing `AIPlayer`
+- `generateMove`: scores all valid moves using `scoreMove`, sorts descending, picks from top 3 with weighted random selection
+- `makeStarvationChoice`: picks random candidate from furthest warriors
+- Configurable thinking delay and top-N candidate count via constructor
+- Created `packages/server/src/ai/__tests__/heuristic-ai.test.ts` with 8 unit tests:
+  - Difficulty is set to 'heuristic'
+  - Returns valid moves for current player
+  - Returned move belongs to specified player
+  - Throws when no valid moves available
+  - Prefers winning moves (Jarl to throne)
+  - Avoids putting Jarl on edge
+  - Returns valid starvation choice
+  - Throws when no starvation candidates exist
+
+**Files Created**:
+- packages/server/src/ai/heuristic-ai.ts (100 lines)
+- packages/server/src/ai/__tests__/heuristic-ai.test.ts (155 lines)
+
+**Verification**: pnpm typecheck passes. All 8 new tests pass (1133 total passing). Pre-existing integration test failures unchanged.
+
+---
+
 ### 2026-01-27: AI - Implement scoreMove function
 
 **Features Completed**: "Implement scoreMove function"

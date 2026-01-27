@@ -1802,7 +1802,7 @@
       "Score: +3 per hex closer to throne for Jarl",
       "Add small random factor to avoid predictability"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ai",
@@ -1810,7 +1810,7 @@
     "steps": [
       "Implement HeuristicAI.generateMove: score all moves, pick from top 3 with weighted random"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ai",
@@ -1819,7 +1819,7 @@
       "Add unit tests: prefers winning moves",
       "Add unit tests: avoids putting Jarl on edge"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ai",
