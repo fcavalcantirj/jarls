@@ -1110,7 +1110,7 @@
       "Create packages/server/src/game/types.ts",
       "Define GameMachineInput for actor creation"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
