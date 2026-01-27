@@ -1,5 +1,33 @@
 ## Progress Log
 
+### 2026-01-27: Network - Implement game creation and listing endpoints
+
+**Feature Completed**: "Implement game creation and listing endpoints"
+
+**Work Done**:
+- Created `packages/server/src/routes/games.ts` with:
+  - `createGameRoutes(manager)` factory function for dependency injection
+  - `POST /api/games`: validates body with Zod (playerCount 2-6, turnTimerMs null or positive int), creates game via GameManager, returns `{ gameId }` with 201 status
+  - `GET /api/games`: lists games with optional `?status=` filter, returns `{ games: GameSummary[] }`
+- Updated `packages/server/src/server.ts` to:
+  - Import and instantiate GameManager
+  - Mount routes at `/api/games`
+  - Export `gameManager` for testing access
+- Created `packages/server/src/routes/__tests__/games.test.ts` with 11 tests:
+  - POST: default config returns 201, custom playerCount, turnTimerMs, invalid playerCount (low/high/type), game appears in list after creation
+  - GET: empty list, returns all games, filters by status, correct summary shape
+
+**Files Created**:
+- packages/server/src/routes/games.ts (59 lines)
+- packages/server/src/routes/__tests__/games.test.ts (153 lines)
+
+**Files Modified**:
+- packages/server/src/server.ts (added route imports and mounting)
+
+**Verification**: pnpm typecheck passes. 1058 tests total (1052 passing, 6 pre-existing integration test failures from database state issues). All 11 new tests pass. All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Implement auth middleware
 
 **Feature Completed**: "Implement auth middleware"

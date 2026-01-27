@@ -1591,7 +1591,7 @@
       "POST /api/games: validate body with Zod, call GameManager.create(), return { gameId }",
       "GET /api/games: call GameManager.listGames(), return array"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",

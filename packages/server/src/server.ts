@@ -3,8 +3,11 @@ import cors from 'cors';
 import helmet from 'helmet';
 import http from 'http';
 import { errorMiddleware } from './middleware/error.js';
+import { createGameRoutes } from './routes/games.js';
+import { GameManager } from './game/manager.js';
 
 const app: Express = express();
+const gameManager = new GameManager();
 
 // Security headers
 app.use(helmet());
@@ -31,6 +34,9 @@ app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// API routes
+app.use('/api/games', createGameRoutes(gameManager));
+
 // Error middleware (must be after all routes)
 app.use(errorMiddleware);
 
@@ -38,4 +44,4 @@ export function createServer(): http.Server {
   return http.createServer(app);
 }
 
-export { app };
+export { app, gameManager };
