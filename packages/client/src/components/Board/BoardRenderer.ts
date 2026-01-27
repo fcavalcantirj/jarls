@@ -35,6 +35,20 @@ const VALID_MOVE_STROKE = '#4caf50';
 /** Attack move overlay color (red) */
 const ATTACK_MOVE_FILL = 'rgba(244, 67, 54, 0.35)';
 const ATTACK_MOVE_STROKE = '#f44336';
+/** Momentum indicator color */
+const MOMENTUM_COLOR = '#ffeb3b';
+/** Current player piece glow color */
+const CURRENT_PLAYER_GLOW = 'rgba(255, 255, 255, 0.25)';
+
+/** Options for rendering highlights alongside the base board/pieces. */
+export interface RenderHighlights {
+  /** Hex of the currently selected piece */
+  selectedHex?: AxialCoord;
+  /** Valid moves for the selected piece */
+  validMoves?: ValidMove[];
+  /** Player ID whose turn it currently is (for piece glow) */
+  currentPlayerId?: string;
+}
 
 export interface BoardDimensions {
   /** Pixel size of each hex (center to corner) */
@@ -360,14 +374,67 @@ export class BoardRenderer {
   }
 
   /**
-   * Full render pass: clear the canvas, draw the hex grid, then draw all pieces.
+   * Draw a small "+1" momentum indicator near the top of a hex.
    */
-  render(state: GameState): void {
+  drawMomentumIndicator(hex: AxialCoord): void {
     const dims = this.dimensions;
+    if (!dims) return;
+
+    const { x, y } = hexToPixel(hex, dims.hexSize, dims.centerX, dims.centerY);
+    const ctx = this.ctx;
+    const fontSize = Math.max(10, dims.hexSize * 0.3);
+
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Position near top-right of hex
+    const indicatorX = x + dims.hexSize * 0.35;
+    const indicatorY = y - dims.hexSize * 0.45;
+
+    // Background circle
+    const bgRadius = fontSize * 0.65;
+    ctx.beginPath();
+    ctx.arc(indicatorX, indicatorY, bgRadius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fill();
+
+    // Text
+    ctx.fillStyle = MOMENTUM_COLOR;
+    ctx.fillText('+1', indicatorX, indicatorY);
+  }
+
+  /**
+   * Draw a subtle glow around pieces belonging to the current player.
+   */
+  drawCurrentPlayerGlow(pieces: Piece[], currentPlayerId: string): void {
+    const dims = this.dimensions;
+    if (!dims) return;
+
+    const ctx = this.ctx;
+    for (const piece of pieces) {
+      if (piece.playerId !== currentPlayerId) continue;
+      if (piece.type === 'shield') continue;
+
+      const { x, y } = hexToPixel(piece.position, dims.hexSize, dims.centerX, dims.centerY);
+      const radius = piece.type === 'jarl' ? dims.hexSize * 0.52 : dims.hexSize * 0.45;
+
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = CURRENT_PLAYER_GLOW;
+      ctx.fill();
+    }
+  }
+
+  /**
+   * Full render pass: clear the canvas, draw the hex grid, draw pieces,
+   * and overlay any active highlights (selection, valid moves, glow).
+   */
+  render(state: GameState, highlights?: RenderHighlights): void {
     const canvas = this.ctx.canvas;
 
     // Ensure dimensions are calculated
-    if (!dims) {
+    if (!this.dimensions) {
       this.calculateDimensions(state.config.boardRadius, canvas.width, canvas.height);
     }
 
@@ -377,7 +444,28 @@ export class BoardRenderer {
     // Draw hex grid
     this.drawGrid(state.config.boardRadius);
 
+    // Draw current player glow (behind pieces)
+    if (highlights?.currentPlayerId) {
+      this.drawCurrentPlayerGlow(state.pieces, highlights.currentPlayerId);
+    }
+
     // Draw all pieces
     this.drawPieces(state.pieces);
+
+    // Draw selection and valid move highlights (on top of pieces)
+    if (highlights?.selectedHex) {
+      this.drawSelection(highlights.selectedHex);
+    }
+    if (highlights?.validMoves) {
+      this.drawValidMoves(highlights.validMoves);
+      this.drawAttackMoves(highlights.validMoves);
+
+      // Draw momentum indicators on attack moves with momentum
+      for (const move of highlights.validMoves) {
+        if (move.moveType === 'attack' && move.hasMomentum) {
+          this.drawMomentumIndicator(move.destination);
+        }
+      }
+    }
   }
 }

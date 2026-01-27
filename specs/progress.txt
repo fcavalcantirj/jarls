@@ -1,5 +1,25 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Implement highlight integration
+
+**Features Completed**: "Implement highlight integration"
+
+**Work Done**:
+- Added `drawMomentumIndicator(hex)`: draws a "+1" label in a dark circle near the top-right of attack hexes with momentum, using yellow text
+- Added `drawCurrentPlayerGlow(pieces, currentPlayerId)`: draws a subtle white glow behind each non-shield piece belonging to the current player
+- Added `RenderHighlights` interface: defines optional `selectedHex`, `validMoves`, and `currentPlayerId` for highlight state
+- Updated `render(state, highlights?)` to accept optional highlights and draw them in correct z-order:
+  - Current player glow drawn behind pieces
+  - Selection ring and valid/attack move overlays drawn on top of pieces
+  - Momentum indicators drawn on attack moves with `hasMomentum === true`
+
+**Files Modified**:
+- packages/client/src/components/Board/BoardRenderer.ts (383 -> 471 lines)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (21 failed, 1172 passed).
+
+---
+
 ### 2026-01-27: Frontend - Implement move highlight functions
 
 **Features Completed**: "Implement move highlight functions"

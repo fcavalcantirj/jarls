@@ -2030,7 +2030,7 @@
       "Update render() to include highlights based on store state",
       "Add highlight for current player's pieces (subtle glow)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
