@@ -1027,7 +1027,7 @@
       "Remove selected Warriors from state.pieces",
       "Generate STARVATION_ELIMINATED event for each removed Warrior"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
@@ -1038,7 +1038,7 @@
       "Return { newState, events, gameEnded, winnerId }",
       "Export function"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
@@ -1048,7 +1048,7 @@
       "Add unit tests: counter resets to 0",
       "Add unit tests: last standing victory triggered by starvation"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",

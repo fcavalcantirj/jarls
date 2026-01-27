@@ -132,4 +132,8 @@ export {
 
 // Re-export starvation functions and types
 export type { StarvationTriggerResult } from './starvation.js';
-export { checkStarvationTrigger, calculateStarvationCandidates } from './starvation.js';
+export {
+  checkStarvationTrigger,
+  calculateStarvationCandidates,
+  resolveStarvation,
+} from './starvation.js';

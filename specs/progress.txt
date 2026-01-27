@@ -2741,3 +2741,48 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - packages/shared/src/types.ts (added StarvationChoice, StarvationResult interfaces)
 - packages/shared/src/index.ts (added re-exports for new types)
 - specs/prd-v1.json (marked task as passes: true)
+
+---
+
+### 2026-01-27: Core Logic - Implement resolveStarvation (core logic + game end checks + unit tests)
+
+**Features Completed**:
+- "Implement resolveStarvation core logic"
+- "Implement resolveStarvation game end checks"
+- "Unit tests for resolveStarvation"
+
+**Work Done**:
+- Implemented `resolveStarvation(state, choices)` function in starvation.ts
+  - Validates each player's choice against calculated candidates
+  - Falls back to first candidate for invalid choices or missing submissions
+  - Removes chosen warriors from state.pieces
+  - Generates ELIMINATED events with cause 'starvation'
+  - Resets roundsSinceElimination to 0
+  - Checks for last standing victory after removals
+  - Returns StarvationResult with newState, events, gameEnded, winnerId
+- Added import of checkLastStanding from move.ts into starvation.ts
+- Exported resolveStarvation from index.ts
+- Created starvation-resolution.test.ts with 9 unit tests covering:
+  - Normal starvation removes chosen warriors
+  - ELIMINATED events generated correctly
+  - Game does not end when both jarls remain
+  - roundsSinceElimination resets to 0
+  - Last standing victory triggered by starvation
+  - Invalid choice fallback behavior
+  - Auto-select for missing player choices
+  - Players with no warriors are skipped
+  - Original state is not mutated
+
+**Verification**:
+- All 819 tests pass across 28 test suites
+- pnpm typecheck passes
+- starvation.ts at 236 lines (well under 800)
+- starvation-resolution.test.ts at ~210 lines (well under 800)
+
+**Files Modified**:
+- packages/shared/src/starvation.ts (added resolveStarvation function)
+- packages/shared/src/index.ts (added resolveStarvation export)
+- specs/prd-v1.json (marked 3 tasks as passes: true)
+
+**Files Created**:
+- packages/shared/src/__tests__/starvation-resolution.test.ts
