@@ -1,5 +1,28 @@
 ## Progress Log
 
+### 2026-01-27: Network - Implement Socket.IO starvation handler
+
+**Feature Completed**: "Implement Socket.IO starvation handler"
+
+**Work Done**:
+- Added `handleStarvationChoice` handler to `packages/server/src/socket/handlers.ts`
+- **starvationChoice handler**: validates socket is joined to a game, validates game ID matches, delegates to `GameManager.submitStarvationChoice()` which validates starvation state, valid candidate, and no duplicate submissions
+- On success: returns success callback, then checks if starvation resolved (all choices made)
+- If game ended after resolution: broadcasts `gameEnded` with winner info
+- If game continues after resolution: broadcasts updated `gameState` to all players
+- On failure: returns error message via callback
+- Added `checkAndBroadcastStarvation` helper function to detect starvation triggering after a move
+- Updated `handlePlayTurn` to call `checkAndBroadcastStarvation` after a successful move, broadcasting `starvationRequired` with candidates and timeout when starvation is triggered
+- Registered `handleStarvationChoice` in `registerSocketHandlers`
+- Added imports for `StarvationChoicePayload` and `StarvationChoiceResponse` types
+
+**Files Modified**:
+- packages/server/src/socket/handlers.ts (234 → 322 lines, added starvation handler + helper)
+
+**Verification**: pnpm typecheck passes. All non-integration tests pass (1107 total). Pre-existing integration test failures unchanged. All files under 800 lines.
+
+---
+
 ### 2026-01-27: Network - Integration tests for playTurn handler
 
 **Feature Completed**: "Integration tests for playTurn handler"

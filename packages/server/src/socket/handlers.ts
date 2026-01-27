@@ -10,6 +10,8 @@ import type {
   StartGameResponse,
   PlayTurnPayload,
   PlayTurnResponse,
+  StarvationChoicePayload,
+  StarvationChoiceResponse,
 } from './types.js';
 import type { GameManager } from '../game/manager.js';
 import type { GameMachineContext } from '../game/types.js';
@@ -40,6 +42,7 @@ export function registerSocketHandlers(io: TypedServer, gameManager: GameManager
     handleJoinGame(socket, gameManager);
     handleStartGame(socket, io, gameManager);
     handlePlayTurn(socket, io, gameManager);
+    handleStarvationChoice(socket, io, gameManager);
     handleDisconnect(socket, io, gameManager);
   });
 }
@@ -190,6 +193,9 @@ function handlePlayTurn(socket: TypedSocket, io: TypedServer, gameManager: GameM
         });
       }
 
+      // Check if starvation was triggered after the move
+      checkAndBroadcastStarvation(io, gameManager, gameId);
+
       callback({ success: true });
 
       console.log(`Player ${playerId} played turn in game ${gameId}`);
@@ -198,6 +204,88 @@ function handlePlayTurn(socket: TypedSocket, io: TypedServer, gameManager: GameM
       callback({ success: false, error: message });
     }
   });
+}
+
+// ── starvationChoice Handler ────────────────────────────────────────────
+
+function handleStarvationChoice(
+  socket: TypedSocket,
+  io: TypedServer,
+  gameManager: GameManager
+): void {
+  socket.on(
+    'starvationChoice',
+    (payload: StarvationChoicePayload, callback: (r: StarvationChoiceResponse) => void) => {
+      try {
+        const { gameId, pieceId } = payload;
+        const { playerId } = socket.data;
+
+        if (!playerId || !socket.data.gameId) {
+          callback({ success: false, error: 'Not joined to a game. Call joinGame first.' });
+          return;
+        }
+
+        if (socket.data.gameId !== gameId) {
+          callback({ success: false, error: 'Game ID mismatch' });
+          return;
+        }
+
+        // Submit the starvation choice via GameManager
+        gameManager.submitStarvationChoice(gameId, playerId, pieceId);
+
+        callback({ success: true });
+
+        console.log(`Player ${playerId} submitted starvation choice in game ${gameId}`);
+
+        // After submitting, check if starvation resolved (all choices made)
+        // The state machine may have transitioned back to playing or ended
+        const snapshot = gameManager.getState(gameId);
+        if (!snapshot) return;
+
+        const context = snapshot.context as GameMachineContext;
+
+        if (context.phase === 'ended' && context.winnerId) {
+          io.to(gameId).emit('gameEnded', {
+            winnerId: context.winnerId,
+            winCondition: context.winCondition as 'throne' | 'lastStanding',
+            finalState: context,
+          });
+        } else if (context.phase === 'playing') {
+          // Starvation resolved, game continues - broadcast updated state
+          io.to(gameId).emit('gameState', context);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to submit starvation choice';
+        callback({ success: false, error: message });
+      }
+    }
+  );
+}
+
+// ── Starvation Detection Helper ─────────────────────────────────────────
+
+/**
+ * Check if the game has transitioned to starvation state after a move,
+ * and broadcast starvationRequired to all players in the room.
+ */
+function checkAndBroadcastStarvation(
+  io: TypedServer,
+  gameManager: GameManager,
+  gameId: string
+): void {
+  const snapshot = gameManager.getState(gameId);
+  if (!snapshot) return;
+
+  const context = snapshot.context as GameMachineContext;
+  if (context.phase !== 'starvation') return;
+
+  // Starvation was triggered - broadcast candidates to all players
+  io.to(gameId).emit('starvationRequired', {
+    candidates: context.starvationCandidates,
+    timeoutMs: context.turnTimerMs ?? 30_000,
+  });
+
+  console.log(`Starvation triggered in game ${gameId}`);
 }
 
 // ── disconnect Handler ──────────────────────────────────────────────────

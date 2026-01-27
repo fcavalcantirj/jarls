@@ -1691,7 +1691,7 @@
       "Subscribe to GameManager events: broadcast starvationRequired when triggered",
       "Broadcast resolution results to room"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "network",
