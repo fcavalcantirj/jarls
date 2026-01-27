@@ -3123,3 +3123,29 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - packages/server/src/game/types.ts (added GameMachineContext)
 - specs/prd-v1.json (marked task as passes: true)
 - specs/progress.txt (this entry)
+
+---
+
+### 2026-01-27: State Machine - Define game machine event types
+
+**Feature Completed**: "Define game machine event types"
+
+**Work Done**:
+- Added 8 individual event interfaces to packages/server/src/game/types.ts:
+  - PlayerJoinedMachineEvent: { type: 'PLAYER_JOINED', playerId, playerName }
+  - PlayerLeftMachineEvent: { type: 'PLAYER_LEFT', playerId }
+  - StartGameMachineEvent: { type: 'START_GAME', playerId }
+  - MakeMoveMachineEvent: { type: 'MAKE_MOVE', playerId, command: MoveCommand }
+  - StarvationChoiceMachineEvent: { type: 'STARVATION_CHOICE', playerId, pieceId }
+  - TimeoutMachineEvent: { type: 'TIMEOUT' }
+  - PlayerDisconnectedMachineEvent: { type: 'PLAYER_DISCONNECTED', playerId }
+  - PlayerReconnectedMachineEvent: { type: 'PLAYER_RECONNECTED', playerId }
+- Added GameMachineEvent union type combining all 8 event types
+- Added MoveCommand import from @jarls/shared
+- Typecheck passes, all 844 tests pass (31 suites)
+- File is 96 lines (well under 800 line limit)
+
+**Files Modified**:
+- packages/server/src/game/types.ts (added event types and union)
+- specs/prd-v1.json (marked task as passes: true)
+- specs/progress.txt (this entry)

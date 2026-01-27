@@ -1129,7 +1129,7 @@
       "Define each event's payload type",
       "Export all event types"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
