@@ -1953,7 +1953,7 @@
       "Implement hexToPixel(hex, hexSize, centerX, centerY): convert to canvas coordinates",
       "Implement pixelToHex(x, y, hexSize, centerX, centerY): convert click to hex"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

@@ -1,5 +1,23 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Client-side hex coordinate utilities
+
+**Features Completed**: "Client-side hex coordinate utilities"
+
+**Work Done**:
+- Created `packages/client/src/utils/hexMath.ts` with canvas-oriented hex coordinate utilities
+- Implemented `hexToPixel(hex, hexSize, centerX, centerY)`: wraps shared `hexToPixel` with canvas center offset
+- Implemented `pixelToHex(x, y, hexSize, centerX, centerY)`: inverse transform from canvas pixel to nearest axial hex using cube rounding
+- Implemented `getHexCorners(centerX, centerY, size)`: returns 6 corner points for pointy-top hex drawing
+- All functions use pointy-top hex orientation consistent with shared package
+
+**Files Created**:
+- packages/client/src/utils/hexMath.ts (99 lines)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (18 failed, 1159 passed).
+
+---
+
 ### 2026-01-27: Frontend - Add Socket.IO event listeners & Export Socket.IO client
 
 **Features Completed**: "Add Socket.IO event listeners", "Export Socket.IO client"
