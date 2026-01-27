@@ -19,6 +19,7 @@ function createTestState(pieces: Piece[]): GameState {
     currentPlayerId: 'p1',
     turnNumber: 1,
     roundNumber: 1,
+    firstPlayerIndex: 0,
     roundsSinceElimination: 0,
     winnerId: null,
     winCondition: null,

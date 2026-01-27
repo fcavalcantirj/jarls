@@ -1240,7 +1240,7 @@
       "After all players move once, increment firstPlayerIndex = (firstPlayerIndex + 1) % playerCount",
       "Turn sequence each round starts from firstPlayerIndex"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",
@@ -1249,7 +1249,7 @@
       "Unit tests: 2-player rotation P0,P1 -> P1,P0 -> P0,P1",
       "Unit tests: 3-player rotation P0,P1,P2 -> P1,P2,P0 -> P2,P0,P1"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "state-machine",

@@ -21,6 +21,7 @@ describe('calculateCombat', () => {
       currentPlayerId: 'p1',
       turnNumber: 0,
       roundNumber: 0,
+      firstPlayerIndex: 0,
       roundsSinceElimination: 0,
       winnerId: null,
       winCondition: null,

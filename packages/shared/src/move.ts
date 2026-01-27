@@ -660,11 +660,19 @@ export function applyMove(state: GameState, playerId: string, command: MoveComma
   const newTurnNumber = resultState.turnNumber + 1;
 
   // Check if a round has completed (all active players have taken a turn)
-  // A round completes when we wrap back to the first player
+  // A round completes when the next player in natural order is the current round's first player
   const activePlayers = resultState.players.filter((p) => !p.isEliminated);
-  const firstActivePlayer = activePlayers[0];
-  const isNewRound = nextPlayerId === firstActivePlayer?.id && newTurnNumber > 0;
+  const currentFirstPlayer = activePlayers[resultState.firstPlayerIndex % activePlayers.length];
+  const isNewRound = nextPlayerId === currentFirstPlayer?.id && newTurnNumber > 0;
   const newRoundNumber = isNewRound ? resultState.roundNumber + 1 : resultState.roundNumber;
+
+  // Rotate first player index when a new round starts
+  const newFirstPlayerIndex = isNewRound
+    ? (resultState.firstPlayerIndex + 1) % activePlayers.length
+    : resultState.firstPlayerIndex;
+
+  // When a new round starts, the next player is the new round's first player
+  const actualNextPlayerId = isNewRound ? activePlayers[newFirstPlayerIndex].id : nextPlayerId;
 
   // Update rounds since elimination
   // Reset to 0 if any piece was eliminated, otherwise increment on new round
@@ -678,9 +686,10 @@ export function applyMove(state: GameState, playerId: string, command: MoveComma
 
   resultState = {
     ...resultState,
-    currentPlayerId: nextPlayerId,
+    currentPlayerId: actualNextPlayerId,
     turnNumber: newTurnNumber,
     roundNumber: newRoundNumber,
+    firstPlayerIndex: newFirstPlayerIndex,
     roundsSinceElimination: newRoundsSinceElimination,
   };
 
@@ -688,7 +697,7 @@ export function applyMove(state: GameState, playerId: string, command: MoveComma
   const turnEndedEvent: TurnEndedEvent = {
     type: 'TURN_ENDED',
     playerId,
-    nextPlayerId,
+    nextPlayerId: actualNextPlayerId,
     turnNumber: newTurnNumber,
   };
   events.push(turnEndedEvent);

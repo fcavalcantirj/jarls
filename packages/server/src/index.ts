@@ -20,6 +20,7 @@ const exampleState: GameState = {
   currentPlayerId: null,
   turnNumber: 0,
   roundNumber: 0,
+  firstPlayerIndex: 0,
   roundsSinceElimination: 0,
   winnerId: null,
   winCondition: null,

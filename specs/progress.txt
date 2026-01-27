@@ -1,5 +1,40 @@
 ## Progress Log
 
+### 2026-01-27: State Machine - Implement rotating first player each round & Unit tests
+
+**Features Completed**: "Implement rotating first player each round" and "Unit tests for rotating first player"
+
+**Work Done**:
+- Added `firstPlayerIndex` field to `GameState` type in shared types
+- Initialized `firstPlayerIndex: 0` in `createInitialState` in board.ts
+- Updated `applyMove` turn advancement logic in move.ts:
+  - Round detection now uses `firstPlayerIndex` to identify current round's first player
+  - On round completion, `firstPlayerIndex` rotates: `(current + 1) % activePlayerCount`
+  - New round's `currentPlayerId` is set to `activePlayers[newFirstPlayerIndex]`
+- Updated game machine context initialization and MAKE_MOVE handler to pass through `firstPlayerIndex`
+- Added `firstPlayerIndex: 0` to all existing test files creating `GameState` objects (19 shared test files + server test + client App)
+- Created `rotating-first-player.test.ts` with 6 tests covering:
+  - 2-player rotation: P1,P2 -> P2,P1 -> P1,P2
+  - 3-player rotation: P1,P2,P3 -> P2,P3,P1 -> P3,P1,P2
+  - Mid-round index stability, multi-round cycling
+- Updated existing tests that assumed P1 always starts after round completion
+
+**Files Modified**:
+- packages/shared/src/types.ts (added firstPlayerIndex to GameState)
+- packages/shared/src/board.ts (initialized firstPlayerIndex in createInitialState)
+- packages/shared/src/move.ts (rotating first player logic in applyMove)
+- packages/server/src/game/machine.ts (context init + MAKE_MOVE handler)
+- packages/server/src/game/__tests__/playing.test.ts (updated expectations)
+- packages/server/src/index.ts (added firstPlayerIndex to example state)
+- packages/client/src/App.tsx (added firstPlayerIndex to example state)
+- packages/shared/src/__tests__/rotating-first-player.test.ts (new, 6 tests)
+- 19 shared test files (added firstPlayerIndex: 0 to GameState objects)
+- packages/shared/src/__tests__/apply-move.test.ts (updated round rotation expectations)
+
+**Verification**: pnpm typecheck passes, all 881 tests pass (6 new).
+
+---
+
 ### 2026-01-27: State Machine - Implement checkingGameEnd substate & Unit tests for playing state
 
 **Features Completed**: "Implement checkingGameEnd substate" and "Unit tests for playing state"

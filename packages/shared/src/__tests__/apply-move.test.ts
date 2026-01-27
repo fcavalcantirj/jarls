@@ -35,6 +35,7 @@ describe('applyMove', () => {
       currentPlayerId: options.currentPlayerId ?? 'p1',
       turnNumber: 0,
       roundNumber: 0,
+      firstPlayerIndex: 0,
       roundsSinceElimination: 0,
       winnerId: null,
       winCondition: null,
@@ -459,9 +460,10 @@ describe('applyMove', () => {
       const result = applyMove(state, 'p2', { pieceId: 'p2-jarl', destination: { q: -2, r: 0 } });
 
       expect(result.success).toBe(true);
-      expect(result.newState.currentPlayerId).toBe('p1'); // Back to first player
+      expect(result.newState.currentPlayerId).toBe('p2'); // Rotating first player: P2 starts round 6
       expect(result.newState.roundNumber).toBe(6); // Round incremented
       expect(result.newState.turnNumber).toBe(11);
+      expect(result.newState.firstPlayerIndex).toBe(1); // Rotated from 0 to 1
     });
 
     it('should increment roundsSinceElimination on new round without elimination', () => {

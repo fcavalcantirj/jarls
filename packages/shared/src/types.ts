@@ -101,6 +101,7 @@ export interface GameState {
   currentPlayerId: string | null;
   turnNumber: number;
   roundNumber: number;
+  firstPlayerIndex: number;
   roundsSinceElimination: number;
   winnerId: string | null;
   winCondition: 'throne' | 'lastStanding' | null;

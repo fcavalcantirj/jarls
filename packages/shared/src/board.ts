@@ -788,6 +788,7 @@ export function createInitialState(
     currentPlayerId: players[0].id, // First player starts
     turnNumber: 0,
     roundNumber: 0,
+    firstPlayerIndex: 0,
     roundsSinceElimination: 0,
     winnerId: null,
     winCondition: null,

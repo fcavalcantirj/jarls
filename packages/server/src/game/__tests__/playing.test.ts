@@ -44,6 +44,7 @@ function contextToGameState(context: GameMachineContext): GameState {
     currentPlayerId: context.currentPlayerId,
     turnNumber: context.turnNumber,
     roundNumber: context.roundNumber,
+    firstPlayerIndex: context.firstPlayerIndex,
     roundsSinceElimination: context.roundsSinceElimination,
     winnerId: context.winnerId,
     winCondition: context.winCondition,
@@ -253,8 +254,10 @@ describe('Game Machine - Playing State', () => {
       });
 
       const snap3 = actor.getSnapshot();
-      expect(snap3.context.currentPlayerId).toBe('p1');
+      // After round completes, rotating first player: P2 starts round 1
+      expect(snap3.context.currentPlayerId).toBe('p2');
       expect(snap3.context.turnNumber).toBe(2);
+      expect(snap3.context.firstPlayerIndex).toBe(1);
 
       actor.stop();
     });
