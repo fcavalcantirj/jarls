@@ -307,7 +307,7 @@
       "Import from relevant modules",
       "Verify tests pass and file is under 800 lines"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",
@@ -320,7 +320,7 @@
       "Verify all tests pass",
       "Verify all code files are under 800 lines where applicable (documentation allowed)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

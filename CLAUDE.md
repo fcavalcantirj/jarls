@@ -22,12 +22,12 @@ The following infrastructure tasks in `specs/prd-v1.json` are **BLOCKING** and m
 - ✅ "Extract push-simple.test.ts from index.test.ts" - DONE
 - ✅ "Extract push-complex.test.ts from index.test.ts" - DONE (split into push-chain.test.ts, push-edge.test.ts, push-compression.test.ts, push-resolution.test.ts)
 - ✅ "Extract move-validation.test.ts from index.test.ts" - DONE
-- ❌ "Extract move-execution.test.ts from index.test.ts" - **BLOCKING**
+- ✅ "Extract move-execution.test.ts from index.test.ts" - DONE (split into move-execution.test.ts, apply-move.test.ts)
 - ✅ "Extract victory.test.ts from index.test.ts" - DONE (split into victory-throne.test.ts, victory-elimination.test.ts, victory-laststanding.test.ts)
-- ❌ "Extract utils.test.ts from index.test.ts" - **BLOCKING**
-- ❌ "Finalize index.test.ts" - **BLOCKING**
+- ✅ "Extract utils.test.ts from index.test.ts" - DONE (split into utils.test.ts, utils-path.test.ts)
+- ✅ "Finalize index.test.ts" - DONE (deleted, all tests extracted)
 
-**WHY**: Files over 800 lines cause context explosion. Every task that touches these files consumes 2M+ tokens instead of ~100k target.
+**All file-splitting tasks are COMPLETE.** No more blocking infrastructure tasks.
 
 ---
 
@@ -46,11 +46,7 @@ The following infrastructure tasks in `specs/prd-v1.json` are **BLOCKING** and m
 
 Large files cause context explosion when using AI assistants. A 3,000+ line file loads ~12k+ tokens just for the source, making even small tasks consume excessive context.
 
-### Current Violations (HIGHEST PRIORITY - FIX FIRST)
-
-- `packages/shared/src/index.test.ts` (~12,000 lines) → split into **tests**/\*.test.ts files (remaining tests)
-
-### Recommended Module Structure for shared/src/
+### Current Module Structure for shared/src/
 
 ```
 shared/src/
@@ -70,11 +66,20 @@ shared/src/
     ├── board-generation.test.ts
     ├── board-validation.test.ts
     ├── combat-strength.test.ts
-    ├── combat-calculation.test.ts
+    ├── combat-attack.test.ts
+    ├── combat-defense.test.ts
+    ├── combat-resolution.test.ts
     ├── push-simple.test.ts
-    ├── push-complex.test.ts
+    ├── push-chain.test.ts
+    ├── push-edge.test.ts
+    ├── push-compression.test.ts
+    ├── push-resolution.test.ts
     ├── move-validation.test.ts
     ├── move-execution.test.ts
-    ├── victory.test.ts
-    └── utils.test.ts
+    ├── apply-move.test.ts
+    ├── victory-throne.test.ts
+    ├── victory-elimination.test.ts
+    ├── victory-laststanding.test.ts
+    ├── utils.test.ts
+    └── utils-path.test.ts
 ```
