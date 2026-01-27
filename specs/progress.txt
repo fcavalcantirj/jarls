@@ -3066,3 +3066,19 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - packages/server/package.json (added dotenv, zod dependencies)
 - packages/server/.env.example (added documentation comments)
 - specs/prd-v1.json (marked 2 env tasks as passes: true)
+
+---
+
+### 2026-01-27: Infrastructure - Vite Dev Server Proxy
+
+**Feature Completed**: "Vite dev server proxy for API and WebSocket"
+
+**Work Done**:
+- Added proxy configuration to packages/client/vite.config.ts
+- Configured /api proxy to http://localhost:3000 with changeOrigin: true
+- Configured /socket.io proxy to http://localhost:3000 with WebSocket upgrade support (ws: true)
+- Typecheck passes, all 844 tests pass
+
+**Files Modified**:
+- packages/client/vite.config.ts (added server.proxy configuration)
+- specs/prd-v1.json (marked Vite proxy task as passes: true)

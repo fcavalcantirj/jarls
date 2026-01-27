@@ -13,7 +13,9 @@ export default tseslint.config(
     files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ['packages/client/vite.config.ts'],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },

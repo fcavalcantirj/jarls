@@ -481,7 +481,7 @@
       "Configure changeOrigin: true",
       "Test proxy works with mock endpoint"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "core-logic",
