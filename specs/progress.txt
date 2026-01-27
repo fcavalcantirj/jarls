@@ -1,5 +1,23 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Implement hex grid drawing
+
+**Features Completed**: "Implement hex grid drawing"
+
+**Work Done**:
+- Added `drawHex(hex, fillColor, strokeColor)` method to BoardRenderer - draws a single hex at given axial coordinates using canvas path operations
+- Added `drawGrid(boardRadius)` method to BoardRenderer - generates all board hexes via `generateAllBoardHexesAxial` and draws them
+- Throne hex at (0,0) is highlighted with gold fill (`#b8860b`) and gold stroke (`#daa520`)
+- Normal hexes use dark fill (`#2a2a3e`) with subtle gray borders (`#4a4a5e`)
+- Imports `hexToPixel` and `getHexCorners` from client utils, `generateAllBoardHexesAxial` from `@jarls/shared`
+
+**Files Modified**:
+- packages/client/src/components/Board/BoardRenderer.ts (85 -> 142 lines)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (21 failed, 1172 passed).
+
+---
+
 ### 2026-01-27: Frontend - Create BoardRenderer class
 
 **Features Completed**: "Create BoardRenderer class"

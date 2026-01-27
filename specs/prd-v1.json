@@ -1983,7 +1983,7 @@
       "Highlight throne hex at (0,0) with gold color",
       "Draw hex borders with subtle gray"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
