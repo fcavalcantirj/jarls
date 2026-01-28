@@ -1,5 +1,35 @@
 ## Progress Log
 
+### 2026-01-27: Testing - Set up Playwright E2E test infrastructure
+
+**Features Completed**: "Set up Playwright with project configuration"
+
+**Work Done**:
+- Installed @playwright/test ^1.58.0 as root dev dependency
+- Installed Chromium browser for Playwright
+- Created playwright.config.ts with project settings (chromium, webServer config for server:3000 and client:5173)
+- Created e2e/setup.ts global setup file
+- Created e2e/teardown.ts global teardown file
+- Created e2e/sample.spec.ts sample test (verifies home page loads with Jarls title)
+- Added `test:e2e` script to root package.json
+- Added Playwright artifacts to .gitignore (test-results, playwright-report, blob-report)
+- Config uses webServer to auto-start server and client before tests, with reuseExistingServer for local dev
+
+**Files Created**:
+- playwright.config.ts
+- e2e/setup.ts
+- e2e/teardown.ts
+- e2e/sample.spec.ts
+
+**Files Modified**:
+- package.json (added @playwright/test dep, test:e2e script)
+- .gitignore (added Playwright artifacts)
+- specs/prd-v1.json (marked 1 task as passes: true)
+
+**Verification**: pnpm typecheck passes. All 1107 unit tests pass (51 suites). Integration tests (86 failed) require Docker services - unchanged.
+
+---
+
 ### 2026-01-27: Testing - Mark integration test infrastructure as complete
 
 **Features Completed**: "Set up integration test infrastructure", "Integration tests for game creation endpoints", "Integration tests for game join and state endpoints", "Integration tests for API error cases", "Set up Socket.IO test infrastructure", "Integration tests for Socket.IO game events", "Integration tests for Socket.IO error and disconnect"
