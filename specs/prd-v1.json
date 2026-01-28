@@ -2502,7 +2502,7 @@
       "Create Dockerfile at project root",
       "Stage 1 (build): use node:20-alpine, install deps, build TypeScript"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "deployment",

@@ -1,5 +1,30 @@
 ## Progress Log
 
+### 2026-01-27: Deployment - Create Dockerfile build stage
+
+**Features Completed**: "Create Dockerfile build stage"
+
+**Work Done**:
+- Created multi-stage Dockerfile with build stage:
+  - Uses node:20-alpine as base image
+  - Enables pnpm via corepack
+  - Copies workspace config and package.json files first (for layer caching)
+  - Runs pnpm install --frozen-lockfile
+  - Copies source code and builds all packages with pnpm run build
+- Created .dockerignore to keep build context small (excludes node_modules, dist, .git, docs, specs, tests, config files)
+
+**Files Created**:
+- Dockerfile (build stage)
+- .dockerignore
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. All 1196 unit tests pass (56 suites). Integration tests (96 failed) require Docker services - unchanged pattern.
+
+---
+
 ### 2026-01-27: Non-functional - Verify server reliability requirements
 
 **Features Completed**: "Verify server reliability requirements"
