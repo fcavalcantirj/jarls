@@ -1,5 +1,30 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Create StarvationModal component
+
+**Features Completed**: "Create StarvationModal component"
+
+**Work Done**:
+- Created StarvationModal React component in src/components/Modals/StarvationModal.tsx
+- Accepts candidates (StarvationCandidates) and timeoutMs props
+- Shows modal when starvation phase is active and player has candidates to sacrifice
+- Displays list of candidate warriors with position coordinates as selectable buttons
+- Highlighted selection with orange border matching starvation theme
+- Countdown timer showing auto-select time, turns red when < 10 seconds
+- Confirm button emits starvationChoice via socket with selected pieceId
+- Shows waiting message if player has no candidates (eliminated or no warriors)
+- Follows existing dark theme pattern (#1a1a2e background, monospace font)
+- Updated Modals barrel export (index.ts)
+
+**Files Modified**:
+- packages/client/src/components/Modals/StarvationModal.tsx (new, 139 lines)
+- packages/client/src/components/Modals/index.ts (updated barrel export)
+- specs/prd-v1.json (marked 1 task as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (23 failed, 1170 passed).
+
+---
+
 ### 2026-01-27: Frontend - Create GameEndModal component
 
 **Features Completed**: "Create GameEndModal component", "Add GameEndModal leave button"

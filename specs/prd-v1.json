@@ -2203,7 +2203,7 @@
       "On select: emit starvationChoice via socket",
       "Show countdown timer for auto-select"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
