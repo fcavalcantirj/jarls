@@ -2269,13 +2269,13 @@
       "Route /lobby/create: CreateGameForm",
       "Route /lobby/games: GameList"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
     "description": "Add game routing",
     "steps": ["Route /lobby/:gameId: WaitingRoom", "Route /game/:gameId: Game page"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",

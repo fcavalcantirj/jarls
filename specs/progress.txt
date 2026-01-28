@@ -1,5 +1,28 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Implement lobby and game routing
+
+**Features Completed**: "Implement lobby routing", "Add game routing"
+
+**Work Done**:
+- Updated Lobby page to render correct components based on URL path
+- `/` renders Home page with styled Create Game / Join Game links
+- `/lobby/create` renders CreateGameForm component
+- `/lobby/games` renders GameList component
+- `/lobby/:gameId` renders WaitingRoom component with gameId prop
+- `/game/:gameId` renders Game page (already existed)
+- Styled Home page to match existing dark theme (#1a1a2e, monospace, gold accents)
+- App.tsx routes were already correctly defined; Lobby.tsx now dispatches to the right component
+
+**Files Modified**:
+- packages/client/src/pages/Home.tsx (styled with dark theme)
+- packages/client/src/pages/Lobby.tsx (routes to CreateGameForm, GameList, WaitingRoom based on URL)
+- specs/prd-v1.json (marked 2 tasks as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (86 failed, 1107 passed).
+
+---
+
 ### 2026-01-27: Frontend - Create WaitingRoom component
 
 **Features Completed**: "Create WaitingRoom component", "Add WaitingRoom non-host behavior"
