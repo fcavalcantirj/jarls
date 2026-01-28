@@ -2417,7 +2417,7 @@
       "Add performance test for getValidMoves: must complete < 10ms",
       "Verify AI move generation: must complete < 2 seconds"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "non-functional",

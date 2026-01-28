@@ -1,5 +1,31 @@
 ## Progress Log
 
+### 2026-01-27: Non-functional - Performance tests for game logic
+
+**Features Completed**: "Performance tests for game logic"
+
+**Work Done**:
+- Created perf-getvalidmoves.test.ts in shared package with 3 performance tests:
+  - Single piece getValidMoves completes under 10ms
+  - All player pieces getValidMoves completes under 10ms
+  - 100-iteration average getValidMoves completes under 10ms
+- Created perf-ai.test.ts in server package with 3 performance tests:
+  - RandomAI generates move under 2 seconds (zero thinking delay)
+  - HeuristicAI generates move under 2 seconds (zero thinking delay)
+  - HeuristicAI 10-iteration average under 2 seconds
+
+**Files Created**:
+- packages/shared/src/__tests__/perf-getvalidmoves.test.ts
+- packages/server/src/ai/__tests__/perf-ai.test.ts
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. All 1113 unit tests pass (53 suites). Integration tests (86 failed) require Docker services - unchanged.
+
+---
+
 ### 2026-01-27: Testing - E2E tests for mobile
 
 **Features Completed**: "E2E tests for mobile"
