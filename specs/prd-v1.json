@@ -2553,7 +2553,7 @@
       "Set up Node.js 20 with pnpm",
       "Cache pnpm dependencies"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "deployment",
@@ -2565,13 +2565,13 @@
       "Run pnpm test",
       "Run pnpm build"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "deployment",
     "description": "Add CI failure handling",
     "steps": ["Fail workflow on any error"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "deployment",
