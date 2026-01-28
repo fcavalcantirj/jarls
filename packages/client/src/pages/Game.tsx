@@ -6,6 +6,7 @@ import { Board } from '../components/Board/Board';
 import TurnIndicator from '../components/Game/TurnIndicator';
 import PlayerList from '../components/Game/PlayerList';
 import GameEndModal from '../components/Modals/GameEndModal';
+import HelpModal from '../components/Modals/HelpModal';
 
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -16,6 +17,7 @@ export default function Game() {
 
   const [joined, setJoined] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   // Join the socket room once connected
   useEffect(() => {
@@ -68,7 +70,12 @@ export default function Game() {
       {/* Header bar */}
       <div style={headerStyle}>
         <TurnIndicator />
-        <PlayerList />
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+          <PlayerList />
+          <button style={helpButtonStyle} onClick={() => setHelpOpen(true)} title="How to Play">
+            ?
+          </button>
+        </div>
       </div>
 
       {/* Board area */}
@@ -76,8 +83,9 @@ export default function Game() {
         <Board />
       </div>
 
-      {/* Game end modal overlay */}
+      {/* Modals */}
       <GameEndModal />
+      <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }
@@ -120,4 +128,18 @@ const linkStyle: React.CSSProperties = {
   color: '#457b9d',
   marginTop: '16px',
   fontFamily: 'monospace',
+};
+
+const helpButtonStyle: React.CSSProperties = {
+  width: '32px',
+  height: '32px',
+  borderRadius: '50%',
+  border: '2px solid #555',
+  backgroundColor: 'transparent',
+  color: '#888',
+  fontFamily: 'monospace',
+  fontSize: '16px',
+  fontWeight: 'bold',
+  cursor: 'pointer',
+  flexShrink: 0,
 };

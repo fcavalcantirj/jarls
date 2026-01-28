@@ -156,6 +156,34 @@ Browser (React + Canvas)
 
 The server is authoritative: clients send commands, the server validates and applies them using shared game logic. Game state is managed by XState v5 state machines with persistence to PostgreSQL for crash recovery.
 
+### Package Dependencies
+
+```
+@jarls/shared (no runtime deps)
+    ↑               ↑
+    │               │
+@jarls/server   @jarls/client
+```
+
+- **@jarls/shared** — Pure TypeScript game logic with zero runtime dependencies. Contains hex coordinate math, board generation, combat calculations, move validation, starvation mechanics, and all type definitions. Both server and client import from this package.
+- **@jarls/server** — Express 5 REST API + Socket.IO WebSocket server. Uses XState v5 for game state machines, PostgreSQL for persistence (snapshots + events), Redis for sessions and Socket.IO adapter. Depends on `@jarls/shared` for all game rule enforcement.
+- **@jarls/client** — React 18 SPA with Canvas-based hex board rendering. Uses Zustand for client state, Socket.IO for real-time communication, and imports types + utility functions from `@jarls/shared`. All game logic runs server-side; the client only sends commands and renders state.
+
+### Shared Package Modules
+
+```
+shared/src/
+├── types.ts           # All type/interface definitions
+├── hex.ts             # Hex coordinate math (distance, neighbors, lines)
+├── board.ts           # Board generation, starting positions, shield placement
+├── combat.ts          # Combat orchestration (re-exports combat-core.ts)
+├── combat-core.ts     # Attack/defense calculation, push resolution
+├── move.ts            # Move execution, valid moves (re-exports move-validation.ts)
+├── move-validation.ts # Path validation, draft formation detection
+├── starvation.ts      # Starvation trigger, candidate selection, resolution
+└── index.ts           # Barrel re-export of all modules
+```
+
 ## Game Rules Summary
 
 - **Objective**: Move your Jarl to the central Throne hex, or be the last Jarl standing.

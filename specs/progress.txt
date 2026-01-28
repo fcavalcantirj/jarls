@@ -1,5 +1,37 @@
 ## Progress Log
 
+### 2026-01-27: Deployment - Create architecture and help documentation
+
+**Features Completed**: "Create architecture and help documentation"
+
+**Work Done**:
+- Enhanced README.md with detailed package dependency diagram and descriptions:
+  - Package dependency graph showing @jarls/shared, @jarls/server, @jarls/client relationships
+  - Detailed description of each package's responsibilities and dependencies
+  - Shared package module structure with file-by-file descriptions
+- Created in-app HelpModal component (packages/client/src/components/Modals/HelpModal.tsx):
+  - Three-tab layout: Rules, Combat, Special
+  - Rules tab: objective, pieces, movement, turns
+  - Combat tab: attack calculation, defense calculation, outcome, push chains
+  - Special tab: draft formation, throne, starvation, elimination
+  - Styled consistently with existing modals (dark theme, monospace)
+- Integrated HelpModal into Game page with a "?" help button in the header bar
+- Updated Modals barrel export to include HelpModal
+
+**Files Created**:
+- packages/client/src/components/Modals/HelpModal.tsx
+
+**Files Modified**:
+- README.md (added package dependencies section, shared module structure)
+- packages/client/src/components/Modals/index.ts (added HelpModal export)
+- packages/client/src/pages/Game.tsx (added help button and HelpModal integration)
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. All 1196 unit tests pass (56 suites). Integration tests (96 failed) require Docker services - unchanged pattern.
+
+---
+
 ### 2026-01-27: Deployment - Create API documentation
 
 **Features Completed**: "Create API documentation"
