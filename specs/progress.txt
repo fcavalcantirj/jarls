@@ -1,5 +1,35 @@
 ## Progress Log
 
+### 2026-01-27: Deployment - Create README with project setup
+
+**Features Completed**: "Create README with project setup"
+
+**Work Done**:
+- Created README.md with comprehensive project documentation:
+  - Project overview and quick start guide
+  - Prerequisites (Node.js 20+, pnpm 9.x, Docker)
+  - Step-by-step development setup (clone, install, docker, migrate, dev)
+  - Environment variables table with defaults
+  - All available npm scripts documented
+  - Production deployment instructions with Docker Compose
+  - Technology stack summary table
+  - Architecture overview diagram (text-based)
+  - Game rules summary
+  - Monorepo guidelines (800-line file limit)
+- Created .env.example with all documented environment variables
+
+**Files Created**:
+- README.md
+- .env.example
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. All 1196 unit tests pass (56 suites). Integration tests (96 failed) require Docker services - unchanged pattern.
+
+---
+
 ### 2026-01-27: Deployment - Create production docker-compose services
 
 **Features Completed**: "Create production docker-compose services"

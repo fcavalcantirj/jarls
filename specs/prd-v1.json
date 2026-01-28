@@ -2582,7 +2582,7 @@
       "Document development setup step by step",
       "Document all environment variables in README"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "deployment",
