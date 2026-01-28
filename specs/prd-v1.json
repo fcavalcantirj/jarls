@@ -2185,13 +2185,13 @@
       "Show win condition (Throne or Last Standing)",
       "Add 'Play Again' button (returns to lobby)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
     "description": "Add GameEndModal leave button",
     "steps": ["Add 'Leave' button (returns to home)"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

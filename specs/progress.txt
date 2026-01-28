@@ -1,5 +1,28 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Create GameEndModal component
+
+**Features Completed**: "Create GameEndModal component", "Add GameEndModal leave button"
+
+**Work Done**:
+- Created GameEndModal React component in src/components/Modals/GameEndModal.tsx
+- Shows overlay when game.phase === 'ended' and winnerId is set
+- Displays 'Victory!' (gold) or 'Defeat' (red) based on whether winnerId matches playerId
+- Shows winner name and win condition label (Throne Conquest / Last Standing)
+- 'Play Again' button navigates to /lobby/create
+- 'Leave' button navigates to home (/)
+- Follows existing dark theme pattern (#1a1a2e background, monospace font)
+- Updated Modals barrel export (index.ts)
+
+**Files Modified**:
+- packages/client/src/components/Modals/GameEndModal.tsx (new, 89 lines)
+- packages/client/src/components/Modals/index.ts (updated barrel export)
+- specs/prd-v1.json (marked 2 tasks as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (24 failed, 1169 passed).
+
+---
+
 ### 2026-01-27: Frontend - Create PlayerList component
 
 **Features Completed**: "Create PlayerList component"
