@@ -2428,7 +2428,7 @@
       "Run tests with production build",
       "Document results in test output"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "non-functional",
