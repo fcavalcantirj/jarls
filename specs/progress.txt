@@ -1,5 +1,32 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Create WaitingRoom component
+
+**Features Completed**: "Create WaitingRoom component", "Add WaitingRoom non-host behavior"
+
+**Work Done**:
+- Created WaitingRoom React component in src/components/Lobby/WaitingRoom.tsx
+- Connects to socket and joins game room via `joinGame` event on mount
+- Displays player slots (filled/empty) with player names, host badge, and "(you)" indicator
+- Connection status banner (connecting/disconnected/error)
+- Host sees "Start Game" button (enabled when 2 players present)
+- Non-host sees "Waiting for host to start the game..." message
+- Start Game emits `startGame` socket event with error handling
+- Auto-navigates to `/game/:gameId` when game phase changes from 'lobby'
+- Leave button navigates back to home
+- Truncated game ID display
+- Follows existing dark theme pattern (#1a1a2e background, monospace font, gold accents)
+- Updated Lobby barrel export (index.ts)
+
+**Files Modified**:
+- packages/client/src/components/Lobby/WaitingRoom.tsx (new, ~220 lines)
+- packages/client/src/components/Lobby/index.ts (updated barrel export)
+- specs/prd-v1.json (marked 2 tasks as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (86 failed, 1107 passed).
+
+---
+
 ### 2026-01-27: Frontend - Create GameList component
 
 **Features Completed**: "Create GameList component", "Add GameList join functionality"

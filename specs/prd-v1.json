@@ -2252,13 +2252,13 @@
       "Display player slots (filled/empty)",
       "Host sees Start Game button (enabled when 2 players)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
     "description": "Add WaitingRoom non-host behavior",
     "steps": ["Non-host sees waiting message", "On startGame event: navigate to Game page"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
