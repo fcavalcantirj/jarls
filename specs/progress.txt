@@ -1,5 +1,27 @@
 ## Progress Log
 
+### 2026-01-27: Testing - E2E tests for game creation and joining
+
+**Features Completed**: "E2E tests for game creation and joining"
+
+**Work Done**:
+- Created e2e/lobby.spec.ts with 3 Playwright E2E tests covering the full lobby flow
+- Test 1: "create game from home page" - navigates Home → Create Game form → fills name → submits → verifies waiting room with HOST badge
+- Test 2: "second player joins game from game list" - Player 1 creates game, Player 2 navigates to game list, enters name, clicks Join, verifies both players visible and non-host sees waiting message
+- Test 3: "waiting room shows both players" - verifies real-time socket updates: host sees player count update from 1/2 to 2/2, Start Game button becomes enabled when both players present
+- Uses separate browser contexts to simulate two distinct players with independent sessions
+
+**Files Created**:
+- e2e/lobby.spec.ts
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. All 1107 unit tests pass (51 suites). Integration tests (86 failed) require Docker services - unchanged.
+
+---
+
 ### 2026-01-27: Testing - Set up Playwright E2E test infrastructure
 
 **Features Completed**: "Set up Playwright with project configuration"

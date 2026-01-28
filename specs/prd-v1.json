@@ -2365,7 +2365,7 @@
       "Test: second player joins game from game list",
       "Test: waiting room shows both players"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",
