@@ -31,6 +31,12 @@ coverage/
 .cache/
 .eslintcache
 
+# Claude Code
+.claude/
+
+# Husky
+.husky/
+
 # Playwright
 /test-results/
 /playwright-report/
