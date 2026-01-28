@@ -2531,7 +2531,7 @@
       "Add postgres service with volume",
       "Add redis service with volume"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "deployment",

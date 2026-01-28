@@ -1,5 +1,30 @@
 ## Progress Log
 
+### 2026-01-27: Deployment - Create production docker-compose services
+
+**Features Completed**: "Create production docker-compose services"
+
+**Work Done**:
+- Created docker-compose.prod.yml with three services:
+  - **app**: Built from Dockerfile (production target), exposes port 3000, connects to postgres and redis via internal network, environment variables configured via shell substitution with defaults
+  - **postgres**: PostgreSQL 16 Alpine with persistent volume (postgres_prod_data), healthcheck via pg_isready
+  - **redis**: Redis 7 Alpine with persistent volume (redis_prod_data), healthcheck via redis-cli ping
+- All services have `restart: unless-stopped` policy
+- All services have healthchecks configured
+- App service uses `depends_on` with `condition: service_healthy` for both postgres and redis
+- Environment variables use `${VAR:-default}` pattern for .env file support
+
+**Files Created**:
+- docker-compose.prod.yml
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. All 1196 unit tests pass (56 suites). Integration tests (96 failed) require Docker services - unchanged pattern.
+
+---
+
 ### 2026-01-27: Deployment - Create Dockerfile production stage
 
 **Features Completed**: "Create Dockerfile production stage"
