@@ -1,5 +1,33 @@
 ## Progress Log
 
+### 2026-01-27: Testing - E2E tests for mobile
+
+**Features Completed**: "E2E tests for mobile"
+
+**Work Done**:
+- Created e2e/mobile.spec.ts with 2 Playwright E2E tests covering mobile viewport behavior
+- Test 1: "mobile viewport touch interactions work" - verifies:
+  - Game board canvas renders on mobile viewport (375x667, iPhone SE)
+  - Touch tap on canvas does not crash the app (uses `hasTouch: true`, `isMobile: true`)
+  - Programmatic move executes successfully in touch-enabled context
+  - Turn switches correctly after move on mobile
+- Test 2: "responsive layout adapts correctly on mobile viewport" - verifies:
+  - Home page has no horizontal overflow on 375px width
+  - Create game form is fully visible without scrolling
+  - Game list page has no horizontal overflow
+  - Waiting room layout fits mobile viewport
+
+**Files Created**:
+- e2e/mobile.spec.ts
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. All 1107 unit tests pass (51 suites). Integration tests (86 failed) require Docker services - unchanged.
+
+---
+
 ### 2026-01-27: Testing - E2E tests for game completion
 
 **Features Completed**: "E2E tests for game completion"

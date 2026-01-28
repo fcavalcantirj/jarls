@@ -2408,7 +2408,7 @@
       "Test: mobile viewport touch interactions work",
       "Test: responsive layout adapts correctly"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "non-functional",
