@@ -2371,7 +2371,7 @@
     "category": "testing",
     "description": "E2E tests for game start",
     "steps": ["Test: host can start game when 2 players present"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",

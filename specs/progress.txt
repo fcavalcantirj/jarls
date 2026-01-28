@@ -1,5 +1,24 @@
 ## Progress Log
 
+### 2026-01-27: Testing - E2E tests for game start
+
+**Features Completed**: "E2E tests for game start"
+
+**Work Done**:
+- Created e2e/game-start.spec.ts with 1 Playwright E2E test covering the game start flow
+- Test: "host can start game when 2 players present" - Player 1 creates game, Player 2 joins via game list, host clicks Start Game, verifies both players navigate to /game/:gameId and see the Game page
+
+**Files Created**:
+- e2e/game-start.spec.ts
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. All 1107 unit tests pass (51 suites). Integration tests (86 failed) require Docker services - unchanged.
+
+---
+
 ### 2026-01-27: Testing - E2E tests for game creation and joining
 
 **Features Completed**: "E2E tests for game creation and joining"
