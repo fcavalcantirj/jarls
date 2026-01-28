@@ -2593,7 +2593,7 @@
       "Include authentication header requirements",
       "Include error response formats"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "deployment",

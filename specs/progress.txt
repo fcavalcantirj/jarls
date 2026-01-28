@@ -1,5 +1,28 @@
 ## Progress Log
 
+### 2026-01-27: Deployment - Create API documentation
+
+**Features Completed**: "Create API documentation"
+
+**Work Done**:
+- Created docs/API.md with comprehensive REST API documentation:
+  - All 6 REST endpoints documented (GET /health, POST /api/games, GET /api/games, POST /api/games/:id/join, GET /api/games/:id, POST /api/games/:id/start, GET /api/games/:id/valid-moves/:pieceId)
+  - Authentication requirements (Bearer token) explained
+  - Request/response examples with JSON for every endpoint
+  - Error response format and all error codes documented
+  - Data type reference (GameState, Player, Piece, ValidMove, CombatPreview)
+
+**Files Created**:
+- docs/API.md
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. All 1196 unit tests pass (56 suites). Integration tests (96 failed) require Docker services - unchanged pattern.
+
+---
+
 ### 2026-01-27: Deployment - Create README with project setup
 
 **Features Completed**: "Create README with project setup"
