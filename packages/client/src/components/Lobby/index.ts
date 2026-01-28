@@ -1,1 +1,1 @@
-// Lobby component barrel export
+export { default as CreateGameForm } from './CreateGameForm';

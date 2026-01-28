@@ -1,5 +1,33 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Create CreateGameForm component
+
+**Features Completed**: "Create CreateGameForm component", "Add CreateGameForm timer and submit"
+
+**Work Done**:
+- Created CreateGameForm React component in src/components/Lobby/CreateGameForm.tsx
+- Player name text input with 30-char limit and autofocus
+- Opponent type toggle buttons (Human / AI) with gold highlight for active
+- AI difficulty dropdown (Normal / Random) shown only when AI opponent selected
+- Turn timer dropdown (No Timer, 30s, 60s, 120s)
+- Submit handler: POST /api/games to create game, POST /api/games/:id/join to join
+- If AI opponent selected, POST /api/games/:id/ai to add AI player
+- Stores sessionToken and playerId in Zustand store
+- Navigates to /lobby/:gameId (waiting room) on success
+- Error display for failed requests
+- Loading state during submission
+- Follows existing dark theme pattern (#1a1a2e background, monospace font, gold accents)
+- Updated Lobby barrel export (index.ts)
+
+**Files Modified**:
+- packages/client/src/components/Lobby/CreateGameForm.tsx (new, 216 lines)
+- packages/client/src/components/Lobby/index.ts (updated barrel export)
+- specs/prd-v1.json (marked 2 tasks as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (86 failed, 1107 passed).
+
+---
+
 ### 2026-01-27: Frontend - Create StarvationModal component
 
 **Features Completed**: "Create StarvationModal component"

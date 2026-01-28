@@ -2214,7 +2214,7 @@
       "Opponent type selector (Human/AI)",
       "AI difficulty dropdown (when AI selected)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
@@ -2224,7 +2224,7 @@
       "Submit: POST /api/games, then POST /join",
       "Navigate to waiting room on success"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
