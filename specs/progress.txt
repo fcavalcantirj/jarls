@@ -1,5 +1,29 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Create Timer component
+
+**Features Completed**: "Create Timer component"
+
+**Work Done**:
+- Created Timer React component in src/components/Game/Timer.tsx
+- Displays countdown timer from gameState.config.turnTimerMs
+- Resets countdown on each turn change (tracks turnNumber)
+- Uses interval-based countdown with 100ms precision
+- Shows minutes:seconds format (e.g., "1:30") or seconds-only (e.g., "15s")
+- Urgent styling when < 10 seconds: red border, red text, pulsing animation
+- Returns null when turnTimerMs is null (timer disabled)
+- Follows existing dark theme pattern (#1a1a2e background, monospace font)
+- Updated Game barrel export (index.ts)
+
+**Files Modified**:
+- packages/client/src/components/Game/Timer.tsx (new, 82 lines)
+- packages/client/src/components/Game/index.ts (updated barrel export)
+- specs/prd-v1.json (marked 1 task as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (22 failed, 1171 passed).
+
+---
+
 ### 2026-01-27: Frontend - Create TurnIndicator component
 
 **Features Completed**: "Create TurnIndicator component"

@@ -2162,7 +2162,7 @@
       "Display countdown from turnTimerMs",
       "Style urgently when < 10 seconds"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
