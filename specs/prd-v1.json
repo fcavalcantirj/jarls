@@ -2173,7 +2173,7 @@
       "Highlight current player",
       "Mark eliminated players with strikethrough"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

@@ -1,5 +1,27 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Create PlayerList component
+
+**Features Completed**: "Create PlayerList component"
+
+**Work Done**:
+- Created PlayerList React component in src/components/Game/PlayerList.tsx
+- Lists all players with colored dot indicator matching their player color
+- Shows warrior count (W:N) and Jarl status (J or -) per player
+- Highlights current player with colored left border
+- Marks eliminated players with strikethrough name and reduced opacity
+- Follows existing dark theme pattern (#1a1a2e background, monospace font)
+- Updated Game barrel export (index.ts)
+
+**Files Modified**:
+- packages/client/src/components/Game/PlayerList.tsx (new, 116 lines)
+- packages/client/src/components/Game/index.ts (updated barrel export)
+- specs/prd-v1.json (marked 1 task as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (28 failed, 1165 passed).
+
+---
+
 ### 2026-01-27: Frontend - Create Timer component
 
 **Features Completed**: "Create Timer component"
