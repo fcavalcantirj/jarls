@@ -2604,7 +2604,7 @@
       "Document all server-to-client events with payloads",
       "Include connection and authentication flow"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "deployment",

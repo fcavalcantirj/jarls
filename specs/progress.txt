@@ -5639,3 +5639,27 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - specs/progress.txt (this entry)
 
 **Verification**: pnpm typecheck passes. 1196 unit/shared tests passing, 96 pre-existing integration test failures (require running database/Redis). All files under 800 lines.
+
+---
+
+### 2026-01-27: Deployment - Create WebSocket documentation
+
+**Features Completed**: "Create WebSocket documentation"
+
+**Work Done**:
+- Created `docs/WEBSOCKET.md` with complete WebSocket API documentation
+- Documented all 4 client-to-server events (joinGame, startGame, playTurn, starvationChoice) with payloads and callback responses
+- Documented all 8 server-to-client events (gameState, turnPlayed, gameEnded, playerJoined, playerLeft, playerReconnected, starvationRequired, error) with payloads
+- Included connection and authentication flow
+- Added connection lifecycle sequence diagram
+- Documented all GameEvent types in a reference table
+- Added error handling section with common error scenarios
+
+**Files Created**:
+- docs/WEBSOCKET.md (380 lines)
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. No code changes, documentation only.
