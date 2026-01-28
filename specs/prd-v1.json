@@ -2398,7 +2398,7 @@
       "Test: play to victory, verify end modal appears",
       "Test: victory condition displayed correctly"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",

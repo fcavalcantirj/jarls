@@ -1,5 +1,31 @@
 ## Progress Log
 
+### 2026-01-27: Testing - E2E tests for game completion
+
+**Features Completed**: "E2E tests for game completion"
+
+**Work Done**:
+- Created e2e/endgame.spec.ts with 2 Playwright E2E tests covering game completion
+- Test 1: "play to victory shows end modal with victory condition" - verifies:
+  - Winner (Alice) sees "Victory!" modal with "Throne Conquest" condition and "Alice wins" text
+  - Loser (Bob) sees "Defeat" modal with same condition label
+  - Both players see "Play Again" and "Leave" buttons
+- Test 2: "victory condition displays correctly for Last Standing" - verifies:
+  - "Last Standing" win condition label displays correctly
+  - "Play Again" button navigates to /lobby/create
+  - "Leave" button navigates to /
+
+**Files Created**:
+- e2e/endgame.spec.ts
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. All 1107 unit tests pass (51 suites). Integration tests (86 failed) require Docker services - unchanged.
+
+---
+
 ### 2026-01-27: Testing - E2E tests for turn indicator
 
 **Features Completed**: "E2E tests for turn indicator"
