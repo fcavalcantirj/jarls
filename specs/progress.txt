@@ -1,5 +1,28 @@
 ## Progress Log
 
+### 2026-01-27: Testing - E2E tests for turn indicator
+
+**Features Completed**: "E2E tests for turn indicator"
+
+**Work Done**:
+- Created e2e/turn-indicator.spec.ts with 1 Playwright E2E test covering the turn indicator
+- Test: "opponent's turn indicator shown" - verifies:
+  - Active player sees "Your Turn" badge, waiting player does not
+  - Both players see the current player's name in the turn indicator
+  - After a move is made, the turn indicator updates: waiting player now sees "Your Turn"
+  - After the turn switch, both players see the new current player's name
+
+**Files Created**:
+- e2e/turn-indicator.spec.ts
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. All 1107 unit tests pass (51 suites). Integration tests (86 failed) require Docker services - unchanged.
+
+---
+
 ### 2026-01-27: Testing - E2E tests for gameplay
 
 **Features Completed**: "E2E tests for gameplay"

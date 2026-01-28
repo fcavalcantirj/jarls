@@ -2388,7 +2388,7 @@
     "category": "testing",
     "description": "E2E tests for turn indicator",
     "steps": ["Test: opponent's turn indicator shown"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",
