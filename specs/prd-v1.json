@@ -2460,7 +2460,7 @@
       "Verify connection pool handles reconnection",
       "Verify no memory leaks (run extended test)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "non-functional",

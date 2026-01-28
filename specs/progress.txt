@@ -1,5 +1,28 @@
 ## Progress Log
 
+### 2026-01-27: Non-functional - Verify server reliability requirements
+
+**Features Completed**: "Verify server reliability requirements"
+
+**Work Done**:
+- Created reliability-server.test.ts with 32 server reliability verification tests:
+  - Game state persists to database (7 tests): initial snapshot saved on create, GAME_CREATED event saved, snapshot on state transition to playing, event on state transition, full XState snapshot with context persisted, version increments on transitions, game continues even if persistence fails
+  - Server recovers active games on restart (8 tests): calls loadActiveSnapshots, recovers lobby snapshot, recovers playing snapshot, recovers multiple games, skips already-loaded games, handles corrupted snapshots gracefully, returns 0 when no active snapshots, recovered game continues to persist
+  - Optimistic locking prevents concurrent conflicts (4 tests): version-based WHERE clause for updates, monotonically increasing versions, only persists on top-level state changes (not sub-states), VersionConflictError defined and throwable
+  - Connection pool handles reconnection (6 tests): pool exports query/getClient/closePool/pool, pool has error handler for idle clients, query wraps pool.query with error handling, getClient for transactions, closePool for graceful shutdown, game manager handles persistence errors without crashing
+  - No memory leaks (7 tests): shutdown stops all actors and clears map, remove() cleans up individual actors, creating/removing 20 games doesn't leak, ended games handled without accumulation, rapid create/destroy cycle stays stable, subscriptions cleaned up on remove, listGames empty after all removed
+
+**Files Created**:
+- packages/server/src/__tests__/reliability-server.test.ts (633 lines)
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. All 1196 unit tests pass (56 suites). Integration tests (96 failed) require Docker services - unchanged pattern.
+
+---
+
 ### 2026-01-27: Non-functional - Security verification for game logic
 
 **Features Completed**: "Security verification for game logic"
