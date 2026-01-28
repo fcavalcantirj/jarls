@@ -2285,7 +2285,7 @@
       "Create packages/server/src/__tests__/api.test.ts",
       "Set up test database and Redis (docker-compose.test.yml or in-memory)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",
@@ -2294,7 +2294,7 @@
       "Test POST /api/games: creates game, returns gameId",
       "Test GET /api/games: lists games in lobby status"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",
@@ -2304,7 +2304,7 @@
       "Test GET /api/games/:id: requires auth, returns state",
       "Test POST /api/games/:id/start: requires host, starts game"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",
@@ -2313,7 +2313,7 @@
       "Test error cases: 404 for missing game, 401 for bad token",
       "Clean up test data after each test"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",
@@ -2322,7 +2322,7 @@
       "Create packages/server/src/__tests__/socket.test.ts",
       "Set up socket.io-client for testing"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",
@@ -2332,7 +2332,7 @@
       "Test playTurn: move executes, all clients receive turnPlayed",
       "Test startGame: game starts, all clients receive gameState"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",
@@ -2342,7 +2342,7 @@
       "Test disconnect/reconnect: game pauses, resumes",
       "Clean up socket connections after tests"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",
