@@ -2438,7 +2438,7 @@
       "Verify all game mutations require valid session",
       "Verify sessions expire after 24 hours"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "non-functional",

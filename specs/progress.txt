@@ -1,5 +1,29 @@
 ## Progress Log
 
+### 2026-01-27: Non-functional - Security verification for sessions
+
+**Features Completed**: "Security verification for sessions"
+
+**Work Done**:
+- Created security-sessions.test.ts with 23 security verification tests:
+  - Session token entropy: tokens are 64 hex chars (256-bit), hex-encoded, sufficient brute-force resistance
+  - REST mutations require valid session: GET game state (401), POST start (401), GET valid-moves (401), malformed auth header (401), non-host start (401)
+  - Public endpoints work without auth: POST create, GET list, POST join
+  - WebSocket mutations require prior joinGame with valid session token
+  - Session expiration: 24h TTL (86400s), expired tokens return 401, extendSession refreshes TTL
+  - Auth error messages: no internal details leaked, no token existence revealed
+
+**Files Created**:
+- packages/server/src/__tests__/security-sessions.test.ts (368 lines)
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. All 1124 unit tests pass (53 suites). Integration tests (96 failed) require Docker services - unchanged pattern.
+
+---
+
 ### 2026-01-27: Non-functional - Performance tests for network
 
 **Features Completed**: "Performance tests for network"
