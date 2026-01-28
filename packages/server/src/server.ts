@@ -2,6 +2,8 @@ import express, { type Express, type Request, type Response, type NextFunction }
 import cors from 'cors';
 import helmet from 'helmet';
 import http from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { errorMiddleware } from './middleware/error.js';
 import { createGameRoutes } from './routes/games.js';
 import { GameManager } from './game/manager.js';
@@ -38,6 +40,25 @@ app.get('/health', (_req: Request, res: Response) => {
 
 // API routes
 app.use('/api/games', createGameRoutes(gameManager));
+
+// In production, serve the client build as static files
+if (process.env.NODE_ENV === 'production') {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const clientDistPath = path.resolve(__dirname, '../../client/dist');
+  app.use(express.static(clientDistPath));
+
+  // SPA fallback: serve index.html for non-API routes
+  app.get('*', (_req: Request, res: Response, next: NextFunction) => {
+    if (
+      _req.path.startsWith('/api') ||
+      _req.path.startsWith('/socket.io') ||
+      _req.path === '/health'
+    ) {
+      return next();
+    }
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
 
 // Error middleware (must be after all routes)
 app.use(errorMiddleware);
