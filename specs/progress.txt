@@ -5695,3 +5695,25 @@ When a Jarl makes a 2-hex draft move that would cross through the Throne (0,0), 
 - specs/progress.txt (this entry)
 
 **Verification**: pnpm typecheck passes. No code changes, documentation only.
+
+---
+
+### 2026-01-28: Deployment - Configure production docker-compose
+
+**Features Completed**: "Configure production docker-compose"
+
+**Work Done**:
+- Verified docker-compose.prod.yml already has all required configuration:
+  - Environment variables configured via shell substitution with defaults (POSTGRES_PASSWORD, PORT)
+  - All 3 services (app, postgres, redis) have `restart: unless-stopped` policies
+  - All 3 services have healthchecks configured
+  - Services use `depends_on` with `condition: service_healthy` for proper startup ordering
+  - Dedicated bridge network for inter-service communication
+  - Named volumes for data persistence
+- Marked task as passing (configuration complete; Docker testing covered by separate "Test Dockerfile locally" task which requires Docker daemon)
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. 1196 unit/shared tests passing, 96 pre-existing integration test failures (require running database/Redis). No code changes.

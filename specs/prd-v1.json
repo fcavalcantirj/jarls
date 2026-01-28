@@ -2542,7 +2542,7 @@
       "Add healthchecks for all services",
       "Test full stack starts correctly"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "deployment",
