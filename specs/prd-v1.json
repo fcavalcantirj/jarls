@@ -2448,7 +2448,7 @@
       "Verify all API input validated with Zod",
       "Verify error messages don't leak sensitive info"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "non-functional",

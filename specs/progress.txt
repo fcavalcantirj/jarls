@@ -1,5 +1,26 @@
 ## Progress Log
 
+### 2026-01-27: Non-functional - Security verification for game logic
+
+**Features Completed**: "Security verification for game logic"
+
+**Work Done**:
+- Created security-game-logic.test.ts with 28 security verification tests:
+  - Players can only move own pieces: turn validation rejects non-current player, applyMove validates piece ownership, rejects opponent's pieces even with valid destinations, rejects non-existent piece IDs, socket playTurn uses server-side playerId (not client-supplied), starvation choice rejects invalid candidates
+  - All API input validated with Zod: POST /api/games rejects invalid playerCount (type, min, max, non-integer), rejects invalid turnTimerMs (type, negative, zero), accepts valid configs and defaults; POST /api/games/:id/join rejects missing/empty/too-long/non-string playerName, accepts valid and max-length names
+  - Error messages don't leak sensitive info: validation errors contain only code+message (no stack/details), 404 errors don't expose paths, invalid move errors don't expose internals, full game errors return generic INTERNAL_ERROR code, no database connection details or file system paths in any error response
+
+**Files Created**:
+- packages/server/src/__tests__/security-game-logic.test.ts (469 lines)
+
+**Files Modified**:
+- specs/prd-v1.json (marked 1 task as passes: true)
+- specs/progress.txt (this entry)
+
+**Verification**: pnpm typecheck passes. All 1192 unit tests pass (55 suites). Integration tests (96 failed) require Docker services - unchanged pattern.
+
+---
+
 ### 2026-01-27: Non-functional - Security verification for sessions
 
 **Features Completed**: "Security verification for sessions"
