@@ -2235,13 +2235,13 @@
       "Display list of joinable games with player counts",
       "Join button for each game"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",
     "description": "Add GameList join functionality",
     "steps": ["On join: POST /api/games/:id/join, navigate to waiting room"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "frontend",

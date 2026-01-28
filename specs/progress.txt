@@ -1,5 +1,31 @@
 ## Progress Log
 
+### 2026-01-27: Frontend - Create GameList component
+
+**Features Completed**: "Create GameList component", "Add GameList join functionality"
+
+**Work Done**:
+- Created GameList React component in src/components/Lobby/GameList.tsx
+- Fetches GET /api/games on mount to load available games
+- Filters to show only joinable games (status 'lobby', not full)
+- Displays game cards with: truncated game ID, player count, timer badge, host name
+- Player name input field required before joining
+- Join button: POST /api/games/:id/join with playerName, stores session, navigates to /lobby/:gameId
+- Loading state, empty state ("No games available"), and error handling
+- Refresh button to re-fetch game list
+- Back button to navigate home
+- Follows existing dark theme pattern (#1a1a2e background, monospace font, gold accents)
+- Updated Lobby barrel export (index.ts)
+
+**Files Modified**:
+- packages/client/src/components/Lobby/GameList.tsx (new, 241 lines)
+- packages/client/src/components/Lobby/index.ts (updated barrel export)
+- specs/prd-v1.json (marked 2 tasks as passes: true)
+
+**Verification**: pnpm typecheck passes. Pre-existing test failures unchanged (86 failed, 1107 passed).
+
+---
+
 ### 2026-01-27: Frontend - Create CreateGameForm component
 
 **Features Completed**: "Create CreateGameForm component", "Add CreateGameForm timer and submit"
