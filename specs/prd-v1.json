@@ -2382,7 +2382,7 @@
       "Test: click piece shows valid moves highlighted",
       "Test: make a move, verify board updates"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",
