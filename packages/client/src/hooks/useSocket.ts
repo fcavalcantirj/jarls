@@ -82,12 +82,23 @@ export function useSocket(gameId: string | null): GameSocket | null {
       events?: import('@jarls/shared').GameEvent[];
     }) => {
       const events = data.events ?? [];
+      console.log(
+        `[TURN PLAYED] newTurn=${data.newState.turnNumber} currentPlayer=${data.newState.currentPlayerId} events=${events.length}`
+      );
+      // Log all piece positions to detect corruption
+      console.log(
+        '[TURN PLAYED] pieces:',
+        data.newState.pieces.map((p) => `${p.id}@(${p.position.q},${p.position.r})`).join(', ')
+      );
+      // Log events for debugging
+      events.forEach((e, i) => console.log(`[TURN PLAYED] event[${i}]:`, JSON.stringify(e)));
       if (events.length > 0) {
         // Queue the update for animation playback — Board will apply state after animating
         useGameStore.getState().setPendingTurnUpdate({ newState: data.newState, events });
         clearSelection();
       } else {
         // No events to animate — apply immediately
+        useGameStore.getState().setMovePending(false);
         setGameState(data.newState);
         clearSelection();
       }

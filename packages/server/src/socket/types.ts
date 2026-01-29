@@ -16,6 +16,8 @@ export interface JoinGamePayload {
 export interface PlayTurnPayload {
   gameId: string;
   command: MoveCommand;
+  /** Optional turn number for stale request detection */
+  turnNumber?: number;
 }
 
 export interface StartGamePayload {

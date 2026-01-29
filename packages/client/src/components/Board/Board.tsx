@@ -26,6 +26,7 @@ export function Board() {
   const hoverPosition = useGameStore((s) => s.hoverPosition);
   const pendingTurnUpdate = useGameStore((s) => s.pendingTurnUpdate);
   const isAnimating = useGameStore((s) => s.isAnimating);
+  const movePending = useGameStore((s) => s.movePending);
 
   // Initialize renderer on mount
   useEffect(() => {
@@ -114,20 +115,26 @@ export function Board() {
       });
   }, [pendingTurnUpdate, gameState]);
 
-  // Handle window resize
+  // Handle window resize and container resize
   useEffect(() => {
     const canvas = canvasRef.current;
     const renderer = rendererRef.current;
     if (!canvas || !renderer) return;
 
+    const parent = canvas.parentElement;
+    if (!parent) return;
+
     const handleResize = () => {
-      const parent = canvas.parentElement;
-      if (!parent) return;
+      const width = parent.clientWidth;
+      const height = parent.clientHeight;
 
-      canvas.width = parent.clientWidth;
-      canvas.height = parent.clientHeight;
+      // Skip if dimensions are zero (layout not yet computed)
+      if (width === 0 || height === 0) return;
 
-      renderer.handleResize(canvas.width, canvas.height);
+      canvas.width = width;
+      canvas.height = height;
+
+      renderer.handleResize(width, height);
 
       if (gameState && !isAnimating) {
         const highlights = getHighlights();
@@ -138,8 +145,17 @@ export function Board() {
     // Initial sizing
     handleResize();
 
+    // Use ResizeObserver for reliable container size changes
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+    resizeObserver.observe(parent);
+
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
+    };
   }, [gameState, getHighlights, isAnimating]);
 
   // Auto-clear error toast after duration
@@ -156,16 +172,28 @@ export function Board() {
     };
   }, [errorMessage]);
 
-  const isMyTurn = useGameStore(selectIsMyTurn);
-
   // Core interaction logic shared by mouse and touch handlers
   const handleInteraction = useCallback(
     (canvasX: number, canvasY: number) => {
-      // Block interaction during animations
-      if (isAnimating) return;
+      // IMPORTANT: Read ALL state directly from store to avoid React stale closure issues.
+      // React's useCallback captures values at render time, but rapid clicks can happen
+      // before React re-renders, causing the captured values to be stale.
+      const store = useGameStore.getState();
+      const freshGameState = store.gameState;
+      const freshPlayerId = store.playerId;
+      const freshSelectedPieceId = store.selectedPieceId;
+      const freshValidMoves = store.validMoves;
+
+      console.log(
+        `[CLICK] isAnimating=${store.isAnimating} movePending=${store.movePending} turn=${freshGameState?.turnNumber} currentPlayer=${freshGameState?.currentPlayerId}`
+      );
+      if (store.isAnimating || store.movePending) {
+        console.log('[CLICK] BLOCKED');
+        return;
+      }
 
       const renderer = rendererRef.current;
-      if (!renderer || !gameState) return;
+      if (!renderer || !freshGameState) return;
 
       const dims = renderer.getDimensions();
       if (!dims) return;
@@ -174,33 +202,35 @@ export function Board() {
       const clickedHex = pixelToHex(canvasX, canvasY, dims.hexSize, dims.centerX, dims.centerY);
 
       // Ignore clicks outside the board
-      if (!isOnBoardAxial(clickedHex, gameState.config.boardRadius)) return;
-
-      const store = useGameStore.getState();
+      if (!isOnBoardAxial(clickedHex, freshGameState.config.boardRadius)) return;
 
       // If a piece is selected and we click a valid move destination, execute the move
-      if (selectedPieceId && validMoves.length > 0) {
-        const targetMove = validMoves.find(
+      if (freshSelectedPieceId && freshValidMoves.length > 0) {
+        const targetMove = freshValidMoves.find(
           (m) => m.destination.q === clickedHex.q && m.destination.r === clickedHex.r
         );
         if (targetMove) {
           // Save selection info for potential restore on error
-          const prevPieceId = selectedPieceId;
-          const prevMoves = validMoves;
+          const prevPieceId = freshSelectedPieceId;
+          const prevMoves = freshValidMoves;
 
-          // Clear selection immediately while waiting for server response
+          // Block further interaction immediately while waiting for server response
           store.clearSelection();
+          store.setMovePending(true);
+          console.log(`[SEND MOVE] pieceId=${prevPieceId} turnNumber=${freshGameState.turnNumber}`);
 
           const socket = getSocket();
           socket.emit(
             'playTurn',
             {
-              gameId: gameState.id,
+              gameId: freshGameState.id,
               command: { pieceId: prevPieceId, destination: targetMove.destination },
+              turnNumber: freshGameState.turnNumber,
             },
             (response) => {
               if (!response.success) {
                 // Restore selection so the player can try again
+                store.setMovePending(false);
                 store.selectPiece(prevPieceId, prevMoves);
                 store.setError(response.error ?? 'Move failed');
               }
@@ -210,23 +240,26 @@ export function Board() {
         }
       }
 
-      // Check if hex contains a piece owned by the current player
-      const piece = gameState.pieces.find(
+      // Check if hex contains a piece owned by the current player (use FRESH state)
+      const piece = freshGameState.pieces.find(
         (p) => p.position.q === clickedHex.q && p.position.r === clickedHex.r
       );
 
-      const isOwnPiece = piece != null && piece.playerId === playerId;
+      const isOwnPiece = piece != null && piece.playerId === freshPlayerId;
 
-      if (isOwnPiece && isMyTurn) {
-        // Own piece clicked on player's turn: select and compute valid moves
-        const moves = getValidMoves(gameState, piece.id);
+      // Check turn status fresh from store
+      const isMyTurnNow = selectIsMyTurn(store);
+
+      if (isOwnPiece && isMyTurnNow) {
+        // Own piece clicked on player's turn: select and compute valid moves using FRESH state
+        const moves = getValidMoves(freshGameState, piece.id);
         store.selectPiece(piece.id, moves);
       } else {
         // Clicked elsewhere or not player's turn: clear selection
         store.clearSelection();
       }
     },
-    [gameState, playerId, isMyTurn, selectedPieceId, validMoves, isAnimating]
+    [] // No dependencies - we read everything fresh from store
   );
 
   // Mouse click handler
@@ -320,7 +353,7 @@ export function Board() {
           display: 'block',
           width: '100%',
           height: '100%',
-          cursor: isAnimating ? 'default' : 'pointer',
+          cursor: isAnimating || movePending ? 'wait' : 'pointer',
           touchAction: 'none',
         }}
       />

@@ -77,12 +77,13 @@ describe('Move Execution - getValidMoves', () => {
     });
 
     it('should return moveType "attack" for enemy-occupied destination', () => {
+      // Jarl attacking warrior (2 vs 1 = push, valid attack)
       const pieces: Piece[] = [
-        { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+        { id: 'jarl1', type: 'jarl', playerId: 'p1', position: { q: 0, r: 0 } },
         { id: 'w2', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
       ];
       const state = createTestState(pieces);
-      const result = getValidMoves(state, 'w1');
+      const result = getValidMoves(state, 'jarl1');
 
       const attackMoves = result.filter((m) => m.moveType === 'attack');
       expect(attackMoves.length).toBe(1);
@@ -92,17 +93,18 @@ describe('Move Execution - getValidMoves', () => {
 
   describe('combat preview for attacks', () => {
     it('should include combat preview for attack moves', () => {
+      // Jarl attacking warrior (2 vs 1 = push)
       const pieces: Piece[] = [
-        { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+        { id: 'jarl1', type: 'jarl', playerId: 'p1', position: { q: 0, r: 0 } },
         { id: 'w2', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
       ];
       const state = createTestState(pieces);
-      const result = getValidMoves(state, 'w1');
+      const result = getValidMoves(state, 'jarl1');
 
       const attackMove = result.find((m) => m.moveType === 'attack');
       expect(attackMove).toBeDefined();
       expect(attackMove!.combatPreview).not.toBeNull();
-      expect(attackMove!.combatPreview!.attackerId).toBe('w1');
+      expect(attackMove!.combatPreview!.attackerId).toBe('jarl1');
       expect(attackMove!.combatPreview!.defenderId).toBe('w2');
     });
 
@@ -119,16 +121,17 @@ describe('Move Execution - getValidMoves', () => {
     });
 
     it('should calculate correct attack/defense values in combat preview', () => {
-      // Warrior attacking warrior - base strength 1 vs 1
+      // Jarl attacking warrior - base strength 2 vs 1 (push)
       const pieces: Piece[] = [
-        { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
+        { id: 'jarl1', type: 'jarl', playerId: 'p1', position: { q: 0, r: 0 } },
         { id: 'w2', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
       ];
       const state = createTestState(pieces);
-      const result = getValidMoves(state, 'w1');
+      const result = getValidMoves(state, 'jarl1');
 
       const attackMove = result.find((m) => m.moveType === 'attack');
-      expect(attackMove!.combatPreview!.attack.baseStrength).toBe(1);
+      expect(attackMove).toBeDefined();
+      expect(attackMove!.combatPreview!.attack.baseStrength).toBe(2);
       expect(attackMove!.combatPreview!.defense.baseStrength).toBe(1);
     });
 
@@ -172,11 +175,13 @@ describe('Move Execution - getValidMoves', () => {
     });
 
     it('should include bracing pieces in defense calculation', () => {
-      // Defender with friendly Warrior behind (bracing)
+      // Jarl attacker (2) with support (+2) vs Warrior (1) with bracing (+1)
+      // Attack: 4, Defense: 2 = push
       const pieces: Piece[] = [
+        { id: 'jarl1', type: 'jarl', playerId: 'p1', position: { q: -1, r: 0 } }, // support behind
         { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
         { id: 'w2', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
-        { id: 'w3', type: 'warrior', playerId: 'p2', position: { q: 2, r: 0 } },
+        { id: 'w3', type: 'warrior', playerId: 'p2', position: { q: 2, r: 0 } }, // bracing
       ];
       const state = createTestState(pieces);
       const result = getValidMoves(state, 'w1');
@@ -207,8 +212,8 @@ describe('Move Execution - getValidMoves', () => {
       expect(momentumAttack!.combatPreview!.pushDirection).not.toBeNull();
     });
 
-    it('should correctly determine blocked outcome', () => {
-      // Attack where defender wins (with bracing)
+    it('should NOT include attacks that would be blocked', () => {
+      // Attack where defender wins (with bracing) - should NOT be a valid move
       const pieces: Piece[] = [
         { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
         { id: 'w2', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
@@ -217,13 +222,11 @@ describe('Move Execution - getValidMoves', () => {
       const state = createTestState(pieces);
       const result = getValidMoves(state, 'w1');
 
+      // Blocked attacks should not appear in valid moves
       const attackMove = result.find(
         (m) => m.moveType === 'attack' && m.destination.q === 1 && m.destination.r === 0
       );
-      expect(attackMove).toBeDefined();
-      // Attack: 1 (base) vs Defense: 2 (1 base + 1 bracing)
-      expect(attackMove!.combatPreview!.outcome).toBe('blocked');
-      expect(attackMove!.combatPreview!.pushDirection).toBeNull();
+      expect(attackMove).toBeUndefined();
     });
   });
 
@@ -335,9 +338,10 @@ describe('Move Execution - getValidMoves', () => {
     });
 
     it('should include full CombatResult structure for attacks', () => {
+      // Position warrior 2 hexes away so attack has momentum (2 vs 1 = push)
       const pieces: Piece[] = [
         { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
-        { id: 'w2', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
+        { id: 'w2', type: 'warrior', playerId: 'p2', position: { q: 2, r: 0 } },
       ];
       const state = createTestState(pieces);
       const result = getValidMoves(state, 'w1');
@@ -389,7 +393,8 @@ describe('Move Execution - getValidMoves', () => {
       });
     });
 
-    it('should handle Jarl vs Jarl combat preview', () => {
+    it('should NOT show Jarl vs Jarl attack when it would be blocked', () => {
+      // Jarl vs Jarl at 1 hex: 2 vs 2 = blocked, so attack should not be valid
       const pieces: Piece[] = [
         { id: 'jarl1', type: 'jarl', playerId: 'p1', position: { q: 0, r: 0 } },
         { id: 'jarl2', type: 'jarl', playerId: 'p2', position: { q: 1, r: 0 } },
@@ -397,13 +402,23 @@ describe('Move Execution - getValidMoves', () => {
       const state = createTestState(pieces);
       const result = getValidMoves(state, 'jarl1');
 
+      // Blocked attacks should not appear in valid moves
+      const attackMove = result.find((m) => m.moveType === 'attack');
+      expect(attackMove).toBeUndefined();
+    });
+
+    it('should show Jarl vs Warrior attack when it would push', () => {
+      // Jarl (2) vs Warrior (1) = push, so attack should be valid
+      const pieces: Piece[] = [
+        { id: 'jarl1', type: 'jarl', playerId: 'p1', position: { q: 0, r: 0 } },
+        { id: 'w1', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
+      ];
+      const state = createTestState(pieces);
+      const result = getValidMoves(state, 'jarl1');
+
       const attackMove = result.find((m) => m.moveType === 'attack');
       expect(attackMove).toBeDefined();
-      // Jarl vs Jarl: both have base strength 2
-      expect(attackMove!.combatPreview!.attack.baseStrength).toBe(2);
-      expect(attackMove!.combatPreview!.defense.baseStrength).toBe(2);
-      // Attack 2 vs Defense 2 = blocked
-      expect(attackMove!.combatPreview!.outcome).toBe('blocked');
+      expect(attackMove!.combatPreview!.outcome).toBe('push');
     });
   });
 });

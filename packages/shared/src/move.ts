@@ -391,7 +391,9 @@ export function getValidMoves(state: GameState, pieceId: string): ValidMove[] {
   const reachableHexes = getReachableHexes(state, pieceId);
 
   // Convert to ValidMove[] with combat previews
-  return reachableHexes.map((reachable) => {
+  const validMoves: ValidMove[] = [];
+
+  for (const reachable of reachableHexes) {
     let combatPreview: CombatResult | null = null;
 
     if (reachable.moveType === 'attack') {
@@ -423,16 +425,23 @@ export function getValidMoves(state: GameState, pieceId: string): ValidMove[] {
           reachable.direction,
           reachable.hasMomentum
         );
+
+        // Skip attacks that would be blocked - they waste the turn with no effect
+        if (combatPreview.outcome === 'blocked') {
+          continue;
+        }
       }
     }
 
-    return {
+    validMoves.push({
       destination: reachable.destination,
       moveType: reachable.moveType,
       hasMomentum: reachable.hasMomentum,
       combatPreview,
-    };
-  });
+    });
+  }
+
+  return validMoves;
 }
 
 /**

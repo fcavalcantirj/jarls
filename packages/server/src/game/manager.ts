@@ -1,13 +1,37 @@
 import { createActor, type Actor, type Subscription } from 'xstate';
 import { gameMachine } from './machine';
 import type { GameMachineContext, GameMachineInput } from './types';
-import type { GameConfig, GameState, MoveCommand, MoveResult } from '@jarls/shared';
+import type { GameConfig, GameState, MoveCommand, MoveResult, Piece } from '@jarls/shared';
 import { generateId, applyMove } from '@jarls/shared';
 import { saveSnapshot, saveEvent, loadActiveSnapshots } from './persistence';
 import type { AIPlayer, AIDifficulty } from '../ai/types';
 import { RandomAI } from '../ai/random';
 import { HeuristicAI } from '../ai/heuristic-ai';
 import { generateNorseName } from '../ai/names';
+
+/**
+ * Validate game state integrity - check for corrupted state like duplicate positions.
+ * Returns an error message if validation fails, or null if state is valid.
+ */
+function validateGameState(pieces: Piece[]): string | null {
+  const positionMap = new Map<string, string[]>();
+
+  for (const piece of pieces) {
+    const key = `${piece.position.q},${piece.position.r}`;
+    const existing = positionMap.get(key) || [];
+    existing.push(piece.id);
+    positionMap.set(key, existing);
+  }
+
+  // Check for duplicate positions
+  for (const [pos, pieceIds] of positionMap) {
+    if (pieceIds.length > 1) {
+      return `CORRUPTED STATE: Multiple pieces at position ${pos}: ${pieceIds.join(', ')}`;
+    }
+  }
+
+  return null;
+}
 
 /** Summary of a game for listing purposes */
 export interface GameSummary {
@@ -16,6 +40,17 @@ export interface GameSummary {
   playerCount: number;
   maxPlayers: number;
   players: Array<{ id: string; name: string }>;
+  turnTimerMs: number | null;
+  boardRadius: number;
+  createdAt: string;
+}
+
+/** Stats for the dashboard */
+export interface GameStats {
+  totalGames: number;
+  openLobbies: number;
+  gamesInProgress: number;
+  gamesEnded: number;
 }
 
 /** Configuration for creating a new game */
@@ -39,6 +74,7 @@ interface ManagedGame {
   version: number;
   previousStateValue: string;
   aiPlayers: ManagedAIPlayer[];
+  createdAt: Date;
 }
 
 /**
@@ -58,6 +94,8 @@ function getStateName(value: string | Record<string, unknown>): string {
 export class GameManager {
   private games: Map<string, ManagedGame> = new Map();
   private pendingAIMoves: Set<string> = new Set();
+  /** Per-game mutex locks to serialize move processing and prevent race conditions */
+  private moveLocks: Map<string, Promise<void>> = new Map();
 
   /**
    * Create a new game with the given configuration.
@@ -83,6 +121,7 @@ export class GameManager {
       version: 1,
       previousStateValue: 'lobby',
       aiPlayers: [],
+      createdAt: new Date(),
     };
 
     const subscription = actor.subscribe((snapshot) => {
@@ -154,6 +193,14 @@ export class GameManager {
       try {
         // The state field contains the full XState persisted snapshot
         const persistedSnapshot = snap.state as ReturnType<GameActor['getPersistedSnapshot']>;
+        const context = (persistedSnapshot as unknown as { context: GameMachineContext }).context;
+
+        // Validate state integrity before recovering
+        const validationError = validateGameState(context.pieces);
+        if (validationError) {
+          console.error(`Skipping corrupted game ${gameId}: ${validationError}`);
+          continue;
+        }
 
         // XState v5 requires input even when restoring from snapshot.
         // The input is only used for initial context creation, which is
@@ -173,6 +220,7 @@ export class GameManager {
           version: snap.version,
           previousStateValue: snap.status,
           aiPlayers: [],
+          createdAt: snap.createdAt ?? new Date(),
         };
 
         // Subscribe to state changes for ongoing persistence
@@ -249,10 +297,58 @@ export class GameManager {
         playerCount: context.players.length,
         maxPlayers: context.config.playerCount,
         players: context.players.map((p) => ({ id: p.id, name: p.name })),
+        turnTimerMs: context.config.turnTimerMs,
+        boardRadius: context.config.boardRadius,
+        createdAt: managed.createdAt.toISOString(),
       });
     }
 
     return summaries;
+  }
+
+  /**
+   * Get stats for the dashboard.
+   * openLobbies only counts joinable lobbies (not full, not stale >1hr).
+   */
+  getStats(): GameStats {
+    let openLobbies = 0;
+    let gamesInProgress = 0;
+    let gamesEnded = 0;
+    const ONE_HOUR = 60 * 60 * 1000;
+    const now = Date.now();
+
+    for (const [, managed] of this.games) {
+      const snapshot = managed.actor.getSnapshot();
+      const context = snapshot.context as GameMachineContext;
+      const status = getStateName(snapshot.value);
+
+      switch (status) {
+        case 'lobby': {
+          // Only count joinable lobbies (not full, not stale)
+          const isFull = context.players.length >= context.config.playerCount;
+          const isStale = now - managed.createdAt.getTime() > ONE_HOUR;
+          if (!isFull && !isStale) {
+            openLobbies++;
+          }
+          break;
+        }
+        case 'playing':
+        case 'paused':
+        case 'starvation':
+          gamesInProgress++;
+          break;
+        case 'ended':
+          gamesEnded++;
+          break;
+      }
+    }
+
+    return {
+      totalGames: this.games.size,
+      openLobbies,
+      gamesInProgress,
+      gamesEnded,
+    };
   }
 
   /**
@@ -356,42 +452,127 @@ export class GameManager {
    * then sends MAKE_MOVE to the actor to update the state machine.
    * Returns the MoveResult with success/failure, new state, and events.
    * Throws if the game doesn't exist or is not in a playing state.
+   *
+   * Uses a per-game mutex lock to serialize move processing and prevent
+   * race conditions where rapid moves from the same player both pass validation.
    */
-  makeMove(gameId: string, playerId: string, command: MoveCommand): MoveResult {
+  async makeMove(
+    gameId: string,
+    playerId: string,
+    command: MoveCommand,
+    turnNumber?: number
+  ): Promise<MoveResult> {
     const managed = this.games.get(gameId);
     if (!managed) {
       throw new Error(`Game not found: ${gameId}`);
     }
 
-    const snapshot = managed.actor.getSnapshot();
-    const stateName = getStateName(snapshot.value);
-    if (stateName !== 'playing') {
-      throw new Error(`Cannot make move in state: ${stateName}`);
+    // Proper mutex: set our lock BEFORE waiting on the previous one
+    // This prevents race conditions where two requests both pass the check
+    const previousLock = this.moveLocks.get(gameId) ?? Promise.resolve();
+
+    let unlock: () => void;
+    const ourLock = new Promise<void>((resolve) => {
+      unlock = resolve;
+    });
+
+    // Set our lock immediately - anyone coming after us will chain onto this
+    this.moveLocks.set(gameId, ourLock);
+
+    // Now wait for the previous operation to complete
+    await previousLock;
+
+    try {
+      // Re-fetch snapshot AFTER acquiring lock to ensure fresh state
+      const snapshot = managed.actor.getSnapshot();
+
+      // DEBUG: Log move attempt with destination details
+      const ctx = snapshot.context as GameMachineContext;
+      const destPiece = ctx.pieces.find(
+        (p) => p.position.q === command.destination.q && p.position.r === command.destination.r
+      );
+      console.log(
+        `[MOVE] Player ${playerId} attempting move. Current turn: ${ctx.turnNumber}, currentPlayer: ${ctx.currentPlayerId}`
+      );
+      console.log(
+        `[MOVE] pieceId=${command.pieceId} dest=(${command.destination.q},${command.destination.r}) destPiece=${destPiece ? `${destPiece.id}(owner=${destPiece.playerId})` : 'empty'}`
+      );
+      const stateName = getStateName(snapshot.value);
+      if (stateName !== 'playing') {
+        return {
+          success: false,
+          error: `Cannot make move in state: ${stateName}`,
+          newState: snapshot.context as GameMachineContext,
+          events: [],
+        };
+      }
+
+      const context = snapshot.context as GameMachineContext;
+
+      // Validate turn number if provided (detects stale requests)
+      if (turnNumber !== undefined && turnNumber !== context.turnNumber) {
+        return {
+          success: false,
+          error: 'Stale move request',
+          newState: context,
+          events: [],
+        };
+      }
+
+      if (context.currentPlayerId !== playerId) {
+        return {
+          success: false,
+          error: 'Not your turn',
+          newState: context,
+          events: [],
+        };
+      }
+
+      // Compute the result using shared logic (same as the machine guard/action)
+      const result = applyMove(context, playerId, command);
+
+      if (result.success) {
+        // Validate result state integrity BEFORE applying
+        const validationError = validateGameState(result.newState.pieces);
+        if (validationError) {
+          console.error(`[MOVE CORRUPTED] ${validationError}`);
+          // Don't apply the corrupted state - return error
+          return {
+            success: false,
+            error: 'Internal error: move would corrupt game state',
+            newState: context,
+            events: [],
+          };
+        }
+
+        // Send the event to the actor to update the state machine
+        managed.actor.send({
+          type: 'MAKE_MOVE',
+          playerId,
+          command,
+        });
+
+        // DEBUG: Log successful move with events
+        const afterSnapshot = managed.actor.getSnapshot();
+        const afterCtx = afterSnapshot.context as GameMachineContext;
+        console.log(
+          `[MOVE SUCCESS] Turn advanced to: ${afterCtx.turnNumber}, next player: ${afterCtx.currentPlayerId}`
+        );
+        console.log(`[MOVE EVENTS] ${result.events.length} event(s):`);
+        result.events.forEach((e, i) => console.log(`  [${i}] ${JSON.stringify(e)}`));
+      } else {
+        console.log(`[MOVE FAILED] ${result.error}`);
+      }
+
+      return result;
+    } finally {
+      // Release our lock (allows next waiter to proceed)
+      unlock!();
+      // Only clean up if we're still the current lock
+      if (this.moveLocks.get(gameId) === ourLock) {
+        this.moveLocks.delete(gameId);
+      }
     }
-
-    const context = snapshot.context as GameMachineContext;
-    if (context.currentPlayerId !== playerId) {
-      return {
-        success: false,
-        error: 'Not your turn',
-        newState: context,
-        events: [],
-      };
-    }
-
-    // Compute the result using shared logic (same as the machine guard/action)
-    const result = applyMove(context, playerId, command);
-
-    if (result.success) {
-      // Send the event to the actor to update the state machine
-      managed.actor.send({
-        type: 'MAKE_MOVE',
-        playerId,
-        command,
-      });
-    }
-
-    return result;
   }
 
   /**
@@ -586,7 +767,7 @@ export class GameManager {
     ]);
 
     movePromise
-      .then((command) => {
+      .then(async (command) => {
         // Verify the game is still in the right state before making the move
         const currentSnapshot = managedGame.actor.getSnapshot();
         const currentContext = currentSnapshot.context as GameMachineContext;
@@ -594,7 +775,7 @@ export class GameManager {
           currentContext.currentPlayerId === currentPlayerId &&
           currentContext.turnNumber === context.turnNumber
         ) {
-          this.makeMove(gameId, currentPlayerId, command);
+          await this.makeMove(gameId, currentPlayerId, command, context.turnNumber);
         }
       })
       .catch((err) => {
@@ -603,14 +784,14 @@ export class GameManager {
         const fallbackAI = new RandomAI(0, 0);
         fallbackAI
           .generateMove(gameState, currentPlayerId)
-          .then((fallbackCommand) => {
+          .then(async (fallbackCommand) => {
             const currentSnapshot = managedGame.actor.getSnapshot();
             const currentContext = currentSnapshot.context as GameMachineContext;
             if (
               currentContext.currentPlayerId === currentPlayerId &&
               currentContext.turnNumber === context.turnNumber
             ) {
-              this.makeMove(gameId, currentPlayerId, fallbackCommand);
+              await this.makeMove(gameId, currentPlayerId, fallbackCommand, context.turnNumber);
             }
           })
           .catch((fallbackErr) => {

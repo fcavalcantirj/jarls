@@ -24,6 +24,8 @@ export interface GameStore {
   pendingTurnUpdate: PendingTurnUpdate | null;
   /** Whether an animation is currently playing (blocks interaction). */
   isAnimating: boolean;
+  /** Whether a move has been sent to the server and we're awaiting the response. */
+  movePending: boolean;
 
   // Actions
   setGameState: (state: GameState) => void;
@@ -40,6 +42,7 @@ export interface GameStore {
   setPendingTurnUpdate: (update: PendingTurnUpdate) => void;
   clearPendingTurnUpdate: () => void;
   setIsAnimating: (animating: boolean) => void;
+  setMovePending: (pending: boolean) => void;
 }
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -55,6 +58,7 @@ export const useGameStore = create<GameStore>((set) => ({
   hoverPosition: null,
   pendingTurnUpdate: null,
   isAnimating: false,
+  movePending: false,
 
   // Actions
   setGameState: (gameState) => set({ gameState }),
@@ -77,19 +81,23 @@ export const useGameStore = create<GameStore>((set) => ({
       hoverPosition: null,
       pendingTurnUpdate: null,
       isAnimating: false,
+      movePending: false,
     }),
   setError: (message) => set({ errorMessage: message }),
   clearError: () => set({ errorMessage: null }),
   setHoveredCombat: (combat, x, y) => set({ hoveredCombat: combat, hoverPosition: { x, y } }),
   clearHoveredCombat: () => set({ hoveredCombat: null, hoverPosition: null }),
-  setPendingTurnUpdate: (update) => set({ pendingTurnUpdate: update }),
+  setPendingTurnUpdate: (update) =>
+    set({ pendingTurnUpdate: update, isAnimating: true, movePending: false }),
   clearPendingTurnUpdate: () => set({ pendingTurnUpdate: null }),
   setIsAnimating: (isAnimating) => set({ isAnimating }),
+  setMovePending: (movePending) => set({ movePending }),
 }));
 
 // Computed selectors
 export const selectIsMyTurn = (state: GameStore): boolean => {
   if (!state.gameState || !state.playerId) return false;
+  if (state.movePending) return false;
   return state.gameState.currentPlayerId === state.playerId;
 };
 
