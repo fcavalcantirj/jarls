@@ -47,8 +47,8 @@ if (process.env.NODE_ENV === 'production') {
   const clientDistPath = path.resolve(__dirname, '../../client/dist');
   app.use(express.static(clientDistPath));
 
-  // SPA fallback: serve index.html for non-API routes
-  app.get('*', (_req: Request, res: Response, next: NextFunction) => {
+  // SPA fallback: serve index.html for non-API routes (Express 5 syntax)
+  app.get('/{*splat}', (_req: Request, res: Response, next: NextFunction) => {
     if (
       _req.path.startsWith('/api') ||
       _req.path.startsWith('/socket.io') ||
