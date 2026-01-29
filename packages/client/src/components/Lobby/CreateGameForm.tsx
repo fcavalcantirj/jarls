@@ -5,16 +5,19 @@ import { useGameStore } from '../../store/gameStore';
 type OpponentType = 'human' | 'ai';
 type AIDifficulty = 'random' | 'heuristic';
 type TurnTimer = 'none' | '30' | '60' | '120';
+type BoardSize = 'default' | '4' | '5' | '6';
 
 export default function CreateGameForm() {
   const navigate = useNavigate();
   const setSession = useGameStore((s) => s.setSession);
   const setPlayer = useGameStore((s) => s.setPlayer);
+  const clearGame = useGameStore((s) => s.clearGame);
 
   const [playerName, setPlayerName] = useState('');
   const [opponentType, setOpponentType] = useState<OpponentType>('human');
   const [aiDifficulty, setAIDifficulty] = useState<AIDifficulty>('heuristic');
   const [turnTimer, setTurnTimer] = useState<TurnTimer>('none');
+  const [boardSize, setBoardSize] = useState<BoardSize>('default');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,10 +33,11 @@ export default function CreateGameForm() {
       try {
         // 1. Create game
         const turnTimerMs = turnTimer === 'none' ? null : Number(turnTimer) * 1000;
+        const boardRadius = boardSize === 'default' ? undefined : Number(boardSize);
         const createRes = await fetch('/api/games', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ playerCount: 2, turnTimerMs }),
+          body: JSON.stringify({ playerCount: 2, turnTimerMs, boardRadius }),
         });
         if (!createRes.ok) {
           const body = await createRes.json().catch(() => ({}));
@@ -56,7 +60,8 @@ export default function CreateGameForm() {
           playerId: string;
         };
 
-        // 3. Store session
+        // 3. Clear previous game state and store new session
+        clearGame();
         setSession(sessionToken);
         setPlayer(playerId);
 
@@ -83,7 +88,7 @@ export default function CreateGameForm() {
         setSubmitting(false);
       }
     },
-    [playerName, opponentType, aiDifficulty, turnTimer, submitting, navigate, setSession, setPlayer]
+    [playerName, opponentType, aiDifficulty, turnTimer, boardSize, submitting, navigate, setSession, setPlayer]
   );
 
   const isValid = playerName.trim().length > 0;
@@ -155,6 +160,21 @@ export default function CreateGameForm() {
             <option value="30">30 seconds</option>
             <option value="60">60 seconds</option>
             <option value="120">120 seconds</option>
+          </select>
+        </label>
+
+        {/* Board Size */}
+        <label style={labelStyle}>
+          Board Size
+          <select
+            value={boardSize}
+            onChange={(e) => setBoardSize(e.target.value as BoardSize)}
+            style={selectStyle}
+          >
+            <option value="default">Default (37 hexes)</option>
+            <option value="4">Medium (61 hexes)</option>
+            <option value="5">Large (91 hexes)</option>
+            <option value="6">Extra Large (127 hexes)</option>
           </select>
         </label>
 

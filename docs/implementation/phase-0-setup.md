@@ -12,9 +12,11 @@ Initialize the project structure, tooling, and infrastructure required for devel
 ## Task 0.1: Initialize Project Structure
 
 ### Description
+
 Set up monorepo structure with shared types between server and client.
 
 ### Work Items
+
 - [ ] Initialize npm workspace
 - [ ] Create `/packages/server`
 - [ ] Create `/packages/client`
@@ -25,6 +27,7 @@ Set up monorepo structure with shared types between server and client.
 - [ ] Set up Git hooks (husky + lint-staged)
 
 ### Directory Structure
+
 ```
 jarls/
 ├── packages/
@@ -52,6 +55,7 @@ jarls/
 ```
 
 ### Definition of Done
+
 - [ ] `npm install` works from root
 - [ ] `npm run build` compiles all packages without errors
 - [ ] `npm test` runs (with placeholder test passing)
@@ -60,6 +64,7 @@ jarls/
 - [ ] Shared types importable from server and client: `import { GameState } from '@jarls/shared'`
 
 ### Test Verification
+
 ```bash
 # From project root
 npm install
@@ -77,9 +82,11 @@ npx ts-node -e "import { GameState } from '@jarls/shared'; console.log('OK')"
 ## Task 0.2: Database Setup
 
 ### Description
+
 Set up PostgreSQL schema and connection infrastructure.
 
 ### Work Items
+
 - [ ] Create PostgreSQL database `jarls_dev`
 - [ ] Create database schema (see below)
 - [ ] Set up pg connection pool
@@ -88,6 +95,7 @@ Set up PostgreSQL schema and connection infrastructure.
 - [ ] Create health check endpoint
 
 ### Database Schema
+
 ```sql
 -- Game snapshots for fast restore
 CREATE TABLE game_snapshots (
@@ -129,6 +137,7 @@ CREATE INDEX idx_player_sessions_expires ON player_sessions(expires_at);
 ```
 
 ### Environment Variables
+
 ```env
 # .env.example
 DATABASE_URL=postgresql://user:password@localhost:5432/jarls_dev
@@ -138,6 +147,7 @@ PORT=3000
 ```
 
 ### Definition of Done
+
 - [ ] PostgreSQL database created and accessible
 - [ ] All schema migrations run successfully
 - [ ] Connection pool configured and tested
@@ -146,6 +156,7 @@ PORT=3000
 - [ ] Environment variables documented
 
 ### Test Verification
+
 ```bash
 # Start server
 npm run dev
@@ -160,6 +171,7 @@ npm run db:migrate:status
 ```
 
 ### Health Check Implementation
+
 ```typescript
 // GET /health
 {
@@ -176,9 +188,11 @@ npm run db:migrate:status
 ## Task 0.3: Development Tooling
 
 ### Description
+
 Set up development environment for efficient workflow.
 
 ### Work Items
+
 - [ ] Configure nodemon for server hot-reload
 - [ ] Configure Vite for client hot-reload
 - [ ] Set up VS Code workspace settings
@@ -186,6 +200,7 @@ Set up development environment for efficient workflow.
 - [ ] Set up Docker Compose for local services
 
 ### Docker Compose
+
 ```yaml
 # docker-compose.yml
 version: '3.8'
@@ -197,20 +212,21 @@ services:
       POSTGRES_PASSWORD: jarls_dev
       POSTGRES_DB: jarls_dev
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
 
 volumes:
   postgres_data:
 ```
 
 ### Definition of Done
+
 - [ ] `npm run dev` starts server with hot-reload
 - [ ] `npm run dev:client` starts client with hot-reload
 - [ ] `docker-compose up -d` starts all services
@@ -218,6 +234,7 @@ volumes:
 - [ ] All developers can set up in < 30 minutes
 
 ### Test Verification
+
 ```bash
 # Start infrastructure
 docker-compose up -d
@@ -234,11 +251,13 @@ npm run dev
 ## Phase 0 Checklist
 
 ### Prerequisites
+
 - [ ] Node.js 20+ installed
 - [ ] Docker installed
 - [ ] PostgreSQL client installed (psql)
 
 ### Completion Criteria
+
 - [ ] Task 0.1 complete
 - [ ] Task 0.2 complete
 - [ ] Task 0.3 complete
@@ -246,6 +265,7 @@ npm run dev
 - [ ] CI pipeline runs tests on PR
 
 ### Handoff to Phase 1
+
 - Project structure ready
 - Database accessible
 - Development workflow smooth
@@ -253,4 +273,4 @@ npm run dev
 
 ---
 
-*Phase 0 Status: Not Started*
+_Phase 0 Status: Not Started_

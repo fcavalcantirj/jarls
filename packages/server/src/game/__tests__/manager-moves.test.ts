@@ -82,6 +82,38 @@ function findValidMove(
   return null;
 }
 
+/**
+ * Helper: find another valid move for a specific player (different from a given move).
+ */
+function findAnotherValidMove(
+  manager: InstanceType<typeof GameManager>,
+  gameId: string,
+  playerId: string,
+  excludePieceId?: string
+): { pieceId: string; command: MoveCommand } | null {
+  const snapshot = manager.getState(gameId)!;
+  const context = snapshot.context as GameMachineContext;
+
+  // Find pieces belonging to the specified player
+  const playerPieces = context.pieces.filter(
+    (p) => p.playerId === playerId && p.id !== excludePieceId
+  );
+
+  for (const piece of playerPieces) {
+    const validMoves = getValidMoves(context, piece.id);
+    if (validMoves.length > 0) {
+      const simpleMove = validMoves.find((m) => m.moveType === 'move');
+      const move = simpleMove ?? validMoves[0];
+      return {
+        pieceId: piece.id,
+        command: { pieceId: piece.id, destination: move.destination },
+      };
+    }
+  }
+
+  return null;
+}
+
 describe('GameManager - move execution', () => {
   let manager: InstanceType<typeof GameManager>;
 
@@ -101,7 +133,7 @@ describe('GameManager - move execution', () => {
       const moveInfo = findValidMove(manager, gameId);
       expect(moveInfo).not.toBeNull();
 
-      const result = manager.makeMove(gameId, p1, moveInfo!.command);
+      const result = await manager.makeMove(gameId, p1, moveInfo!.command);
 
       expect(result.success).toBe(true);
       expect(result.events.length).toBeGreaterThan(0);
@@ -114,7 +146,7 @@ describe('GameManager - move execution', () => {
       const moveInfo = findValidMove(manager, gameId);
       expect(moveInfo).not.toBeNull();
 
-      manager.makeMove(gameId, p1, moveInfo!.command);
+      await manager.makeMove(gameId, p1, moveInfo!.command);
 
       const snapshot = manager.getState(gameId)!;
       const context = snapshot.context as GameMachineContext;
@@ -133,7 +165,7 @@ describe('GameManager - move execution', () => {
       const p2Pieces = context.pieces.filter((p) => p.playerId === p2);
       const p2Piece = p2Pieces[0];
 
-      const result = manager.makeMove(gameId, p2, {
+      const result = await manager.makeMove(gameId, p2, {
         pieceId: p2Piece.id,
         destination: { q: 0, r: 0 },
       });
@@ -152,7 +184,7 @@ describe('GameManager - move execution', () => {
       const p1Pieces = context.pieces.filter((p) => p.playerId === p1);
       const piece = p1Pieces[0];
 
-      const result = manager.makeMove(gameId, p1, {
+      const result = await manager.makeMove(gameId, p1, {
         pieceId: piece.id,
         destination: piece.position,
       });
@@ -172,7 +204,7 @@ describe('GameManager - move execution', () => {
       const p1Pieces = contextBefore.pieces.filter((p) => p.playerId === p1);
       const piece = p1Pieces[0];
 
-      manager.makeMove(gameId, p1, {
+      await manager.makeMove(gameId, p1, {
         pieceId: piece.id,
         destination: piece.position,
       });
@@ -184,28 +216,32 @@ describe('GameManager - move execution', () => {
       expect(contextAfter.turnNumber).toBe(contextBefore.turnNumber);
     });
 
-    it('throws when game does not exist', () => {
+    it('throws when game does not exist', async () => {
       manager = new GameManager();
 
-      expect(() =>
+      await expect(
         manager.makeMove('non-existent', 'p1', { pieceId: 'x', destination: { q: 0, r: 0 } })
-      ).toThrow('Game not found');
+      ).rejects.toThrow('Game not found');
     });
 
-    it('throws when game is not in playing state', async () => {
+    it('returns error when game is not in playing state', async () => {
       manager = new GameManager();
       const gameId = await manager.create({ config: createTestConfig() });
 
-      expect(() =>
-        manager.makeMove(gameId, 'p1', { pieceId: 'x', destination: { q: 0, r: 0 } })
-      ).toThrow('Cannot make move in state: lobby');
+      const result = await manager.makeMove(gameId, 'p1', {
+        pieceId: 'x',
+        destination: { q: 0, r: 0 },
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Cannot make move in state: lobby');
     });
 
     it('returns failure for a non-existent piece', async () => {
       manager = new GameManager();
       const { gameId, p1 } = await createStartedGame(manager);
 
-      const result = manager.makeMove(gameId, p1, {
+      const result = await manager.makeMove(gameId, p1, {
         pieceId: 'non-existent-piece',
         destination: { q: 0, r: 0 },
       });
@@ -220,13 +256,13 @@ describe('GameManager - move execution', () => {
       // Player 1 moves
       const move1 = findValidMove(manager, gameId);
       expect(move1).not.toBeNull();
-      const result1 = manager.makeMove(gameId, p1, move1!.command);
+      const result1 = await manager.makeMove(gameId, p1, move1!.command);
       expect(result1.success).toBe(true);
 
       // Player 2 moves
       const move2 = findValidMove(manager, gameId);
       expect(move2).not.toBeNull();
-      const result2 = manager.makeMove(gameId, p2, move2!.command);
+      const result2 = await manager.makeMove(gameId, p2, move2!.command);
       expect(result2.success).toBe(true);
 
       const snapshot = manager.getState(gameId)!;
@@ -241,11 +277,67 @@ describe('GameManager - move execution', () => {
       const moveInfo = findValidMove(manager, gameId);
       expect(moveInfo).not.toBeNull();
 
-      manager.makeMove(gameId, p1, moveInfo!.command);
+      await manager.makeMove(gameId, p1, moveInfo!.command);
 
       // After a normal move, the machine should be back in awaitingMove
       const snapshot = manager.getState(gameId)!;
       expect(snapshot.value).toEqual({ playing: 'awaitingMove' });
+    });
+
+    it('rejects second move from same player before turn advances (concurrent calls)', async () => {
+      manager = new GameManager();
+      const { gameId, p1 } = await createStartedGame(manager);
+
+      const move1 = findValidMove(manager, gameId);
+      expect(move1).not.toBeNull();
+
+      const move2 = findAnotherValidMove(manager, gameId, p1, move1!.pieceId);
+      expect(move2).not.toBeNull();
+
+      // Call both moves concurrently (without awaiting the first)
+      const [result1, result2] = await Promise.all([
+        manager.makeMove(gameId, p1, move1!.command),
+        manager.makeMove(gameId, p1, move2!.command),
+      ]);
+
+      // One should succeed, one should fail
+      const successCount = [result1.success, result2.success].filter(Boolean).length;
+      expect(successCount).toBe(1);
+
+      // The failure should be "Not your turn" (turn already advanced)
+      const failedResult = result1.success ? result2 : result1;
+      expect(failedResult.error).toBe('Not your turn');
+    });
+
+    it('rejects stale move request with mismatched turnNumber', async () => {
+      manager = new GameManager();
+      const { gameId, p1 } = await createStartedGame(manager);
+
+      const moveInfo = findValidMove(manager, gameId);
+      expect(moveInfo).not.toBeNull();
+
+      // Send a move with an old turnNumber (0 when current is 0, but will fail if we pass wrong one)
+      const staleTurnNumber = 999;
+      const result = await manager.makeMove(gameId, p1, moveInfo!.command, staleTurnNumber);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Stale move request');
+    });
+
+    it('accepts move with correct turnNumber', async () => {
+      manager = new GameManager();
+      const { gameId, p1 } = await createStartedGame(manager);
+
+      const snapshot = manager.getState(gameId)!;
+      const context = snapshot.context as GameMachineContext;
+      const currentTurnNumber = context.turnNumber;
+
+      const moveInfo = findValidMove(manager, gameId);
+      expect(moveInfo).not.toBeNull();
+
+      const result = await manager.makeMove(gameId, p1, moveInfo!.command, currentTurnNumber);
+
+      expect(result.success).toBe(true);
     });
   });
 

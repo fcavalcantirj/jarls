@@ -13,9 +13,11 @@ Implement AI opponent with multiple difficulty levels for single-player and fill
 ## Task 4.1: AI Move Generation
 
 ### Description
+
 Implement AI that can evaluate positions and generate valid moves.
 
 ### Work Items
+
 - [ ] Implement `AIPlayer` interface
 - [ ] Implement `RandomAI` (baseline - picks random valid move)
 - [ ] Implement `HeuristicAI` (evaluates positions)
@@ -25,6 +27,7 @@ Implement AI that can evaluate positions and generate valid moves.
 - [ ] Add configurable thinking time
 
 ### AI Interface
+
 ```typescript
 interface AIPlayer {
   difficulty: 'easy' | 'medium' | 'hard';
@@ -39,19 +42,20 @@ interface MoveScore {
 ```
 
 ### Random AI (Easy)
+
 ```typescript
 export class RandomAI implements AIPlayer {
   difficulty = 'easy' as const;
 
   async generateMove(state: GameState, playerId: string): Promise<MoveCommand> {
-    const myPieces = state.pieces.filter(p => p.owner === playerId);
+    const myPieces = state.pieces.filter((p) => p.owner === playerId);
 
     // Collect all valid moves for all pieces
     const allMoves: { pieceId: string; move: ValidMove }[] = [];
 
     for (const piece of myPieces) {
       const moves = getValidMoves(state, playerId, piece.id);
-      moves.forEach(m => allMoves.push({ pieceId: piece.id, move: m }));
+      moves.forEach((m) => allMoves.push({ pieceId: piece.id, move: m }));
     }
 
     if (allMoves.length === 0) {
@@ -63,19 +67,20 @@ export class RandomAI implements AIPlayer {
 
     return {
       pieceId: chosen.pieceId,
-      to: chosen.move.to
+      to: chosen.move.to,
     };
   }
 }
 ```
 
 ### Heuristic AI (Medium)
+
 ```typescript
 export class HeuristicAI implements AIPlayer {
   difficulty = 'medium' as const;
 
   async generateMove(state: GameState, playerId: string): Promise<MoveCommand> {
-    const myPieces = state.pieces.filter(p => p.owner === playerId);
+    const myPieces = state.pieces.filter((p) => p.owner === playerId);
     const scoredMoves: MoveScore[] = [];
 
     for (const piece of myPieces) {
@@ -85,7 +90,7 @@ export class HeuristicAI implements AIPlayer {
         const score = this.scoreMove(state, playerId, piece, move);
         scoredMoves.push({
           command: { pieceId: piece.id, to: move.to },
-          score
+          score,
         });
       }
     }
@@ -94,18 +99,13 @@ export class HeuristicAI implements AIPlayer {
     scoredMoves.sort((a, b) => b.score - a.score);
 
     // Add some randomness to top moves (avoid predictability)
-    const topMoves = scoredMoves.filter(m => m.score >= scoredMoves[0].score - 1);
+    const topMoves = scoredMoves.filter((m) => m.score >= scoredMoves[0].score - 1);
     const chosen = topMoves[Math.floor(Math.random() * topMoves.length)];
 
     return chosen.command;
   }
 
-  private scoreMove(
-    state: GameState,
-    playerId: string,
-    piece: Piece,
-    move: ValidMove
-  ): number {
+  private scoreMove(state: GameState, playerId: string, piece: Piece, move: ValidMove): number {
     let score = 0;
 
     // Base scores by move type
@@ -151,11 +151,10 @@ export class HeuristicAI implements AIPlayer {
     }
 
     // Prefer keeping pieces together (bracing potential)
-    const friendlyNeighbors = getAllNeighbors(move.to)
-      .filter(n => {
-        const p = getPieceAt(state, n);
-        return p && p.owner === playerId;
-      }).length;
+    const friendlyNeighbors = getAllNeighbors(move.to).filter((n) => {
+      const p = getPieceAt(state, n);
+      return p && p.owner === playerId;
+    }).length;
     score += friendlyNeighbors * 2;
 
     // Prefer gaining momentum
@@ -175,6 +174,7 @@ export class HeuristicAI implements AIPlayer {
 ```
 
 ### Minimax AI (Hard) - Optional
+
 ```typescript
 export class MinimaxAI implements AIPlayer {
   difficulty = 'hard' as const;
@@ -257,17 +257,18 @@ export class MinimaxAI implements AIPlayer {
     if (state.winner && state.winner !== playerId) return -10000;
 
     let score = 0;
-    const myPieces = state.pieces.filter(p => p.owner === playerId);
-    const enemyPieces = state.pieces.filter(p => p.owner && p.owner !== playerId);
+    const myPieces = state.pieces.filter((p) => p.owner === playerId);
+    const enemyPieces = state.pieces.filter((p) => p.owner && p.owner !== playerId);
 
     // Material advantage
-    score += myPieces.filter(p => p.type === 'warrior').length * 10;
-    score -= enemyPieces.filter(p => p.type === 'warrior').length * 10;
+    score += myPieces.filter((p) => p.type === 'warrior').length * 10;
+    score -= enemyPieces.filter((p) => p.type === 'warrior').length * 10;
 
     // Jarl safety (distance from edge)
-    const myJarl = myPieces.find(p => p.type === 'jarl');
+    const myJarl = myPieces.find((p) => p.type === 'jarl');
     if (myJarl) {
-      const edgeDistance = state.config.boardRadius -
+      const edgeDistance =
+        state.config.boardRadius -
         Math.max(Math.abs(myJarl.position.q), Math.abs(myJarl.position.r));
       score += edgeDistance * 5;
 
@@ -281,11 +282,11 @@ export class MinimaxAI implements AIPlayer {
 
   private getAllMoves(state: GameState, playerId: string): MoveCommand[] {
     const moves: MoveCommand[] = [];
-    const myPieces = state.pieces.filter(p => p.owner === playerId);
+    const myPieces = state.pieces.filter((p) => p.owner === playerId);
 
     for (const piece of myPieces) {
       const validMoves = getValidMoves(state, playerId, piece.id);
-      validMoves.forEach(m => moves.push({ pieceId: piece.id, to: m.to }));
+      validMoves.forEach((m) => moves.push({ pieceId: piece.id, to: m.to }));
     }
 
     return moves;
@@ -294,6 +295,7 @@ export class MinimaxAI implements AIPlayer {
 ```
 
 ### Definition of Done
+
 - [ ] RandomAI plays legal moves
 - [ ] HeuristicAI makes sensible moves
 - [ ] MinimaxAI looks ahead (optional)
@@ -301,6 +303,7 @@ export class MinimaxAI implements AIPlayer {
 - [ ] AIs handle all game phases (starvation choices)
 
 ### Test Cases
+
 ```typescript
 describe('AI Move Generation', () => {
   test('RandomAI generates valid move', async () => {
@@ -331,8 +334,8 @@ describe('AI Move Generation', () => {
       moves.push(move);
     }
 
-    const jarlMoves = moves.filter(m => m.pieceId.includes('jarl'));
-    const edgeMoves = jarlMoves.filter(m => isOnEdge(m.to, gameState.config.boardRadius));
+    const jarlMoves = moves.filter((m) => m.pieceId.includes('jarl'));
+    const edgeMoves = jarlMoves.filter((m) => isOnEdge(m.to, gameState.config.boardRadius));
 
     // Should rarely move Jarl to edge
     expect(edgeMoves.length / jarlMoves.length).toBeLessThan(0.2);
@@ -365,9 +368,11 @@ describe('AI Move Generation', () => {
 ## Task 4.2: AI Game Integration
 
 ### Description
+
 Integrate AI as a player in games via the game manager.
 
 ### Work Items
+
 - [ ] Add AI player type to game creation
 - [ ] Implement auto-play on AI's turn
 - [ ] Configure AI thinking delay (for UX)
@@ -375,6 +380,7 @@ Integrate AI as a player in games via the game manager.
 - [ ] Implement AI takeover for disconnected players (optional)
 
 ### AI Integration
+
 ```typescript
 // Game creation with AI
 interface CreateGameOptions {
@@ -453,6 +459,7 @@ private generateAIName(): string {
 ```
 
 ### Definition of Done
+
 - [ ] Can create game with AI players
 - [ ] AI plays automatically on its turn
 - [ ] Configurable AI difficulty
@@ -460,22 +467,23 @@ private generateAIName(): string {
 - [ ] AI works in team mode
 
 ### Test Cases
+
 ```typescript
 describe('AI Game Integration', () => {
   test('create game with AI opponent', async () => {
     const { gameId } = await gameManager.createWithAI({
       playerCount: 2,
-      aiPlayers: { count: 1, difficulty: 'medium' }
+      aiPlayers: { count: 1, difficulty: 'medium' },
     });
 
     const state = await gameManager.getState(gameId);
-    expect(state?.players.filter(p => p.isAI)).toHaveLength(1);
+    expect(state?.players.filter((p) => p.isAI)).toHaveLength(1);
   });
 
   test('AI plays automatically', async () => {
     const { gameId } = await gameManager.createWithAI({
       playerCount: 2,
-      aiPlayers: { count: 1, difficulty: 'easy' }
+      aiPlayers: { count: 1, difficulty: 'easy' },
     });
 
     await gameManager.join(gameId, 'Human');
@@ -498,7 +506,7 @@ describe('AI Game Integration', () => {
   test('multiple AI players', async () => {
     const { gameId } = await gameManager.createWithAI({
       playerCount: 4,
-      aiPlayers: { count: 3, difficulty: 'medium' }
+      aiPlayers: { count: 3, difficulty: 'medium' },
     });
 
     await gameManager.join(gameId, 'Human');
@@ -527,9 +535,11 @@ describe('AI Game Integration', () => {
 ## Phase 4 Checklist
 
 ### Prerequisites
+
 - [ ] Phase 3 complete (network layer)
 
 ### Completion Criteria
+
 - [ ] Task 4.1 complete (AI move generation)
 - [ ] Task 4.2 complete (AI integration)
 - [ ] Single player vs AI fully playable
@@ -537,10 +547,11 @@ describe('AI Game Integration', () => {
 - [ ] AI doesn't break under any game state
 
 ### Handoff to Phase 5
+
 - AI opponent functional
 - Can play complete games vs AI
 - Ready to build frontend
 
 ---
 
-*Phase 4 Status: Not Started*
+_Phase 4 Status: Not Started_

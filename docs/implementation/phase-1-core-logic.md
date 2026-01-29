@@ -13,9 +13,11 @@ Implement all game logic without network layer. Pure functions that take state a
 ## Task 1.1: Hex Coordinate System
 
 ### Description
+
 Implement cube/axial coordinate system with all required operations.
 
 ### Work Items
+
 - [ ] Define `CubeCoord` interface `{ q, r, s }`
 - [ ] Define `AxialCoord` interface `{ q, r }`
 - [ ] Implement `axialToCube()` and `cubeToAxial()`
@@ -31,6 +33,7 @@ Implement cube/axial coordinate system with all required operations.
 - [ ] Implement `hexToKey(hex)` and `keyToHex(key)` for Map storage
 
 ### Type Definitions
+
 ```typescript
 interface CubeCoord {
   q: number;
@@ -46,64 +49,66 @@ interface AxialCoord {
 type HexDirection = 0 | 1 | 2 | 3 | 4 | 5;
 
 const DIRECTIONS: readonly CubeCoord[] = [
-  { q: +1, r:  0, s: -1 },  // 0: East
-  { q: +1, r: -1, s:  0 },  // 1: Northeast
-  { q:  0, r: -1, s: +1 },  // 2: Northwest
-  { q: -1, r:  0, s: +1 },  // 3: West
-  { q: -1, r: +1, s:  0 },  // 4: Southwest
-  { q:  0, r: +1, s: -1 },  // 5: Southeast
+  { q: +1, r: 0, s: -1 }, // 0: East
+  { q: +1, r: -1, s: 0 }, // 1: Northeast
+  { q: 0, r: -1, s: +1 }, // 2: Northwest
+  { q: -1, r: 0, s: +1 }, // 3: West
+  { q: -1, r: +1, s: 0 }, // 4: Southwest
+  { q: 0, r: +1, s: -1 }, // 5: Southeast
 ];
 ```
 
 ### Definition of Done
+
 - [ ] All coordinate functions implemented
 - [ ] 100% unit test coverage for hex math
 - [ ] All functions are pure (no side effects)
 - [ ] Performance: <1ms for any single operation
 
 ### Test Cases
+
 ```typescript
 describe('Hex Coordinates', () => {
   // Distance
   test('distance from origin', () => {
-    expect(hexDistance({q:0,r:0,s:0}, {q:2,r:-1,s:-1})).toBe(2);
-    expect(hexDistance({q:0,r:0,s:0}, {q:3,r:0,s:-3})).toBe(3);
+    expect(hexDistance({ q: 0, r: 0, s: 0 }, { q: 2, r: -1, s: -1 })).toBe(2);
+    expect(hexDistance({ q: 0, r: 0, s: 0 }, { q: 3, r: 0, s: -3 })).toBe(3);
   });
 
   // Neighbors
   test('all neighbors', () => {
-    const neighbors = getAllNeighbors({q:0,r:0,s:0});
+    const neighbors = getAllNeighbors({ q: 0, r: 0, s: 0 });
     expect(neighbors).toHaveLength(6);
-    neighbors.forEach(n => {
-      expect(hexDistance({q:0,r:0,s:0}, n)).toBe(1);
+    neighbors.forEach((n) => {
+      expect(hexDistance({ q: 0, r: 0, s: 0 }, n)).toBe(1);
     });
   });
 
   // Line drawing
   test('line between hexes', () => {
-    const line = hexLine({q:0,r:0,s:0}, {q:3,r:0,s:-3});
+    const line = hexLine({ q: 0, r: 0, s: 0 }, { q: 3, r: 0, s: -3 });
     expect(line).toHaveLength(4); // includes both endpoints
-    expect(line[0]).toEqual({q:0,r:0,s:0});
-    expect(line[3]).toEqual({q:3,r:0,s:-3});
+    expect(line[0]).toEqual({ q: 0, r: 0, s: 0 });
+    expect(line[3]).toEqual({ q: 3, r: 0, s: -3 });
   });
 
   // Edge detection
   test('edge detection', () => {
-    expect(isOnEdge({q:3,r:0,s:-3}, 3)).toBe(true);
-    expect(isOnEdge({q:1,r:0,s:-1}, 3)).toBe(false);
-    expect(isOnEdge({q:0,r:3,s:-3}, 3)).toBe(true);
+    expect(isOnEdge({ q: 3, r: 0, s: -3 }, 3)).toBe(true);
+    expect(isOnEdge({ q: 1, r: 0, s: -1 }, 3)).toBe(false);
+    expect(isOnEdge({ q: 0, r: 3, s: -3 }, 3)).toBe(true);
   });
 
   // Board bounds
   test('board bounds', () => {
-    expect(isOnBoard({q:2,r:1,s:-3}, 3)).toBe(true);
-    expect(isOnBoard({q:4,r:0,s:-4}, 3)).toBe(false);
+    expect(isOnBoard({ q: 2, r: 1, s: -3 }, 3)).toBe(true);
+    expect(isOnBoard({ q: 4, r: 0, s: -4 }, 3)).toBe(false);
   });
 
   // Rotation
   test('60 degree rotation', () => {
-    expect(rotate60CW({q:1,r:0,s:-1})).toEqual({q:1,r:-1,s:0});
-    expect(rotate60CCW({q:1,r:0,s:-1})).toEqual({q:0,r:1,s:-1});
+    expect(rotate60CW({ q: 1, r: 0, s: -1 })).toEqual({ q: 1, r: -1, s: 0 });
+    expect(rotate60CCW({ q: 1, r: 0, s: -1 })).toEqual({ q: 0, r: 1, s: -1 });
   });
 });
 ```
@@ -113,9 +118,11 @@ describe('Hex Coordinates', () => {
 ## Task 1.2: Game State Types
 
 ### Description
+
 Define all TypeScript interfaces for game state.
 
 ### Work Items
+
 - [ ] Define `PieceType` enum
 - [ ] Define `Piece` interface
 - [ ] Define `Player` interface
@@ -128,6 +135,7 @@ Define all TypeScript interfaces for game state.
 - [ ] Define `CombatResult` interface
 
 ### Type Definitions
+
 ```typescript
 // Piece types
 type PieceType = 'warrior' | 'jarl' | 'shield';
@@ -135,7 +143,7 @@ type PieceType = 'warrior' | 'jarl' | 'shield';
 interface Piece {
   id: string;
   type: PieceType;
-  owner: string | null;  // null for shields
+  owner: string | null; // null for shields
   position: AxialCoord;
 }
 
@@ -155,7 +163,7 @@ interface GameConfig {
   boardRadius: number;
   shieldCount: number;
   warriorsPerPlayer: number;
-  turnTimerSeconds: number | null;  // null = no timer
+  turnTimerSeconds: number | null; // null = no timer
   starvationRounds: number;
 }
 
@@ -225,12 +233,13 @@ type GameEvent =
 // Starvation choice (when tie-breaker needed)
 interface StarvationChoice {
   playerId: string;
-  candidates: string[];  // piece IDs equidistant from throne
-  choice?: string;       // selected piece ID
+  candidates: string[]; // piece IDs equidistant from throne
+  choice?: string; // selected piece ID
 }
 ```
 
 ### Definition of Done
+
 - [ ] All interfaces defined in `@jarls/shared`
 - [ ] Interfaces match ruleset v0.4.1 exactly
 - [ ] JSDoc comments on all interfaces
@@ -238,6 +247,7 @@ interface StarvationChoice {
 - [ ] Exported from shared package index
 
 ### Test Verification
+
 ```typescript
 // TypeScript compilation is the test
 // Verify types are usable
@@ -250,9 +260,11 @@ const result: MoveResult = applyMove(state, command);
 ## Task 1.3: Board Generation
 
 ### Description
+
 Generate valid game boards with proper setup according to rules.
 
 ### Work Items
+
 - [ ] Implement `generateBoard(config)` → generates all hexes
 - [ ] Implement `calculateStartingPositions(playerCount, radius)` → equidistant Jarl positions
 - [ ] Implement `generateSymmetricalShields(count, radius, playerCount)` → shield positions
@@ -261,6 +273,7 @@ Generate valid game boards with proper setup according to rules.
 - [ ] Implement `createInitialState(config)` → full initial state
 
 ### Algorithm: Equidistant Starting Positions
+
 ```typescript
 function calculateStartingPositions(playerCount: number, radius: number): AxialCoord[] {
   // Players start on edge, evenly spaced
@@ -270,6 +283,7 @@ function calculateStartingPositions(playerCount: number, radius: number): AxialC
 ```
 
 ### Algorithm: Symmetrical Shield Placement
+
 ```typescript
 function generateSymmetricalShields(
   count: number,
@@ -284,6 +298,7 @@ function generateSymmetricalShields(
 ```
 
 ### Definition of Done
+
 - [ ] Board generates correctly for 2, 3, 4, 5, 6 players
 - [ ] All Jarls are exactly equidistant from Throne
 - [ ] Shields have rotational symmetry matching player count
@@ -292,6 +307,7 @@ function generateSymmetricalShields(
 - [ ] Shields never on edge or Throne
 
 ### Test Cases
+
 ```typescript
 describe('Board Generation', () => {
   test.each([2, 3, 4, 5, 6])('generates valid %i-player board', (playerCount) => {
@@ -299,24 +315,24 @@ describe('Board Generation', () => {
     const state = createInitialState(config);
 
     // Correct piece counts
-    const jarls = state.pieces.filter(p => p.type === 'jarl');
-    const warriors = state.pieces.filter(p => p.type === 'warrior');
-    const shields = state.pieces.filter(p => p.type === 'shield');
+    const jarls = state.pieces.filter((p) => p.type === 'jarl');
+    const warriors = state.pieces.filter((p) => p.type === 'warrior');
+    const shields = state.pieces.filter((p) => p.type === 'shield');
 
     expect(jarls).toHaveLength(playerCount);
     expect(warriors).toHaveLength(playerCount * config.warriorsPerPlayer);
     expect(shields).toHaveLength(config.shieldCount);
 
     // Equidistant jarls
-    const distances = jarls.map(j => hexDistance(j.position, THRONE));
+    const distances = jarls.map((j) => hexDistance(j.position, THRONE));
     expect(new Set(distances).size).toBe(1);
 
     // No overlaps
-    const positions = state.pieces.map(p => hexToKey(p.position));
+    const positions = state.pieces.map((p) => hexToKey(p.position));
     expect(new Set(positions).size).toBe(positions.length);
 
     // Shields not on edge or throne
-    shields.forEach(s => {
+    shields.forEach((s) => {
       expect(isOnEdge(s.position, config.boardRadius)).toBe(false);
       expect(hexToKey(s.position)).not.toBe(hexToKey(THRONE));
     });
@@ -324,9 +340,9 @@ describe('Board Generation', () => {
 
   test('each player has path to throne', () => {
     const state = createInitialState(getConfigForPlayerCount(4));
-    const jarls = state.pieces.filter(p => p.type === 'jarl');
+    const jarls = state.pieces.filter((p) => p.type === 'jarl');
 
-    jarls.forEach(jarl => {
+    jarls.forEach((jarl) => {
       expect(hasDirectPathToThrone(state, jarl.position)).toBe(true);
     });
   });
@@ -338,9 +354,11 @@ describe('Board Generation', () => {
 ## Task 1.4: Move Validation
 
 ### Description
+
 Validate all move types according to rules.
 
 ### Work Items
+
 - [ ] Implement `validateMove(state, playerId, command)` → ValidationResult
 - [ ] Check piece ownership
 - [ ] Check turn order
@@ -351,16 +369,17 @@ Validate all move types according to rules.
 - [ ] Check Warriors cannot enter Throne
 
 ### Validation Errors
+
 ```typescript
 type MoveError =
-  | 'INVALID_PIECE'        // Piece doesn't exist
-  | 'NOT_YOUR_PIECE'       // Piece belongs to another player
-  | 'NOT_YOUR_TURN'        // Not this player's turn
-  | 'GAME_NOT_PLAYING'     // Game not in playing phase
-  | 'OUT_OF_RANGE'         // Destination too far
-  | 'PATH_BLOCKED'         // Piece in movement path
-  | 'INVALID_DESTINATION'  // Off board or on friendly
-  | 'NO_DRAFT_FORMATION'   // Jarl 2-hex without draft
+  | 'INVALID_PIECE' // Piece doesn't exist
+  | 'NOT_YOUR_PIECE' // Piece belongs to another player
+  | 'NOT_YOUR_TURN' // Not this player's turn
+  | 'GAME_NOT_PLAYING' // Game not in playing phase
+  | 'OUT_OF_RANGE' // Destination too far
+  | 'PATH_BLOCKED' // Piece in movement path
+  | 'INVALID_DESTINATION' // Off board or on friendly
+  | 'NO_DRAFT_FORMATION' // Jarl 2-hex without draft
   | 'WARRIOR_CANNOT_ENTER_THRONE';
 
 interface ValidationResult {
@@ -373,12 +392,14 @@ interface ValidationResult {
 ```
 
 ### Definition of Done
+
 - [ ] All valid moves accepted
 - [ ] All invalid moves rejected with specific error code
 - [ ] Combat preview included for attack moves
 - [ ] Draft detection works correctly
 
 ### Test Cases
+
 ```typescript
 describe('Move Validation', () => {
   test('valid warrior 1-hex move', () => {
@@ -399,7 +420,10 @@ describe('Move Validation', () => {
   });
 
   test('rejects path blocked', () => {
-    const result = validateMove(stateWithBlockedPath, 'player1', { pieceId: 'w1', to: behindBlocker });
+    const result = validateMove(stateWithBlockedPath, 'player1', {
+      pieceId: 'w1',
+      to: behindBlocker,
+    });
     expect(result).toEqual({ valid: false, error: 'PATH_BLOCKED' });
   });
 
@@ -431,9 +455,11 @@ describe('Move Validation', () => {
 ## Task 1.5: Combat Resolution
 
 ### Description
+
 Calculate attack/defense and resolve push outcomes.
 
 ### Work Items
+
 - [ ] Implement `calculateAttack(state, attackerPos, direction, hexesMoved)`
 - [ ] Implement `calculateDefense(state, defenderPos, pushDirection)`
 - [ ] Implement `findInlineSupport(state, pos, direction)` → piece IDs
@@ -441,14 +467,17 @@ Calculate attack/defense and resolve push outcomes.
 - [ ] Implement `calculateCombat(state, attackerPos, defenderPos, hexesMoved)`
 
 ### Combat Formulas
+
 ```typescript
 // Attack = base strength + momentum + inline support
 function calculateAttack(state, attackerPos, direction, hexesMoved): number {
   const attacker = getPieceAt(state, attackerPos);
   const base = attacker.type === 'jarl' ? 2 : 1;
   const momentum = hexesMoved === 2 ? 1 : 0;
-  const support = findInlineSupport(state, attackerPos, oppositeDirection(direction))
-    .reduce((sum, piece) => sum + (piece.type === 'jarl' ? 2 : 1), 0);
+  const support = findInlineSupport(state, attackerPos, oppositeDirection(direction)).reduce(
+    (sum, piece) => sum + (piece.type === 'jarl' ? 2 : 1),
+    0
+  );
   return base + momentum + support;
 }
 
@@ -456,13 +485,16 @@ function calculateAttack(state, attackerPos, direction, hexesMoved): number {
 function calculateDefense(state, defenderPos, pushDirection): number {
   const defender = getPieceAt(state, defenderPos);
   const base = defender.type === 'jarl' ? 2 : 1;
-  const bracing = findBracing(state, defenderPos, pushDirection)
-    .reduce((sum, piece) => sum + (piece.type === 'jarl' ? 2 : 1), 0);
+  const bracing = findBracing(state, defenderPos, pushDirection).reduce(
+    (sum, piece) => sum + (piece.type === 'jarl' ? 2 : 1),
+    0
+  );
   return base + bracing;
 }
 ```
 
 ### Definition of Done
+
 - [ ] All combat calculations match ruleset examples exactly
 - [ ] Momentum correctly applied for 2-hex moves
 - [ ] Inline support chains correctly calculated
@@ -470,6 +502,7 @@ function calculateDefense(state, defenderPos, pushDirection): number {
 - [ ] Returns detailed breakdown for UI
 
 ### Test Cases
+
 ```typescript
 describe('Combat Resolution', () => {
   // All examples from ruleset v0.4.1
@@ -477,9 +510,11 @@ describe('Combat Resolution', () => {
   test('W → W (1 hex, both alone) = BLOCKED', () => {
     const result = calculateCombat(state, warriorPos, enemyPos, 1);
     expect(result).toEqual({
-      attack: 1, defense: 1, outcome: 'blocked',
+      attack: 1,
+      defense: 1,
+      outcome: 'blocked',
       attackBreakdown: { base: 1, momentum: 0, support: 0 },
-      defenseBreakdown: { base: 1, bracing: 0 }
+      defenseBreakdown: { base: 1, bracing: 0 },
     });
   });
 
@@ -529,9 +564,11 @@ describe('Combat Resolution', () => {
 ## Task 1.6: Push Chain Resolution
 
 ### Description
+
 Resolve chain pushes including compression and elimination.
 
 ### Work Items
+
 - [ ] Implement `detectChain(state, startPos, direction)` → ChainResult
 - [ ] Implement `resolveSimplePush(state, chain)` → events
 - [ ] Implement `resolveEdgePush(state, chain)` → events + eliminations
@@ -541,9 +578,10 @@ Resolve chain pushes including compression and elimination.
 - [ ] Handle multi-piece elimination chains
 
 ### Chain Detection
+
 ```typescript
 interface ChainResult {
-  pieces: Piece[];           // Pieces in chain, front to back
+  pieces: Piece[]; // Pieces in chain, front to back
   terminator: 'empty' | 'edge' | 'shield' | 'throne';
   terminatorPos?: AxialCoord;
 }
@@ -558,6 +596,7 @@ function detectChain(state, startPos, direction): ChainResult {
 ```
 
 ### Definition of Done
+
 - [ ] Simple pushes work (into empty hex)
 - [ ] Edge elimination works (piece falls off)
 - [ ] Shield compression works (pieces stack against shield)
@@ -566,20 +605,24 @@ function detectChain(state, startPos, direction): ChainResult {
 - [ ] Events generated in correct animation order (with depth)
 
 ### Test Cases
+
 ```typescript
 describe('Push Chain Resolution', () => {
   test('simple push into empty', () => {
     const result = resolvePush(state, attackerPos, direction);
     expect(result.events).toEqual([
       { type: 'MOVE', pieceId: 'attacker', from: attackerPos, to: defenderPos },
-      { type: 'PUSH', pieceId: 'defender', from: defenderPos, to: emptyPos, depth: 0 }
+      { type: 'PUSH', pieceId: 'defender', from: defenderPos, to: emptyPos, depth: 0 },
     ]);
   });
 
   test('edge elimination', () => {
     const result = resolvePush(stateAtEdge, attackerPos, direction);
     expect(result.events).toContainEqual({
-      type: 'ELIMINATED', pieceId: 'defender', from: edgePos, reason: 'edge'
+      type: 'ELIMINATED',
+      pieceId: 'defender',
+      from: edgePos,
+      reason: 'edge',
     });
     expect(result.eliminations).toContain('defender');
   });
@@ -588,7 +631,9 @@ describe('Push Chain Resolution', () => {
     // A →→ W1 ← W2 ← [Shield]
     const result = resolvePush(stateWithShield, attackerPos, direction);
     expect(result.events).toContainEqual({
-      type: 'COMPRESSED', pieceIds: ['w1', 'w2'], at: shieldAdjacentPos
+      type: 'COMPRESSED',
+      pieceIds: ['w1', 'w2'],
+      at: shieldAdjacentPos,
     });
     // No eliminations
     expect(result.eliminations).toHaveLength(0);
@@ -598,7 +643,9 @@ describe('Push Chain Resolution', () => {
     // A →→ W ← W ← [Throne]
     const result = resolvePush(stateNearThrone, attackerPos, direction);
     expect(result.events).toContainEqual({
-      type: 'COMPRESSED', pieceIds: ['w1', 'w2'], at: throneAdjacentPos
+      type: 'COMPRESSED',
+      pieceIds: ['w1', 'w2'],
+      at: throneAdjacentPos,
     });
   });
 
@@ -607,8 +654,7 @@ describe('Push Chain Resolution', () => {
     // W3 should be eliminated, W2 stops at edge
     const result = resolvePush(stateMultiChain, attackerPos, direction);
     expect(result.eliminations).toEqual(['w3']);
-    expect(result.newState.pieces.find(p => p.id === 'w2')?.position)
-      .toEqual(edgePos);
+    expect(result.newState.pieces.find((p) => p.id === 'w2')?.position).toEqual(edgePos);
   });
 });
 ```
@@ -618,9 +664,11 @@ describe('Push Chain Resolution', () => {
 ## Task 1.7: Win Condition Detection
 
 ### Description
+
 Detect both win conditions and handle player elimination.
 
 ### Work Items
+
 - [ ] Implement `checkThroneVictory(state, pieceId, destination)` → boolean
 - [ ] Implement `checkLastStanding(state)` → winnerId | null
 - [ ] Implement `eliminatePlayer(state, playerId)` → new state
@@ -628,6 +676,7 @@ Detect both win conditions and handle player elimination.
 - [ ] Handle win precedence (Throne > Last Standing)
 
 ### Definition of Done
+
 - [ ] Throne victory detected immediately when Jarl enters voluntarily
 - [ ] Last Standing detected after elimination leaves one Jarl
 - [ ] Player elimination removes all their remaining pieces
@@ -635,6 +684,7 @@ Detect both win conditions and handle player elimination.
 - [ ] Being pushed onto Throne does NOT trigger victory
 
 ### Test Cases
+
 ```typescript
 describe('Win Conditions', () => {
   test('throne victory on voluntary entry', () => {
@@ -656,11 +706,11 @@ describe('Win Conditions', () => {
   });
 
   test('player elimination removes all pieces', () => {
-    const beforeCount = state.pieces.filter(p => p.owner === 'player2').length;
+    const beforeCount = state.pieces.filter((p) => p.owner === 'player2').length;
     expect(beforeCount).toBeGreaterThan(0);
 
     const result = eliminatePlayer(state, 'player2');
-    const afterCount = result.pieces.filter(p => p.owner === 'player2').length;
+    const afterCount = result.pieces.filter((p) => p.owner === 'player2').length;
     expect(afterCount).toBe(0);
   });
 
@@ -678,9 +728,11 @@ describe('Win Conditions', () => {
 ## Task 1.8: Starvation Mechanic
 
 ### Description
+
 Implement starvation rule for stalemate prevention.
 
 ### Work Items
+
 - [ ] Track `roundsWithoutElimination` in state
 - [ ] Implement `checkStarvationTrigger(state)` → boolean
 - [ ] Implement `calculateStarvationCandidates(state)` → by player
@@ -689,6 +741,7 @@ Implement starvation rule for stalemate prevention.
 - [ ] Reset counter when elimination occurs
 
 ### Definition of Done
+
 - [ ] Starvation triggers after 10 rounds without elimination
 - [ ] Correct Warriors selected (furthest from Throne)
 - [ ] Tie-breaker returns candidates for player choice
@@ -697,6 +750,7 @@ Implement starvation rule for stalemate prevention.
 - [ ] Counter resets on any elimination
 
 ### Test Cases
+
 ```typescript
 describe('Starvation Mechanic', () => {
   test('triggers at round 10 without elimination', () => {
@@ -717,29 +771,30 @@ describe('Starvation Mechanic', () => {
 
   test('selects furthest warrior from throne', () => {
     const candidates = calculateStarvationCandidates(state);
-    candidates.forEach(c => {
+    candidates.forEach((c) => {
       // Verify selected warrior is furthest
-      const selected = state.pieces.find(p => p.id === c.candidates[0]);
+      const selected = state.pieces.find((p) => p.id === c.candidates[0]);
       const otherWarriors = state.pieces.filter(
-        p => p.owner === c.playerId && p.type === 'warrior' && p.id !== c.candidates[0]
+        (p) => p.owner === c.playerId && p.type === 'warrior' && p.id !== c.candidates[0]
       );
-      otherWarriors.forEach(w => {
-        expect(hexDistance(selected.position, THRONE))
-          .toBeGreaterThanOrEqual(hexDistance(w.position, THRONE));
+      otherWarriors.forEach((w) => {
+        expect(hexDistance(selected.position, THRONE)).toBeGreaterThanOrEqual(
+          hexDistance(w.position, THRONE)
+        );
       });
     });
   });
 
   test('returns multiple candidates for tie-breaker', () => {
     const candidates = calculateStarvationCandidates(stateWithTie);
-    const playerCandidates = candidates.find(c => c.playerId === 'player1');
+    const playerCandidates = candidates.find((c) => c.playerId === 'player1');
     expect(playerCandidates.candidates.length).toBeGreaterThan(1);
   });
 
   test('jarl at risk when no warriors', () => {
     const state = createStateWithNoWarriors('player1');
     const candidates = calculateStarvationCandidates(state);
-    const p1 = candidates.find(c => c.playerId === 'player1');
+    const p1 = candidates.find((c) => c.playerId === 'player1');
     expect(p1.candidates[0]).toBe('j1'); // Jarl is the candidate
   });
 });
@@ -750,9 +805,11 @@ describe('Starvation Mechanic', () => {
 ## Task 1.9: Valid Moves Calculator
 
 ### Description
+
 Calculate all valid moves for a piece (for UI highlighting).
 
 ### Work Items
+
 - [ ] Implement `getValidMoves(state, playerId, pieceId)` → ValidMove[]
 - [ ] Calculate reachable hexes based on piece type
 - [ ] Filter by path availability
@@ -761,16 +818,18 @@ Calculate all valid moves for a piece (for UI highlighting).
 - [ ] Include draft/momentum info
 
 ### Return Type
+
 ```typescript
 interface ValidMove {
   to: AxialCoord;
   type: 'move' | 'attack';
   hasMomentum: boolean;
-  combat?: CombatResult;  // Only for attacks
+  combat?: CombatResult; // Only for attacks
 }
 ```
 
 ### Definition of Done
+
 - [ ] Returns all valid destinations for piece
 - [ ] Correctly distinguishes move vs attack
 - [ ] Includes accurate combat preview
@@ -778,36 +837,37 @@ interface ValidMove {
 - [ ] Performance: <10ms for calculation
 
 ### Test Cases
+
 ```typescript
 describe('Valid Moves Calculator', () => {
   test('warrior returns up to 12 hexes (6 at distance 1, 6 at distance 2)', () => {
     const moves = getValidMoves(openState, 'player1', 'w1');
     expect(moves.length).toBeLessThanOrEqual(12);
-    moves.forEach(m => {
+    moves.forEach((m) => {
       expect(hexDistance(warriorPos, m.to)).toBeLessThanOrEqual(2);
     });
   });
 
   test('jarl without draft returns only 6 hexes', () => {
     const moves = getValidMoves(stateWithoutDraft, 'player1', 'j1');
-    moves.forEach(m => {
+    moves.forEach((m) => {
       expect(hexDistance(jarlPos, m.to)).toBe(1);
     });
   });
 
   test('jarl with draft includes 2-hex moves', () => {
     const moves = getValidMoves(stateWithDraft, 'player1', 'j1');
-    const twoHexMoves = moves.filter(m => hexDistance(jarlPos, m.to) === 2);
+    const twoHexMoves = moves.filter((m) => hexDistance(jarlPos, m.to) === 2);
     expect(twoHexMoves.length).toBeGreaterThan(0);
-    twoHexMoves.forEach(m => {
+    twoHexMoves.forEach((m) => {
       expect(m.hasMomentum).toBe(true);
     });
   });
 
   test('attacks include combat preview', () => {
     const moves = getValidMoves(stateWithEnemy, 'player1', 'w1');
-    const attacks = moves.filter(m => m.type === 'attack');
-    attacks.forEach(a => {
+    const attacks = moves.filter((m) => m.type === 'attack');
+    attacks.forEach((a) => {
       expect(a.combat).toBeDefined();
       expect(a.combat.attack).toBeGreaterThan(0);
       expect(a.combat.defense).toBeGreaterThan(0);
@@ -830,10 +890,12 @@ describe('Valid Moves Calculator', () => {
 ## Phase 1 Checklist
 
 ### Prerequisites
+
 - [ ] Phase 0 complete
 - [ ] All packages set up
 
 ### Completion Criteria
+
 - [ ] All 9 tasks complete
 - [ ] 100% test coverage on core logic
 - [ ] All ruleset v0.4.1 scenarios pass
@@ -841,10 +903,11 @@ describe('Valid Moves Calculator', () => {
 - [ ] Code reviewed
 
 ### Handoff to Phase 2
+
 - All game logic implemented as pure functions
 - Types defined and exported from shared
 - Ready to integrate with state machine
 
 ---
 
-*Phase 1 Status: Not Started*
+_Phase 1 Status: Not Started_

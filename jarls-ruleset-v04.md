@@ -2,7 +2,7 @@
 
 ### A Push-Combat Strategy Game for 2-6 Players
 
-*Version 0.4.1*
+_Version 0.4.1_
 
 ---
 
@@ -15,14 +15,17 @@ Norse Wars is a turn-based strategy game where players compete to either claim t
 ## Components
 
 **Per player:**
+
 - 1 Jarl (unique color, larger piece)
 - 4-5 Warriors (matching color, smaller pieces — varies by player count)
 
 **Neutral:**
+
 - 2-5 Shield tokens (gray, immovable obstacles)
 - 1 Throne marker (center hex)
 
 **Board:**
+
 - Hexagonal grid (size scales with player count)
 
 ---
@@ -32,16 +35,16 @@ Norse Wars is a turn-based strategy game where players compete to either claim t
 ### Scaling Table
 
 | Players | Board Radius | Total Hexes | Shields | Warriors/Player | Total Pieces | Density |
-|---------|--------------|-------------|---------|-----------------|--------------|---------|
+| ------- | ------------ | ----------- | ------- | --------------- | ------------ | ------- |
 | 2       | 3            | 37          | 5       | 5               | 12           | ~32%    |
 | 3       | 5            | 91          | 4       | 5               | 18           | ~20%    |
 | 4       | 6            | 127         | 4       | 4               | 20           | ~16%    |
 | 5       | 7            | 169         | 3       | 4               | 25           | ~15%    |
 | 6       | 8            | 217         | 3       | 4               | 30           | ~14%    |
 
-*Hex count formula: 3r² + 3r + 1*
+_Hex count formula: 3r² + 3r + 1_
 
-*Density scaling is intentionally non-linear: 2-player is tight and tactical, larger games are more open but complexity comes from player interactions.*
+_Density scaling is intentionally non-linear: 2-player is tight and tactical, larger games are more open but complexity comes from player interactions._
 
 ### Critical Setup Rule: Equidistant Starting Positions
 
@@ -61,6 +64,7 @@ Board shape and starting positions are calculated to guarantee this regardless o
 ### Shield Placement Rules
 
 Shields are placed randomly but with constraints:
+
 - **Symmetrically balanced** — rotational symmetry matching player count
 - **Equidistant from all starting positions** — no player gets a defensive advantage
 - **Never blocking all straight-line paths to Throne** — each player must have at least one unobstructed straight route to center
@@ -71,11 +75,11 @@ Shields are placed randomly but with constraints:
 
 ## Pieces
 
-| Piece | Owner | Strength | Movement | Special |
-|-------|-------|----------|----------|---------|
-| **Warrior** | Player | 1 | 1-2 hexes in a straight line | Can provide draft for Jarl |
-| **Jarl** | Player | 2 | 1 hex (or 2 with draft) | Only piece that can enter Throne |
-| **Shield** | Neutral | ∞ | Immovable | Cannot be pushed, blocks movement |
+| Piece       | Owner   | Strength | Movement                     | Special                           |
+| ----------- | ------- | -------- | ---------------------------- | --------------------------------- |
+| **Warrior** | Player  | 1        | 1-2 hexes in a straight line | Can provide draft for Jarl        |
+| **Jarl**    | Player  | 2        | 1 hex (or 2 with draft)      | Only piece that can enter Throne  |
+| **Shield**  | Neutral | ∞        | Immovable                    | Cannot be pushed, blocks movement |
 
 ---
 
@@ -94,6 +98,7 @@ Shields are placed randomly but with constraints:
 ## Movement Rules
 
 ### Warrior Movement
+
 - Move 1-2 hexes in a straight line (no turning mid-move)
 - Cannot move through other pieces (friend, foe, or Shield)
 - Cannot land on friendly pieces
@@ -105,6 +110,7 @@ Shields are placed randomly but with constraints:
 **Standard:** Move 1 hex in any of the 6 directions
 
 **Draft Movement (Extended):** Move 2 hexes in a straight line IF:
+
 - You have **2+ friendly Warriors directly behind** your Jarl (opposite the direction of movement)
 - The Warriors propel the Jarl forward — like a slingshot formation
 - This allows the Jarl to gain **momentum** (+1 attack if pushing)
@@ -135,36 +141,36 @@ Draft Formation Example:
 
 ### Strength
 
-| Piece | Base Strength |
-|-------|---------------|
-| Warrior | 1 |
-| Jarl | 2 |
-| Shield | ∞ (immovable) |
+| Piece   | Base Strength |
+| ------- | ------------- |
+| Warrior | 1             |
+| Jarl    | 2             |
+| Shield  | ∞ (immovable) |
 
 ### Attack Power
 
 When you move into an enemy's hex, calculate your Attack:
 
-| Factor | Bonus |
-|--------|-------|
-| Your piece's strength | +1 (Warrior) or +2 (Jarl) |
-| **Momentum** | +1 if you moved 2 hexes to reach them |
-| **Inline support** | + strength of each friendly piece directly behind you (opposite push direction) |
+| Factor                | Bonus                                                                           |
+| --------------------- | ------------------------------------------------------------------------------- |
+| Your piece's strength | +1 (Warrior) or +2 (Jarl)                                                       |
+| **Momentum**          | +1 if you moved 2 hexes to reach them                                           |
+| **Inline support**    | + strength of each friendly piece directly behind you (opposite push direction) |
 
 ### Defense Power
 
 The target's Defense:
 
-| Factor | Bonus |
-|--------|-------|
-| Target's strength | +1 (Warrior) or +2 (Jarl) |
-| **Bracing** | + strength of each friendly piece directly behind them (opposite push direction) |
+| Factor            | Bonus                                                                            |
+| ----------------- | -------------------------------------------------------------------------------- |
+| Target's strength | +1 (Warrior) or +2 (Jarl)                                                        |
+| **Bracing**       | + strength of each friendly piece directly behind them (opposite push direction) |
 
 ### Resolution
 
-| Comparison | Result |
-|------------|--------|
-| **Attack > Defense** | Push succeeds |
+| Comparison           | Result                                |
+| -------------------- | ------------------------------------- |
+| **Attack > Defense** | Push succeeds                         |
 | **Attack ≤ Defense** | Blocked — you stop adjacent to target |
 
 ---
@@ -312,6 +318,7 @@ When a piece is pushed, it pushes whatever is directly behind it.
 **Shields stop chains but don't cancel the push.**
 
 If a chain would push into a Shield:
+
 - Push succeeds up to the Shield
 - Pieces compress against the Shield (stop there, don't die)
 - Attacker still takes the first defender's spot
@@ -328,6 +335,7 @@ Push succeeds. Both W's compress against Shield. A takes first position.
 **The Throne blocks Warriors like a Shield.**
 
 If a chain would push a Warrior into the Throne hex:
+
 - Push succeeds up to the Throne
 - Warrior stops adjacent to Throne (cannot enter)
 - Chain compresses
@@ -375,6 +383,7 @@ A takes W1's original spot.
 ### Win Precedence
 
 If multiple win conditions would trigger on the same turn:
+
 - **Throne Victory takes precedence over Last Standing**
 - In the impossible case of simultaneous Throne claims: current player wins
 
@@ -432,47 +441,51 @@ A: The Warrior stops adjacent to the Throne (compression). Warriors cannot enter
 
 ### Offensive Tactics
 
-| Tactic | Description |
-|--------|-------------|
-| **The Train** | Line up pieces for maximum inline support |
-| **Momentum Strike** | 2-hex charge to break even defenses |
-| **Flanking** | Attack from the side where they have no brace |
-| **Cut the Brace** | Push away their support piece, then hit exposed target |
-| **Slingshot Launch** | Set up 2 Warriors behind Jarl for momentum charge |
+| Tactic               | Description                                            |
+| -------------------- | ------------------------------------------------------ |
+| **The Train**        | Line up pieces for maximum inline support              |
+| **Momentum Strike**  | 2-hex charge to break even defenses                    |
+| **Flanking**         | Attack from the side where they have no brace          |
+| **Cut the Brace**    | Push away their support piece, then hit exposed target |
+| **Slingshot Launch** | Set up 2 Warriors behind Jarl for momentum charge      |
 
 ### Defensive Tactics
 
-| Tactic | Description |
-|--------|-------------|
-| **Stay Braced** | Keep friendly pieces behind valuable units |
-| **Shield Anchoring** | Position near Shields — compression stops lethal chains |
-| **Throne Buffer** | Use Throne as a compression point for Warriors |
-| **Bait** | Leave piece "exposed" but actually braced — waste their charge |
-| **Sidestep** | Enemy builds a train, you simply move out of the line |
+| Tactic               | Description                                                    |
+| -------------------- | -------------------------------------------------------------- |
+| **Stay Braced**      | Keep friendly pieces behind valuable units                     |
+| **Shield Anchoring** | Position near Shields — compression stops lethal chains        |
+| **Throne Buffer**    | Use Throne as a compression point for Warriors                 |
+| **Bait**             | Leave piece "exposed" but actually braced — waste their charge |
+| **Sidestep**         | Enemy builds a train, you simply move out of the line          |
 
 ### Multiplayer Tactics
 
-| Tactic | Description |
-|--------|-------------|
-| **Let Them Fight** | Hang back while others weaken each other |
-| **Kingmaker Threat** | "Attack me and I'll push your Jarl off before I die" |
-| **Throne Race** | Ignore combat, sprint Jarl to center while they're distracted |
-| **Alliance of Convenience** | Temporarily coordinate against the leader |
+| Tactic                      | Description                                                   |
+| --------------------------- | ------------------------------------------------------------- |
+| **Let Them Fight**          | Hang back while others weaken each other                      |
+| **Kingmaker Threat**        | "Attack me and I'll push your Jarl off before I die"          |
+| **Throne Race**             | Ignore combat, sprint Jarl to center while they're distracted |
+| **Alliance of Convenience** | Temporarily coordinate against the leader                     |
 
 ---
 
 ## Optional Rules
 
 ### Fog of War (Digital Only)
+
 Pieces more than 4 hexes from any of your pieces are hidden. Creates scouting and ambush tactics.
 
 ### Draft Shields
+
 Instead of random placement, players take turns placing one Shield each (reverse turn order). Adds strategic setup phase.
 
 ### Sudden Death
+
 Alternative to Starvation: After 20 rounds with no elimination, the board **shrinks** — outer ring becomes "edge" and pieces there fall off. Repeat every 5 rounds.
 
 ### Team Mode (4 or 6 players)
+
 - 2v2 or 3v3
 - Teammates share victory
 - **Non-adjacent start:** Teammates begin in opposite/separate corners, not side-by-side. Teams must coordinate movement to combine forces.
@@ -521,19 +534,19 @@ STARVATION: No kills for 10 rounds → remove 1 Warrior each (player chooses if 
 
 ### Why These Rules?
 
-| Rule | Purpose |
-|------|---------|
-| Push > Capture | Creates positional chess, not piece trading |
-| Formations (inline/brace) | Rewards planning, punishes isolation |
-| Momentum | Risk/reward for commitment |
-| Jarl draft (behind) | Makes Warriors valuable as launch platform |
-| Shield compression | Shields are defensive, not instant-death blockers |
-| Throne compression | Throne is a goal, not a death trap for Warriors |
-| Throne = instant win | No ambiguity, clear victory moment |
-| Throne + Last Standing | Dual win paths prevent turtling |
-| Starvation + player choice | Guarantees game ends, preserves agency |
-| Equidistant start | No first-player throne advantage |
-| Non-linear density | 2-player tactical, 6-player political |
+| Rule                       | Purpose                                           |
+| -------------------------- | ------------------------------------------------- |
+| Push > Capture             | Creates positional chess, not piece trading       |
+| Formations (inline/brace)  | Rewards planning, punishes isolation              |
+| Momentum                   | Risk/reward for commitment                        |
+| Jarl draft (behind)        | Makes Warriors valuable as launch platform        |
+| Shield compression         | Shields are defensive, not instant-death blockers |
+| Throne compression         | Throne is a goal, not a death trap for Warriors   |
+| Throne = instant win       | No ambiguity, clear victory moment                |
+| Throne + Last Standing     | Dual win paths prevent turtling                   |
+| Starvation + player choice | Guarantees game ends, preserves agency            |
+| Equidistant start          | No first-player throne advantage                  |
+| Non-linear density         | 2-player tactical, 6-player political             |
 
 ### Untested / Needs Playtesting
 
@@ -545,4 +558,4 @@ STARVATION: No kills for 10 rounds → remove 1 Warrior each (player chooses if 
 
 ---
 
-*Version 0.4.1 — Ready for playtesting*
+_Version 0.4.1 — Ready for playtesting_

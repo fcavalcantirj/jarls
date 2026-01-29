@@ -70,6 +70,22 @@ export default function WaitingRoom({ gameId }: WaitingRoomProps) {
     navigate('/');
   }, [navigate]);
 
+  // No session token - stale/bookmarked URL
+  if (!sessionToken) {
+    return (
+      <div style={containerStyle}>
+        <h2 style={titleStyle}>Waiting Room</h2>
+        <p style={{ color: '#e74c3c', marginBottom: '8px' }}>No active session for this game.</p>
+        <p style={{ color: '#888', fontSize: '14px', marginBottom: '16px' }}>
+          This link may have expired or you need to create/join a game first.
+        </p>
+        <button style={backButtonStyle} onClick={handleBack}>
+          Back to Home
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div style={containerStyle}>
       <h2 style={titleStyle}>Waiting Room</h2>

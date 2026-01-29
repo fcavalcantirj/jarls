@@ -17,6 +17,7 @@ const createGameSchema = z.object({
     .union([z.literal(null), z.number().int().positive()])
     .optional()
     .default(null),
+  boardRadius: z.number().int().min(3).max(10).optional(),
 });
 
 /**
@@ -37,8 +38,11 @@ export function createGameRoutes(manager: GameManager): Router {
         throw new ValidationError(parsed.error.issues.map((i) => i.message).join(', '));
       }
 
-      const { playerCount, turnTimerMs } = parsed.data;
+      const { playerCount, turnTimerMs, boardRadius } = parsed.data;
       const config = getConfigForPlayerCount(playerCount, turnTimerMs);
+      if (boardRadius) {
+        config.boardRadius = boardRadius;
+      }
 
       const gameId = await manager.create({ config });
 
@@ -57,6 +61,19 @@ export function createGameRoutes(manager: GameManager): Router {
       const status = typeof req.query.status === 'string' ? req.query.status : undefined;
       const games = manager.listGames(status ? { status } : undefined);
       res.json({ games });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  /**
+   * GET /api/games/stats
+   * Get dashboard stats.
+   */
+  router.get('/stats', (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const stats = manager.getStats();
+      res.json(stats);
     } catch (err) {
       next(err);
     }

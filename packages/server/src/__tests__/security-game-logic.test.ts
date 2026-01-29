@@ -113,7 +113,7 @@ describe('Security verification: game logic', () => {
       const otherPlayerId = currentPlayerId === hostPlayerId ? player2Id : hostPlayerId;
 
       // Attempt to move as the non-current player
-      const result = manager.makeMove(gameId, otherPlayerId, {
+      const result = await manager.makeMove(gameId, otherPlayerId, {
         pieceId: 'any-piece',
         destination: { q: 0, r: 0 },
       });
@@ -138,7 +138,7 @@ describe('Security verification: game logic', () => {
       expect(opponentPiece).toBeDefined();
 
       // Try to move the opponent's piece as the current player
-      const result = manager.makeMove(gameId, currentPlayerId, {
+      const result = await manager.makeMove(gameId, currentPlayerId, {
         pieceId: opponentPiece.id,
         destination: { q: 0, r: 0 },
       });
@@ -160,7 +160,7 @@ describe('Security verification: game logic', () => {
       expect(opponentPiece).toBeDefined();
 
       // Even if destination is adjacent (potentially valid), can't move opponent's piece
-      const result = manager.makeMove(gameId, currentPlayerId, {
+      const result = await manager.makeMove(gameId, currentPlayerId, {
         pieceId: opponentPiece.id,
         destination: { q: opponentPiece.position.q + 1, r: opponentPiece.position.r },
       });
@@ -175,7 +175,7 @@ describe('Security verification: game logic', () => {
       const context = snapshot!.context as any;
       const currentPlayerId = context.currentPlayerId;
 
-      const result = manager.makeMove(gameId, currentPlayerId, {
+      const result = await manager.makeMove(gameId, currentPlayerId, {
         pieceId: 'non-existent-piece-id-12345',
         destination: { q: 0, r: 0 },
       });
@@ -386,7 +386,7 @@ describe('Security verification: game logic', () => {
       const currentPlayerId = context.currentPlayerId;
 
       // Make an invalid move (non-existent piece)
-      const result = manager.makeMove(gameId, currentPlayerId, {
+      const result = await manager.makeMove(gameId, currentPlayerId, {
         pieceId: 'fake-piece',
         destination: { q: 0, r: 0 },
       });

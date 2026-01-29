@@ -45,12 +45,17 @@ jest.unstable_mockModule('../redis/client', () => ({
   },
 }));
 
-// Dynamic imports after mocking
-const { GameManager } = await import('../game/manager');
-const { createGameRoutes } = await import('../routes/games');
-const { errorMiddleware } = await import('../middleware/error');
-const { registerSocketHandlers } = await import('../socket/handlers');
-const { createSession } = await import('../services/session');
+// Dynamic imports after mocking - loaded in beforeAll
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let GameManager: any, createGameRoutes: any, errorMiddleware: any, registerSocketHandlers: any, createSession: any;
+
+beforeAll(async () => {
+  ({ GameManager } = await import('../game/manager'));
+  ({ createGameRoutes } = await import('../routes/games'));
+  ({ errorMiddleware } = await import('../middleware/error'));
+  ({ registerSocketHandlers } = await import('../socket/handlers'));
+  ({ createSession } = await import('../services/session'));
+});
 
 // ── Type for typed client socket ─────────────────────────────────────
 

@@ -13,9 +13,11 @@ Implement REST API and WebSocket communication for multiplayer gameplay.
 ## Task 3.1: REST API Endpoints
 
 ### Description
+
 Implement REST API for game management operations.
 
 ### Work Items
+
 - [ ] Set up Express with TypeScript
 - [ ] Implement input validation middleware (Zod)
 - [ ] Implement error handling middleware
@@ -30,6 +32,7 @@ Implement REST API for game management operations.
 ### API Specification
 
 #### Create Game
+
 ```http
 POST /api/games
 Content-Type: application/json
@@ -48,6 +51,7 @@ Response 201:
 ```
 
 #### List Games
+
 ```http
 GET /api/games?status=lobby&limit=10
 
@@ -65,6 +69,7 @@ Response 200:
 ```
 
 #### Get Game State
+
 ```http
 GET /api/games/:id
 Authorization: Bearer <sessionToken>
@@ -81,6 +86,7 @@ Response 200:
 ```
 
 #### Join Game
+
 ```http
 POST /api/games/:id/join
 Content-Type: application/json
@@ -98,6 +104,7 @@ Response 200:
 ```
 
 #### Get Valid Moves
+
 ```http
 GET /api/games/:id/valid-moves/:pieceId
 Authorization: Bearer <sessionToken>
@@ -125,6 +132,7 @@ Response 200:
 ```
 
 ### Express Setup
+
 ```typescript
 import express from 'express';
 import { z } from 'zod';
@@ -137,11 +145,11 @@ app.use(express.json());
 const CreateGameSchema = z.object({
   playerCount: z.number().min(2).max(6).default(2),
   turnTimerSeconds: z.number().min(10).max(300).nullable().default(60),
-  isPrivate: z.boolean().default(false)
+  isPrivate: z.boolean().default(false),
 });
 
 const JoinGameSchema = z.object({
-  playerName: z.string().min(1).max(20)
+  playerName: z.string().min(1).max(20),
 });
 
 // Error handler
@@ -210,6 +218,7 @@ app.get('/api/games/:id/valid-moves/:pieceId', authenticateSession, async (req, 
 ```
 
 ### Definition of Done
+
 - [ ] All endpoints implemented
 - [ ] Input validation on all endpoints
 - [ ] Consistent error response format
@@ -217,21 +226,18 @@ app.get('/api/games/:id/valid-moves/:pieceId', authenticateSession, async (req, 
 - [ ] OpenAPI spec generated
 
 ### Test Cases
+
 ```typescript
 describe('REST API', () => {
   test('POST /api/games creates game', async () => {
-    const res = await request(app)
-      .post('/api/games')
-      .send({ playerCount: 2 });
+    const res = await request(app).post('/api/games').send({ playerCount: 2 });
 
     expect(res.status).toBe(201);
     expect(res.body.gameId).toBeDefined();
   });
 
   test('POST /api/games validates input', async () => {
-    const res = await request(app)
-      .post('/api/games')
-      .send({ playerCount: 10 }); // Invalid
+    const res = await request(app).post('/api/games').send({ playerCount: 10 }); // Invalid
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('VALIDATION_ERROR');
@@ -250,9 +256,7 @@ describe('REST API', () => {
   test('POST /api/games/:id/join returns session', async () => {
     const { gameId } = await createGame();
 
-    const res = await request(app)
-      .post(`/api/games/${gameId}/join`)
-      .send({ playerName: 'Alice' });
+    const res = await request(app).post(`/api/games/${gameId}/join`).send({ playerName: 'Alice' });
 
     expect(res.status).toBe(200);
     expect(res.body.playerId).toBeDefined();
@@ -286,9 +290,11 @@ describe('REST API', () => {
 ## Task 3.2: Socket.IO Integration
 
 ### Description
+
 Implement real-time WebSocket communication for game events.
 
 ### Work Items
+
 - [ ] Set up Socket.IO server with Express
 - [ ] Configure Connection State Recovery
 - [ ] Implement room management (one game = one room)
@@ -299,6 +305,7 @@ Implement real-time WebSocket communication for game events.
 - [ ] Handle disconnection/reconnection
 
 ### Socket.IO Setup
+
 ```typescript
 import { Server } from 'socket.io';
 import { createServer } from 'http';
@@ -327,9 +334,7 @@ interface ClientToServerEvents {
     callback: (response: { success: boolean; events?: GameEvent[]; error?: string }) => void
   ) => void;
 
-  startGame: (
-    callback: (response: { success: boolean; error?: string }) => void
-  ) => void;
+  startGame: (callback: (response: { success: boolean; error?: string }) => void) => void;
 
   starvationChoice: (
     data: { pieceId: string },
@@ -353,12 +358,12 @@ const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents, {}, SocketData>(httpServer, {
   connectionStateRecovery: {
     maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
-    skipMiddlewares: true
+    skipMiddlewares: true,
   },
   cors: {
     origin: process.env.CLIENT_URL,
-    credentials: true
-  }
+    credentials: true,
+  },
 });
 
 // Connection handler
@@ -390,7 +395,7 @@ io.on('connection', (socket) => {
       // Notify others
       socket.to(`game:${gameId}`).emit('playerJoined', {
         id: session.playerId,
-        name: session.playerName
+        name: session.playerName,
       });
 
       callback({ success: true, state });
@@ -416,14 +421,14 @@ io.on('connection', (socket) => {
       // Broadcast to all in room (including sender for confirmation)
       io.to(`game:${gameId}`).emit('turnPlayed', {
         playerId,
-        events: result.events
+        events: result.events,
       });
 
       // Check for game end
       if (result.newState.winner) {
         io.to(`game:${gameId}`).emit('gameEnded', {
           winner: result.newState.winner,
-          condition: result.newState.winCondition
+          condition: result.newState.winCondition,
         });
       }
 
@@ -489,6 +494,7 @@ gameManager.on('starvation', ({ gameId, choices }) => {
 ```
 
 ### Definition of Done
+
 - [ ] Players receive real-time updates
 - [ ] Disconnected players can reconnect (2 min window)
 - [ ] Move acknowledgements work correctly
@@ -496,6 +502,7 @@ gameManager.on('starvation', ({ gameId, choices }) => {
 - [ ] All game events broadcast to room
 
 ### Test Cases
+
 ```typescript
 describe('Socket.IO', () => {
   let io: Server;
@@ -563,11 +570,11 @@ describe('Socket.IO', () => {
   test('reconnection restores state', async () => {
     clientSocket.disconnect();
 
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 100));
 
     clientSocket.connect();
 
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 100));
 
     expect(clientSocket.recovered).toBe(true);
   });
@@ -579,9 +586,11 @@ describe('Socket.IO', () => {
 ## Task 3.3: Session Management
 
 ### Description
+
 Implement secure session management for player authentication.
 
 ### Work Items
+
 - [ ] Generate cryptographically secure session tokens
 - [ ] Store sessions in Redis (fast lookup)
 - [ ] Implement session validation middleware
@@ -590,6 +599,7 @@ Implement secure session management for player authentication.
 - [ ] Clean up expired sessions
 
 ### Session Service
+
 ```typescript
 import { createHash, randomBytes } from 'crypto';
 import Redis from 'ioredis';
@@ -617,21 +627,13 @@ export class SessionService {
       playerId,
       playerName,
       createdAt: new Date(),
-      expiresAt: new Date(Date.now() + this.SESSION_TTL * 1000)
+      expiresAt: new Date(Date.now() + this.SESSION_TTL * 1000),
     };
 
-    await this.redis.setex(
-      `session:${token}`,
-      this.SESSION_TTL,
-      JSON.stringify(session)
-    );
+    await this.redis.setex(`session:${token}`, this.SESSION_TTL, JSON.stringify(session));
 
     // Also store reverse lookup
-    await this.redis.setex(
-      `player_session:${gameId}:${playerId}`,
-      this.SESSION_TTL,
-      token
-    );
+    await this.redis.setex(`player_session:${gameId}:${playerId}`, this.SESSION_TTL, token);
 
     return token;
   }
@@ -666,11 +668,7 @@ export class SessionService {
     const session = await this.validate(token);
     if (session) {
       session.expiresAt = new Date(Date.now() + this.SESSION_TTL * 1000);
-      await this.redis.setex(
-        `session:${token}`,
-        this.SESSION_TTL,
-        JSON.stringify(session)
-      );
+      await this.redis.setex(`session:${token}`, this.SESSION_TTL, JSON.stringify(session));
     }
   }
 
@@ -701,6 +699,7 @@ export function authenticateSession(sessionService: SessionService) {
 ```
 
 ### Definition of Done
+
 - [ ] Session tokens are cryptographically secure
 - [ ] Sessions expire appropriately
 - [ ] Session validation is fast (<5ms)
@@ -708,6 +707,7 @@ export function authenticateSession(sessionService: SessionService) {
 - [ ] Cleanup runs periodically
 
 ### Test Cases
+
 ```typescript
 describe('Session Management', () => {
   let sessionService: SessionService;
@@ -771,10 +771,12 @@ describe('Session Management', () => {
 ## Phase 3 Checklist
 
 ### Prerequisites
+
 - [ ] Phase 2 complete (state machine + persistence)
 - [ ] Redis running
 
 ### Completion Criteria
+
 - [ ] Task 3.1 complete (REST API)
 - [ ] Task 3.2 complete (Socket.IO)
 - [ ] Task 3.3 complete (sessions)
@@ -783,6 +785,7 @@ describe('Session Management', () => {
 - [ ] Disconnection/reconnection works
 
 ### Handoff to Phase 4
+
 - Full network API available
 - Real-time events working
 - Session management secure
@@ -790,4 +793,4 @@ describe('Session Management', () => {
 
 ---
 
-*Phase 3 Status: Not Started*
+_Phase 3 Status: Not Started_

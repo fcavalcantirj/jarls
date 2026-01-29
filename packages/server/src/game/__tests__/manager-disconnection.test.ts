@@ -193,7 +193,7 @@ describe('GameManager - Disconnection', () => {
       for (const piece of p1Pieces) {
         const moves = getValidMoves(context, piece.id);
         if (moves.length > 0) {
-          const result = manager.makeMove(gameId, p1, {
+          const result = await manager.makeMove(gameId, p1, {
             pieceId: piece.id,
             destination: moves[0].destination,
           });

@@ -54,6 +54,9 @@ describe('gameStore', () => {
       connectionStatus: 'disconnected',
       selectedPieceId: null,
       validMoves: [],
+      movePending: false,
+      isAnimating: false,
+      pendingTurnUpdate: null,
     });
   });
 
@@ -134,6 +137,59 @@ describe('gameStore', () => {
     });
   });
 
+  describe('movePending', () => {
+    it('blocks double-move: movePending prevents piece selection between emit and broadcast', () => {
+      // Simulate: player's turn, they send a move
+      useGameStore.getState().setGameState(createMockGameState({ currentPlayerId: 'p1' }));
+      useGameStore.getState().setPlayer('p1');
+      expect(selectIsMyTurn(useGameStore.getState())).toBe(true);
+
+      // Player sends move → movePending = true
+      useGameStore.getState().setMovePending(true);
+
+      // Even though gameState still says currentPlayerId = p1, isMyTurn must be false
+      expect(selectIsMyTurn(useGameStore.getState())).toBe(false);
+
+      // Server broadcasts turnPlayed with events → setPendingTurnUpdate clears movePending
+      const newState = createMockGameState({ currentPlayerId: 'p2', turnNumber: 2 });
+      useGameStore.getState().setPendingTurnUpdate({
+        newState,
+        events: [{ type: 'MOVE', pieceId: 'piece-1', from: { q: 0, r: -3 }, to: { q: 0, r: -2 }, hasMomentum: false }],
+      });
+
+      const state = useGameStore.getState();
+      // movePending cleared by setPendingTurnUpdate
+      expect(state.movePending).toBe(false);
+      // isAnimating set immediately by setPendingTurnUpdate (closes animation gap)
+      // This blocks handleInteraction() even though selectIsMyTurn might return true
+      // because gameState.currentPlayerId hasn't changed yet (queued for animation)
+      expect(state.isAnimating).toBe(true);
+    });
+
+    it('movePending is cleared on failed move callback', () => {
+      useGameStore.getState().setMovePending(true);
+      expect(useGameStore.getState().movePending).toBe(true);
+
+      // Server rejects the move → client clears movePending
+      useGameStore.getState().setMovePending(false);
+      expect(useGameStore.getState().movePending).toBe(false);
+    });
+  });
+
+  describe('setPendingTurnUpdate', () => {
+    it('immediately sets isAnimating to prevent interaction gap', () => {
+      expect(useGameStore.getState().isAnimating).toBe(false);
+
+      const newState = createMockGameState({ currentPlayerId: 'p2' });
+      useGameStore.getState().setPendingTurnUpdate({
+        newState,
+        events: [{ type: 'MOVE', pieceId: 'piece-1', from: { q: 0, r: -3 }, to: { q: 0, r: -2 }, hasMomentum: false }],
+      });
+
+      expect(useGameStore.getState().isAnimating).toBe(true);
+    });
+  });
+
   describe('clearGame', () => {
     it('resets all state to defaults', () => {
       useGameStore.getState().setGameState(createMockGameState());
@@ -141,6 +197,7 @@ describe('gameStore', () => {
       useGameStore.getState().setSession('token-abc');
       useGameStore.getState().setConnectionStatus('connected');
       useGameStore.getState().selectPiece('piece-1', []);
+      useGameStore.getState().setMovePending(true);
 
       useGameStore.getState().clearGame();
       const state = useGameStore.getState();
@@ -150,6 +207,29 @@ describe('gameStore', () => {
       expect(state.connectionStatus).toBe('disconnected');
       expect(state.selectedPieceId).toBeNull();
       expect(state.validMoves).toEqual([]);
+      expect(state.movePending).toBe(false);
+      expect(state.isAnimating).toBe(false);
+    });
+
+    it('clears ended game state so new game does not show old game over screen', () => {
+      // Simulate an ended game
+      useGameStore.getState().setGameState(
+        createMockGameState({ phase: 'ended', winnerId: 'p1', winCondition: 'throne' })
+      );
+      useGameStore.getState().setPlayer('p1');
+      useGameStore.getState().setSession('old-token');
+
+      // Simulate what CreateGameForm/GameList should do before navigating to new game
+      useGameStore.getState().clearGame();
+      useGameStore.getState().setSession('new-token');
+      useGameStore.getState().setPlayer('p1-new');
+
+      const state = useGameStore.getState();
+      // Old game state must be gone
+      expect(state.gameState).toBeNull();
+      // New session must be set
+      expect(state.sessionToken).toBe('new-token');
+      expect(state.playerId).toBe('p1-new');
     });
   });
 });
@@ -163,6 +243,9 @@ describe('selectors', () => {
       connectionStatus: 'disconnected',
       selectedPieceId: null,
       validMoves: [],
+      movePending: false,
+      isAnimating: false,
+      pendingTurnUpdate: null,
     });
   });
 
@@ -187,6 +270,26 @@ describe('selectors', () => {
       useGameStore.getState().setGameState(createMockGameState({ currentPlayerId: 'p2' }));
       useGameStore.getState().setPlayer('p1');
       expect(selectIsMyTurn(useGameStore.getState())).toBe(false);
+    });
+
+    it('returns false when a move is pending even if currentPlayerId matches', () => {
+      useGameStore.getState().setGameState(createMockGameState({ currentPlayerId: 'p1' }));
+      useGameStore.getState().setPlayer('p1');
+      expect(selectIsMyTurn(useGameStore.getState())).toBe(true);
+
+      // Player sent a move, waiting for server response
+      useGameStore.getState().setMovePending(true);
+      expect(selectIsMyTurn(useGameStore.getState())).toBe(false);
+    });
+
+    it('returns true again after movePending is cleared', () => {
+      useGameStore.getState().setGameState(createMockGameState({ currentPlayerId: 'p1' }));
+      useGameStore.getState().setPlayer('p1');
+      useGameStore.getState().setMovePending(true);
+      expect(selectIsMyTurn(useGameStore.getState())).toBe(false);
+
+      useGameStore.getState().setMovePending(false);
+      expect(selectIsMyTurn(useGameStore.getState())).toBe(true);
     });
   });
 

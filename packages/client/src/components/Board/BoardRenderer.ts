@@ -102,7 +102,7 @@ export class BoardRenderer {
     canvasWidth: number,
     canvasHeight: number
   ): BoardDimensions {
-    const padding = 0.9; // 10% padding on each side
+    const padding = 0.96; // 4% padding on each side
 
     // For pointy-top hexes:
     // Total width in hex-size units: sqrt(3) * (2 * radius + 1)

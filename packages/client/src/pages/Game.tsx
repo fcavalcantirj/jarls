@@ -33,10 +33,38 @@ export default function Game() {
     });
   }, [socket, sessionToken, gameId, joined, connectionStatus]);
 
+  // Timeout: if we're stuck loading for too long, show an error
+  useEffect(() => {
+    if (gameState || error) return; // Already loaded or errored
+
+    const timeout = setTimeout(() => {
+      if (!gameState && !error) {
+        setError('Connection timed out. The game may no longer exist.');
+      }
+    }, 15000); // 15 second timeout
+
+    return () => clearTimeout(timeout);
+  }, [gameState, error]);
+
   if (!gameId) {
     return (
       <div style={containerStyle}>
         <p style={{ color: '#e74c3c' }}>No game ID provided.</p>
+        <Link to="/" style={linkStyle}>
+          Back to Home
+        </Link>
+      </div>
+    );
+  }
+
+  // No session token means we can't join this game - likely a stale/bookmarked URL
+  if (!sessionToken) {
+    return (
+      <div style={containerStyle}>
+        <p style={{ color: '#e74c3c' }}>No active session for this game.</p>
+        <p style={{ color: '#888', fontSize: '14px', marginTop: '8px' }}>
+          This link may have expired or you need to join the game first.
+        </p>
         <Link to="/" style={linkStyle}>
           Back to Home
         </Link>
@@ -55,12 +83,27 @@ export default function Game() {
     );
   }
 
+  // Connection error - server might be down or unreachable
+  if (connectionStatus === 'error') {
+    return (
+      <div style={containerStyle}>
+        <p style={{ color: '#e74c3c' }}>Failed to connect to game server.</p>
+        <Link to="/" style={linkStyle}>
+          Back to Home
+        </Link>
+      </div>
+    );
+  }
+
   if (!gameState) {
     return (
       <div style={containerStyle}>
         <p style={{ color: '#888' }}>
           {connectionStatus === 'connecting' ? 'Connecting...' : 'Loading game...'}
         </p>
+        <Link to="/" style={linkStyle}>
+          Back to Home
+        </Link>
       </div>
     );
   }
@@ -93,7 +136,7 @@ export default function Game() {
 const pageStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
-  height: '100vh',
+  flex: 1,
   backgroundColor: '#0d1117',
   overflow: 'hidden',
 };
@@ -118,7 +161,7 @@ const containerStyle: React.CSSProperties = {
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  height: '100vh',
+  flex: 1,
   fontFamily: 'monospace',
   color: '#e0e0e0',
   backgroundColor: '#0d1117',

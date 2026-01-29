@@ -1,35 +1,21 @@
-import { VERSION, GameState } from '@jarls/shared';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Layout } from './components/Layout';
+import Home from './pages/Home';
+import Game from './pages/Game';
+import Lobby from './pages/Lobby';
 
-function App() {
-  // Demonstrate that GameState type is available in client
-  const initialState: GameState = {
-    id: 'client-example',
-    phase: 'lobby',
-    config: {
-      playerCount: 2,
-      boardRadius: 3,
-      shieldCount: 5,
-      warriorCount: 5,
-      turnTimerMs: null,
-    },
-    players: [],
-    pieces: [],
-    currentPlayerId: null,
-    turnNumber: 0,
-    roundNumber: 0,
-    firstPlayerIndex: 0,
-    roundsSinceElimination: 0,
-    winnerId: null,
-    winCondition: null,
-  };
-
+export default function App() {
   return (
-    <div>
-      <h1>Jarls</h1>
-      <p>Version: {VERSION}</p>
-      <p>Game Phase: {initialState.phase}</p>
-    </div>
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/lobby/create" element={<Lobby />} />
+          <Route path="/lobby/games" element={<Lobby />} />
+          <Route path="/lobby/:gameId" element={<Lobby />} />
+          <Route path="/game/:gameId" element={<Game />} />
+        </Routes>
+      </Layout>
+    </BrowserRouter>
   );
 }
-
-export default App;

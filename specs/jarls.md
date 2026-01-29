@@ -14,7 +14,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 0.1 Initialize Monorepo Structure
 
 - [ ] **0.1.1** Create root `package.json` with npm workspaces configuration
-  - *Source:* [phase-0-setup.md](../docs/implementation/phase-0-setup.md) Task 0.1
+  - _Source:_ [phase-0-setup.md](../docs/implementation/phase-0-setup.md) Task 0.1
 - [ ] **0.1.2** Create `packages/shared/` directory with `package.json` and `tsconfig.json`
 - [ ] **0.1.3** Create `packages/server/` directory with `package.json` and `tsconfig.json`
 - [ ] **0.1.4** Create `packages/client/` directory with `package.json` and `tsconfig.json`
@@ -41,13 +41,13 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 0.4 Database Setup
 
 - [ ] **0.4.1** Create `docker-compose.yml` with PostgreSQL and Redis services
-  - *Source:* [phase-0-setup.md](../docs/implementation/phase-0-setup.md) Task 0.2
+  - _Source:_ [phase-0-setup.md](../docs/implementation/phase-0-setup.md) Task 0.2
 - [ ] **0.4.2** Create `.env.example` with DATABASE_URL and REDIS_URL
 - [ ] **0.4.3** Install `pg` and `@types/pg` in server package
 - [ ] **0.4.4** Create database connection pool module (`packages/server/src/db/pool.ts`)
 - [ ] **0.4.5** Install `node-pg-migrate` for migrations
 - [ ] **0.4.6** Create migration: `game_snapshots` table
-  - *Source:* [phase-0-setup.md](../docs/implementation/phase-0-setup.md) Database Schema
+  - _Source:_ [phase-0-setup.md](../docs/implementation/phase-0-setup.md) Database Schema
 - [ ] **0.4.7** Create migration: `game_events` table
 - [ ] **0.4.8** Create migration: `player_sessions` table
 - [ ] **0.4.9** Create migration: indexes for all tables
@@ -81,7 +81,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 1.1 Hex Coordinate System
 
 - [ ] **1.1.1** Define `CubeCoord` interface in `packages/shared/src/types/hex.ts`
-  - *Source:* [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.1
+  - _Source:_ [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.1
 - [ ] **1.1.2** Define `AxialCoord` interface
 - [ ] **1.1.3** Define `HexDirection` type (0-5)
 - [ ] **1.1.4** Define `DIRECTIONS` constant array with all 6 direction vectors
@@ -106,11 +106,11 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 1.2 Game State Types
 
 - [ ] **1.2.1** Define `PieceType` type (`'warrior' | 'jarl' | 'shield'`)
-  - *Source:* [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.2
+  - _Source:_ [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.2
 - [ ] **1.2.2** Define `Piece` interface
 - [ ] **1.2.3** Define `Player` interface
 - [ ] **1.2.4** Define `GameConfig` interface with scaling table values
-  - *Spec:* [game-rules-v1.md](./game-rules-v1.md) (2-player MVP)
+  - _Spec:_ [game-rules-v1.md](./game-rules-v1.md) (2-player MVP)
 - [ ] **1.2.5** Define `GamePhase` type
 - [ ] **1.2.6** Define `GameState` interface
 - [ ] **1.2.7** Define `MoveCommand` interface
@@ -126,7 +126,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 1.3 Board Generation
 
 - [ ] **1.3.1** Implement `getConfigForPlayerCount(count)` with scaling table
-  - *Source:* [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.3
+  - _Source:_ [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.3
 - [ ] **1.3.2** Implement `generateAllBoardHexes(radius)` function
 - [ ] **1.3.3** Write tests for board hex generation
 - [ ] **1.3.4** Implement `calculateStartingPositions(playerCount, radius)` for equidistant Jarls
@@ -142,12 +142,12 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 1.4 Move Validation
 
 - [ ] **1.4.1** Implement `getPieceAt(state, position)` helper
-  - *Source:* [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.4
+  - _Source:_ [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.4
 - [ ] **1.4.2** Implement `getPieceById(state, pieceId)` helper
 - [ ] **1.4.3** Implement `isPathClear(state, from, to)` - checks no pieces block path
 - [ ] **1.4.4** Write tests for path checking
 - [ ] **1.4.5** Implement `hasDraftFormation(state, jarlPosition, direction)` - 2+ warriors behind
-  - *Spec:* [game-rules-v1.md](./game-rules-v1.md) Draft Formation
+  - _Spec:_ [game-rules-v1.md](./game-rules-v1.md) Draft Formation
 - [ ] **1.4.6** Write tests for draft detection (consecutive and non-consecutive)
 - [ ] **1.4.7** Implement `validateMove(state, playerId, command)` - main validation function
 - [ ] **1.4.8** Add check: piece exists
@@ -160,12 +160,27 @@ This document breaks down the implementation into small, actionable tasks. Each 
 - [ ] **1.4.15** Add check: Warriors cannot enter Throne
 - [ ] **1.4.16** Add check: cannot land on friendly piece
 - [ ] **1.4.17** Write comprehensive tests for all validation rules
+- [ ] **1.4.18** Validate Jarl 2-hex moves cannot pass through Throne
+  - Call hexLine(from, to) when Jarl moves 2 hexes
+  - If any hex in path is Throne (0,0), block at Throne instead
+  - Set destination to Throne, trigger immediate victory
+  - Unit tests for Throne pass-through blocking
+- [ ] **1.4.19** Implement hasLegalMoves(state, playerId) for no-pass rule
+  - Check all player's pieces for reachable hexes
+  - If true, player MUST move (cannot skip)
+  - If false (extremely rare), allow turn skip
+  - Unit tests: cannot skip when legal moves exist
+- [ ] **1.4.20** Validate friendly piece blocking in paths
+  - Path must be clear of ALL pieces (friend or foe)
+  - Cannot move through friendly pieces
+  - Cannot push friendly pieces (chain only includes enemies)
+  - Unit tests for friendly blocking scenarios
 
 ### 1.5 Combat Resolution
 
 - [ ] **1.5.1** Implement `findInlineSupport(state, position, direction)` - find pieces behind
-  - *Source:* [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.5
-  - *Spec:* [game-rules-v1.md](./game-rules-v1.md) Inline Support Stacking
+  - _Source:_ [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.5
+  - _Spec:_ [game-rules-v1.md](./game-rules-v1.md) Inline Support Stacking
 - [ ] **1.5.2** Write tests for inline support detection (single and chain)
 - [ ] **1.5.3** Implement `findBracing(state, position, pushDirection)` - find pieces behind defender
 - [ ] **1.5.4** Write tests for bracing detection
@@ -186,25 +201,31 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 1.6 Push Chain Resolution
 
 - [ ] **1.6.1** Implement `detectChain(state, startPos, direction)` - returns pieces in chain and terminator
-  - *Source:* [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.6
+  - _Source:_ [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.6
 - [ ] **1.6.2** Write tests for chain detection (empty, edge, shield, throne)
 - [ ] **1.6.3** Implement `resolveSimplePush(state, chain)` - push into empty hex
 - [ ] **1.6.4** Write tests for simple push
 - [ ] **1.6.5** Implement `resolveEdgePush(state, chain)` - elimination at edge
 - [ ] **1.6.6** Write tests for edge elimination (single and multi-piece)
 - [ ] **1.6.7** Implement `resolveCompression(state, chain, blocker)` - shield/throne compression
-  - *Spec:* [game-rules-v1.md](./game-rules-v1.md) Throne Compression
+  - _Spec:_ [game-rules-v1.md](./game-rules-v1.md) Throne Compression
 - [ ] **1.6.8** Write tests for shield compression
 - [ ] **1.6.9** Write tests for throne compression (Warriors)
 - [ ] **1.6.10** Write tests for throne compression (Jarls cannot be pushed onto Throne)
 - [ ] **1.6.11** Implement `resolvePush(state, attackerPos, direction)` - main resolver
 - [ ] **1.6.12** Ensure events are generated with correct `depth` for staggered animation
 - [ ] **1.6.13** Write integration tests for complex chain scenarios
+- [ ] **1.6.14** Implement Warriors stop adjacent to Throne in push chains
+  - In detectChain, check if next hex is Throne
+  - If Warrior would be pushed to Throne, mark as compression terminator
+  - Warriors compress against Throne like they do against Shields
+  - Unit tests: Warrior pushed toward Throne stops adjacent
+  - Unit tests: Chain with multiple Warriors compresses at Throne edge
 
 ### 1.7 Win Condition Detection
 
 - [ ] **1.7.1** Implement `checkThroneVictory(state, pieceId, destination)` - voluntary entry only
-  - *Source:* [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.7
+  - _Source:_ [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.7
 - [ ] **1.7.2** Write tests: voluntary entry wins
 - [ ] **1.7.3** Write tests: pushed onto throne does NOT win (should be blocked by compression)
 - [ ] **1.7.4** Implement `eliminatePlayer(state, playerId)` - remove all their pieces
@@ -217,8 +238,8 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 1.8 Starvation Mechanic
 
 - [ ] **1.8.1** Implement `checkStarvationTrigger(state)` - 10 rounds without elimination
-  - *Source:* [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.8
-  - *Spec:* [game-rules-v1.md](./game-rules-v1.md) Starvation Mechanic
+  - _Source:_ [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.8
+  - _Spec:_ [game-rules-v1.md](./game-rules-v1.md) Starvation Mechanic
 - [ ] **1.8.2** Write tests for starvation trigger timing
 - [ ] **1.8.3** Implement `calculateStarvationCandidates(state)` - furthest warriors from throne
 - [ ] **1.8.4** Write tests for candidate selection (hex distance ignoring obstacles)
@@ -229,11 +250,19 @@ This document breaks down the implementation into small, actionable tasks. Each 
 - [ ] **1.8.9** Write tests for Jarl starvation
 - [ ] **1.8.10** Implement starvation counter reset on any elimination
 - [ ] **1.8.11** Write tests for counter reset
+- [ ] **1.8.12** Implement Jarl starvation grace period
+  - Track roundsSinceLastWarrior per player in game state
+  - When player loses last Warrior, start 5-round grace period
+  - During starvation trigger, if no Warriors AND grace period passed (5+ rounds)
+  - Eliminate Jarl, generate JARL_STARVED event
+  - Check for last standing victory after Jarl elimination
+  - Unit tests: Jarl survives during 5-round grace period
+  - Unit tests: Jarl eliminated after grace period expires
 
 ### 1.9 Valid Moves Calculator
 
 - [ ] **1.9.1** Implement `getReachableHexes(state, piece)` - all hexes piece can reach
-  - *Source:* [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.9
+  - _Source:_ [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.9
 - [ ] **1.9.2** Write tests for warrior movement range (1-2 hexes)
 - [ ] **1.9.3** Write tests for jarl movement range (1 hex, 2 with draft)
 - [ ] **1.9.4** Implement `getValidMoves(state, playerId, pieceId)` - returns ValidMove[]
@@ -249,11 +278,18 @@ This document breaks down the implementation into small, actionable tasks. Each 
 - [ ] **1.10.2** Handle simple move (no combat)
 - [ ] **1.10.3** Handle attack with push
 - [ ] **1.10.4** Handle attack blocked
-  - *Spec:* [game-rules-v1.md](./game-rules-v1.md) Blocked Attack Position
+  - _Spec:_ [game-rules-v1.md](./game-rules-v1.md) Blocked Attack Position
 - [ ] **1.10.5** Generate all events for animation
 - [ ] **1.10.6** Check win conditions after move
 - [ ] **1.10.7** Return MoveResult with new state
 - [ ] **1.10.8** Write integration tests for complete move scenarios
+- [ ] **1.10.9** Validate blocked attack positioning
+  - When attack is BLOCKED (Attack <= Defense)
+  - Move attacker to hex adjacent to defender (last clear hex before target)
+  - Attacker does NOT take defender's position
+  - Generate MOVE event with blocked destination
+  - Unit tests: blocked attack stops attacker adjacent
+  - Unit tests: attacker uses their turn even when blocked
 
 ---
 
@@ -262,7 +298,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 2.1 XState Machine Definition
 
 - [ ] **2.1.1** Install XState v5 in server package
-  - *Source:* [phase-2-state-machine.md](../docs/implementation/phase-2-state-machine.md) Task 2.1
+  - _Source:_ [phase-2-state-machine.md](../docs/implementation/phase-2-state-machine.md) Task 2.1
 - [ ] **2.1.2** Define machine input types
 - [ ] **2.1.3** Define machine event types (PLAYER_JOINED, MAKE_MOVE, etc.)
 - [ ] **2.1.4** Create machine with `lobby` state
@@ -274,8 +310,14 @@ This document breaks down the implementation into small, actionable tasks. Each 
 - [ ] **2.1.10** Add `MAKE_MOVE` event with guards
 - [ ] **2.1.11** Write tests for move handling
 - [ ] **2.1.12** Add `turnEnding` substate with turn advancement
+- [ ] **2.1.12a** Implement rotating first player each round
+  - Add roundNumber and firstPlayerIndex to game state
+  - After all players move once, increment firstPlayerIndex = (firstPlayerIndex + 1) % playerCount
+  - Turn sequence each round starts from firstPlayerIndex
+  - Unit tests: 2-player rotation P0,P1 -> P1,P0 -> P0,P1
+  - Unit tests: 3-player rotation P0,P1,P2 -> P1,P2,P0 -> P2,P0,P1
 - [ ] **2.1.13** Add turn timer with `after` transition
-  - *Spec:* [game-rules-v1.md](./game-rules-v1.md) Turn Timeout (auto-skip)
+  - _Spec:_ [game-rules-v1.md](./game-rules-v1.md) Turn Timeout (auto-skip)
 - [ ] **2.1.14** Write tests for turn timeout
 - [ ] **2.1.15** Add `starvation` state
 - [ ] **2.1.16** Add `STARVATION_CHOICE` event
@@ -286,7 +328,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 2.2 Game Persistence
 
 - [ ] **2.2.1** Create `GamePersistence` class
-  - *Source:* [phase-2-state-machine.md](../docs/implementation/phase-2-state-machine.md) Task 2.2
+  - _Source:_ [phase-2-state-machine.md](../docs/implementation/phase-2-state-machine.md) Task 2.2
 - [ ] **2.2.2** Implement `save(gameId, actor, event?)` with optimistic locking
 - [ ] **2.2.3** Write tests for save operation
 - [ ] **2.2.4** Implement `restore(gameId)` - returns actor with restored state
@@ -298,7 +340,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 2.3 Game Manager
 
 - [ ] **2.3.1** Create `GameManager` class
-  - *Source:* [phase-2-state-machine.md](../docs/implementation/phase-2-state-machine.md) Task 2.3
+  - _Source:_ [phase-2-state-machine.md](../docs/implementation/phase-2-state-machine.md) Task 2.3
 - [ ] **2.3.2** Implement `create(config)` - creates new game
 - [ ] **2.3.3** Implement `join(gameId, playerName)` - adds player
 - [ ] **2.3.4** Implement `start(gameId)` - starts game
@@ -315,7 +357,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 3.1 REST API Endpoints
 
 - [ ] **3.1.1** Install Zod for validation
-  - *Source:* [phase-3-network.md](../docs/implementation/phase-3-network.md) Task 3.1
+  - _Source:_ [phase-3-network.md](../docs/implementation/phase-3-network.md) Task 3.1
 - [ ] **3.1.2** Create validation schemas (CreateGameSchema, JoinGameSchema)
 - [ ] **3.1.3** Implement error handling middleware
 - [ ] **3.1.4** Implement `POST /api/games` - create game
@@ -332,12 +374,12 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 3.2 Socket.IO Integration
 
 - [ ] **3.2.1** Install Socket.IO and types
-  - *Source:* [phase-3-network.md](../docs/implementation/phase-3-network.md) Task 3.2
+  - _Source:_ [phase-3-network.md](../docs/implementation/phase-3-network.md) Task 3.2
 - [ ] **3.2.2** Define ServerToClientEvents interface
 - [ ] **3.2.3** Define ClientToServerEvents interface
 - [ ] **3.2.4** Set up Socket.IO server with CORS
 - [ ] **3.2.5** Configure Connection State Recovery (2 min window)
-  - *Spec:* [game-rules-v1.md](./game-rules-v1.md) Disconnection Handling
+  - _Spec:_ [game-rules-v1.md](./game-rules-v1.md) Disconnection Handling
 - [ ] **3.2.6** Implement `joinGame` event handler
 - [ ] **3.2.7** Implement `playTurn` event handler with acknowledgement
 - [ ] **3.2.8** Implement `startGame` event handler
@@ -350,7 +392,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 3.3 Session Management
 
 - [ ] **3.3.1** Create `SessionService` class
-  - *Source:* [phase-3-network.md](../docs/implementation/phase-3-network.md) Task 3.3
+  - _Source:_ [phase-3-network.md](../docs/implementation/phase-3-network.md) Task 3.3
 - [ ] **3.3.2** Implement `create(gameId, playerId, playerName)` - generates secure token
 - [ ] **3.3.3** Implement `validate(token, gameId?)` - validates session
 - [ ] **3.3.4** Implement `invalidate(token)` - removes session
@@ -365,7 +407,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 4.1 AI Move Generation
 
 - [ ] **4.1.1** Define `AIPlayer` interface
-  - *Source:* [phase-4-ai.md](../docs/implementation/phase-4-ai.md) Task 4.1
+  - _Source:_ [phase-4-ai.md](../docs/implementation/phase-4-ai.md) Task 4.1
 - [ ] **4.1.2** Implement `RandomAI` class (easy difficulty)
 - [ ] **4.1.3** Write tests for RandomAI (generates valid moves)
 - [ ] **4.1.4** Implement position evaluation function for HeuristicAI
@@ -380,13 +422,13 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 4.2 AI Game Integration
 
 - [ ] **4.2.1** Add AI player type to game creation
-  - *Source:* [phase-4-ai.md](../docs/implementation/phase-4-ai.md) Task 4.2
+  - _Source:_ [phase-4-ai.md](../docs/implementation/phase-4-ai.md) Task 4.2
 - [ ] **4.2.2** Implement `addAIPlayer(gameId, difficulty)`
 - [ ] **4.2.3** Implement AI name generator (Norse names)
 - [ ] **4.2.4** Set up auto-play on AI's turn
 - [ ] **4.2.5** Add thinking delay for UX (500-1500ms)
 - [ ] **4.2.6** Implement AI takeover for disconnected players
-  - *Spec:* [game-rules-v1.md](./game-rules-v1.md) Disconnection Handling
+  - _Spec:_ [game-rules-v1.md](./game-rules-v1.md) Disconnection Handling
 - [ ] **4.2.7** Write tests for AI integration
 - [ ] **4.2.8** Write tests for disconnection AI takeover
 
@@ -397,7 +439,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 5.1 Project Setup
 
 - [ ] **5.1.1** Initialize Vite + TypeScript project in `packages/client`
-  - *Source:* [phase-5-frontend.md](../docs/implementation/phase-5-frontend.md) Task 5.1
+  - _Source:_ [phase-5-frontend.md](../docs/implementation/phase-5-frontend.md) Task 5.1
 - [ ] **5.1.2** Install honeycomb-grid
 - [ ] **5.1.3** Install Socket.IO client
 - [ ] **5.1.4** Configure Vite proxy for API and WebSocket
@@ -421,7 +463,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 5.3 Input Handling
 
 - [ ] **5.3.1** Create `InputHandler` class
-  - *Source:* [phase-5-frontend.md](../docs/implementation/phase-5-frontend.md) Task 5.2
+  - _Source:_ [phase-5-frontend.md](../docs/implementation/phase-5-frontend.md) Task 5.2
 - [ ] **5.3.2** Implement click detection and hex conversion
 - [ ] **5.3.3** Implement piece selection
 - [ ] **5.3.4** Fetch valid moves on selection
@@ -433,7 +475,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 5.4 Move Animation
 
 - [ ] **5.4.1** Create `AnimationSystem` class
-  - *Source:* [phase-5-frontend.md](../docs/implementation/phase-5-frontend.md) Task 5.3
+  - _Source:_ [phase-5-frontend.md](../docs/implementation/phase-5-frontend.md) Task 5.3
 - [ ] **5.4.2** Define easing functions (easeOutQuad, easeOutBack, easeInQuad)
 - [ ] **5.4.3** Implement `eventsToAnimations(events)` conversion
 - [ ] **5.4.4** Implement staggered timing based on chain depth
@@ -446,7 +488,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 5.5 Game UI Components
 
 - [ ] **5.5.1** Create TurnIndicator component (whose turn, timer)
-  - *Source:* [phase-5-frontend.md](../docs/implementation/phase-5-frontend.md) Task 5.4
+  - _Source:_ [phase-5-frontend.md](../docs/implementation/phase-5-frontend.md) Task 5.4
 - [ ] **5.5.2** Create PlayerList component with piece counts
 - [ ] **5.5.3** Create CombatPreview tooltip component
 - [ ] **5.5.4** Create GameEndModal component (victory/defeat)
@@ -457,7 +499,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 5.6 Lobby UI
 
 - [ ] **5.6.1** Create CreateGameForm component
-  - *Source:* [phase-5-frontend.md](../docs/implementation/phase-5-frontend.md) Task 5.5
+  - _Source:_ [phase-5-frontend.md](../docs/implementation/phase-5-frontend.md) Task 5.5
 - [ ] **5.6.2** Create GameList component
 - [ ] **5.6.3** Create JoinGameFlow component
 - [ ] **5.6.4** Create GameLobby component (waiting for players)
@@ -478,7 +520,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 6.1 Error Handling
 
 - [ ] **6.1.1** Define custom error classes (GameNotFoundError, InvalidMoveError, etc.)
-  - *Source:* [phase-6-production.md](../docs/implementation/phase-6-production.md) Task 6.1
+  - _Source:_ [phase-6-production.md](../docs/implementation/phase-6-production.md) Task 6.1
 - [ ] **6.1.2** Implement Express error middleware
 - [ ] **6.1.3** Implement client-side error boundary
 - [ ] **6.1.4** Implement reconnection retry logic
@@ -487,7 +529,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 6.2 Performance Optimization
 
 - [ ] **6.2.1** Review and optimize database queries
-  - *Source:* [phase-6-production.md](../docs/implementation/phase-6-production.md) Task 6.2
+  - _Source:_ [phase-6-production.md](../docs/implementation/phase-6-production.md) Task 6.2
 - [ ] **6.2.2** Add database indexes if missing
 - [ ] **6.2.3** Tune connection pool settings
 - [ ] **6.2.4** Optimize client bundle (tree shaking, code splitting)
@@ -497,7 +539,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 6.3 Deployment
 
 - [ ] **6.3.1** Create Dockerfile
-  - *Source:* [phase-6-production.md](../docs/implementation/phase-6-production.md) Task 6.3
+  - _Source:_ [phase-6-production.md](../docs/implementation/phase-6-production.md) Task 6.3
 - [ ] **6.3.2** Create docker-compose.prod.yml
 - [ ] **6.3.3** Create GitHub Actions CI workflow
 - [ ] **6.3.4** Create GitHub Actions CD workflow
@@ -507,7 +549,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 ### 6.4 Documentation
 
 - [ ] **6.4.1** Create README with quick start
-  - *Source:* [phase-6-production.md](../docs/implementation/phase-6-production.md) Task 6.4
+  - _Source:_ [phase-6-production.md](../docs/implementation/phase-6-production.md) Task 6.4
 - [ ] **6.4.2** Create in-app help screen
 - [ ] **6.4.3** Generate API documentation
 - [ ] **6.4.4** Document architecture
@@ -532,5 +574,5 @@ After completing all phases, verify:
 
 ---
 
-*Document Version: 1.0*
-*Created: 2026-01-25*
+_Document Version: 1.0_
+_Created: 2026-01-25_

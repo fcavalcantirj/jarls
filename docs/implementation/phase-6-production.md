@@ -13,9 +13,11 @@ Finalize the game for production with error handling, performance optimization, 
 ## Task 6.1: Error Handling
 
 ### Description
+
 Implement comprehensive error handling across the application.
 
 ### Work Items
+
 - [ ] Server-side error middleware
 - [ ] Client-side error boundaries
 - [ ] Connection error handling
@@ -25,6 +27,7 @@ Implement comprehensive error handling across the application.
 - [ ] Error logging/reporting (optional: Sentry)
 
 ### Server Error Handling
+
 ```typescript
 // Error types
 export class GameError extends Error {
@@ -57,25 +60,20 @@ export class NotYourTurnError extends GameError {
 }
 
 // Express error middleware
-export function errorHandler(
-  err: Error,
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
   // Log error
   console.error(`[${new Date().toISOString()}] Error:`, {
     message: err.message,
     stack: err.stack,
     path: req.path,
-    method: req.method
+    method: req.method,
   });
 
   // Handle known errors
   if (err instanceof GameError) {
     return res.status(err.statusCode).json({
       error: err.code,
-      message: err.message
+      message: err.message,
     });
   }
 
@@ -83,21 +81,20 @@ export function errorHandler(
     return res.status(400).json({
       error: 'VALIDATION_ERROR',
       message: 'Invalid input',
-      details: err.errors
+      details: err.errors,
     });
   }
 
   // Unknown errors
   res.status(500).json({
     error: 'INTERNAL_ERROR',
-    message: process.env.NODE_ENV === 'production'
-      ? 'An unexpected error occurred'
-      : err.message
+    message: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message,
   });
 }
 ```
 
 ### Client Error Handling
+
 ```typescript
 // React error boundary
 class GameErrorBoundary extends React.Component<
@@ -177,6 +174,7 @@ function useSocketConnection(url: string) {
 ```
 
 ### Definition of Done
+
 - [ ] No unhandled exceptions crash the server
 - [ ] No unhandled rejections crash the server
 - [ ] Client shows friendly error messages
@@ -184,6 +182,7 @@ function useSocketConnection(url: string) {
 - [ ] Errors logged with context
 
 ### Test Cases
+
 ```typescript
 describe('Error Handling', () => {
   test('returns 404 for unknown game', async () => {
@@ -193,9 +192,7 @@ describe('Error Handling', () => {
   });
 
   test('returns 400 for invalid input', async () => {
-    const res = await request(app)
-      .post('/api/games')
-      .send({ playerCount: 'invalid' });
+    const res = await request(app).post('/api/games').send({ playerCount: 'invalid' });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('VALIDATION_ERROR');
   });
@@ -218,9 +215,11 @@ describe('Error Handling', () => {
 ## Task 6.2: Performance Optimization
 
 ### Description
+
 Optimize for production load and ensure smooth gameplay.
 
 ### Work Items
+
 - [ ] Database query optimization (indexes, explain analyze)
 - [ ] Connection pooling tuning
 - [ ] Memory leak detection and fixes
@@ -230,6 +229,7 @@ Optimize for production load and ensure smooth gameplay.
 - [ ] Caching strategies
 
 ### Performance Checklist
+
 ```typescript
 // Database optimization
 // Ensure these indexes exist:
@@ -271,6 +271,7 @@ setInterval(() => {
 ```
 
 ### Load Testing
+
 ```javascript
 // k6 load test script
 import http from 'k6/http';
@@ -279,30 +280,38 @@ import { check, sleep } from 'k6';
 
 export const options = {
   stages: [
-    { duration: '1m', target: 50 },   // Ramp up
-    { duration: '3m', target: 100 },  // Sustain
-    { duration: '1m', target: 0 },    // Ramp down
+    { duration: '1m', target: 50 }, // Ramp up
+    { duration: '3m', target: 100 }, // Sustain
+    { duration: '1m', target: 0 }, // Ramp down
   ],
   thresholds: {
-    http_req_duration: ['p(95)<500'],  // 95% of requests under 500ms
-    ws_connecting: ['p(95)<1000'],      // WS connection under 1s
+    http_req_duration: ['p(95)<500'], // 95% of requests under 500ms
+    ws_connecting: ['p(95)<1000'], // WS connection under 1s
   },
 };
 
 export default function () {
   // Create game
-  const createRes = http.post(`${__ENV.API_URL}/api/games`, JSON.stringify({
-    playerCount: 2
-  }), { headers: { 'Content-Type': 'application/json' } });
+  const createRes = http.post(
+    `${__ENV.API_URL}/api/games`,
+    JSON.stringify({
+      playerCount: 2,
+    }),
+    { headers: { 'Content-Type': 'application/json' } }
+  );
 
   check(createRes, { 'game created': (r) => r.status === 201 });
 
   const { gameId } = JSON.parse(createRes.body);
 
   // Join game
-  const joinRes = http.post(`${__ENV.API_URL}/api/games/${gameId}/join`, JSON.stringify({
-    playerName: `Player_${__VU}`
-  }), { headers: { 'Content-Type': 'application/json' } });
+  const joinRes = http.post(
+    `${__ENV.API_URL}/api/games/${gameId}/join`,
+    JSON.stringify({
+      playerName: `Player_${__VU}`,
+    }),
+    { headers: { 'Content-Type': 'application/json' } }
+  );
 
   check(joinRes, { 'joined game': (r) => r.status === 200 });
 
@@ -311,6 +320,7 @@ export default function () {
 ```
 
 ### Definition of Done
+
 - [ ] Handles 100 concurrent games without degradation
 - [ ] P95 API latency < 100ms
 - [ ] No memory leaks over 24h run
@@ -318,6 +328,7 @@ export default function () {
 - [ ] Load test passes
 
 ### Test Cases
+
 ```typescript
 describe('Performance', () => {
   test('API responds under 100ms', async () => {
@@ -362,9 +373,11 @@ describe('Performance', () => {
 ## Task 6.3: Deployment
 
 ### Description
+
 Set up production deployment infrastructure.
 
 ### Work Items
+
 - [ ] Docker containerization
 - [ ] Docker Compose for local dev
 - [ ] CI/CD pipeline (GitHub Actions)
@@ -374,6 +387,7 @@ Set up production deployment infrastructure.
 - [ ] Backup strategy
 
 ### Dockerfile
+
 ```dockerfile
 # Build stage
 FROM node:20-alpine AS builder
@@ -412,6 +426,7 @@ CMD ["node", "dist/index.js"]
 ```
 
 ### Docker Compose
+
 ```yaml
 version: '3.8'
 
@@ -419,7 +434,7 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - DATABASE_URL=postgresql://jarls:jarls@postgres:5432/jarls
       - REDIS_URL=redis://redis:6379
@@ -451,6 +466,7 @@ volumes:
 ```
 
 ### GitHub Actions CI/CD
+
 ```yaml
 name: CI/CD
 
@@ -517,6 +533,7 @@ jobs:
 ```
 
 ### Definition of Done
+
 - [ ] Docker build succeeds
 - [ ] Docker Compose runs locally
 - [ ] CI passes on all PRs
@@ -529,9 +546,11 @@ jobs:
 ## Task 6.4: Documentation
 
 ### Description
+
 Create documentation for users and developers.
 
 ### Work Items
+
 - [ ] API documentation (OpenAPI)
 - [ ] Game rules in-app (help screen)
 - [ ] Developer setup guide
@@ -539,7 +558,8 @@ Create documentation for users and developers.
 - [ ] Contributing guidelines
 
 ### README Structure
-```markdown
+
+````markdown
 # Jarls (Norse Wars)
 
 A turn-based push-combat strategy game.
@@ -563,6 +583,7 @@ npm run db:migrate
 # Start development
 npm run dev
 ```
+````
 
 ## Game Rules
 
@@ -583,7 +604,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 ## License
 
 MIT
-```
+
+````
 
 ### In-App Help
 ```typescript
@@ -624,9 +646,10 @@ function HelpScreen({ onClose }) {
     </div>
   );
 }
-```
+````
 
 ### Definition of Done
+
 - [ ] New developer can set up in 30 minutes
 - [ ] API fully documented with examples
 - [ ] Game rules accessible in-game
@@ -637,9 +660,11 @@ function HelpScreen({ onClose }) {
 ## Phase 6 Checklist
 
 ### Prerequisites
+
 - [ ] Phase 5 complete
 
 ### Completion Criteria
+
 - [ ] Task 6.1 complete (error handling)
 - [ ] Task 6.2 complete (performance)
 - [ ] Task 6.3 complete (deployment)
@@ -648,6 +673,7 @@ function HelpScreen({ onClose }) {
 - [ ] Monitoring active
 
 ### Launch Readiness
+
 - [ ] All tests passing
 - [ ] Performance benchmarks met
 - [ ] Security review complete
@@ -660,12 +686,14 @@ function HelpScreen({ onClose }) {
 ## Post-Launch
 
 ### Monitoring Checklist
+
 - [ ] Error rate alerts configured
 - [ ] Performance alerts configured
 - [ ] Uptime monitoring active
 - [ ] Log aggregation working
 
 ### Future Enhancements
+
 - [ ] Ranked matchmaking
 - [ ] Game replays
 - [ ] Cosmetic customization
@@ -674,4 +702,4 @@ function HelpScreen({ onClose }) {
 
 ---
 
-*Phase 6 Status: Not Started*
+_Phase 6 Status: Not Started_

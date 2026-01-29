@@ -15,8 +15,13 @@ jest.unstable_mockModule('../../db', () => ({
   },
 }));
 
-const { GameManager } = await import('../manager');
-const { loadSnapshot, loadEvents } = await import('../persistence');
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let GameManager: any, loadSnapshot: any, loadEvents: (...args: any[]) => Promise<any[]>;
+
+beforeAll(async () => {
+  ({ GameManager } = await import('../manager'));
+  ({ loadSnapshot, loadEvents } = await import('../persistence'));
+});
 
 function createTestConfig(overrides?: Partial<GameConfig>): GameConfig {
   return {

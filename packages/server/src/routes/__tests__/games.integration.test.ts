@@ -31,11 +31,16 @@ jest.unstable_mockModule('../../redis/client', () => ({
   },
 }));
 
-// Dynamic imports after mocking
-const { GameManager } = await import('../../game/manager');
-const { createGameRoutes } = await import('../games');
-const { errorMiddleware } = await import('../../middleware/error');
-const { createSession, validateSession } = await import('../../services/session');
+// Dynamic imports after mocking - loaded in beforeAll
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let GameManager: any, createGameRoutes: any, errorMiddleware: any, createSession: any, validateSession: any;
+
+beforeAll(async () => {
+  ({ GameManager } = await import('../../game/manager'));
+  ({ createGameRoutes } = await import('../games'));
+  ({ errorMiddleware } = await import('../../middleware/error'));
+  ({ createSession, validateSession } = await import('../../services/session'));
+});
 
 // ── Test helpers ────────────────────────────────────────────────────
 

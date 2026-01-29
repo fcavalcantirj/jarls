@@ -33,6 +33,44 @@ The following infrastructure tasks in `specs/prd-v1.json` are **BLOCKING** and m
 
 ## Golden Rules
 
+### Server Is the Authority — Client Must Be Dumb
+
+**100% of game logic lives on the API. The client is a dumb terminal that only renders and relays user input.**
+
+- The client must NEVER decide whose turn it is, validate moves, calculate combat, check win conditions, or advance game state.
+- ALL game rules, turn logic, and state transitions happen server-side only.
+- After sending a move (`playTurn`), the client must **immediately block all interaction** (`movePending = true`) until the server responds with the authoritative state via `turnPlayed`.
+- The client must not allow piece selection, move sending, or any game action while `movePending` or `isAnimating` is true.
+- `selectIsMyTurn` must return `false` when `movePending` is true, regardless of what `gameState.currentPlayerId` says (it may be stale).
+- Two gaps must always be closed:
+  1. **Emit-to-broadcast gap**: Between sending `playTurn` and receiving `turnPlayed` — closed by `movePending`.
+  2. **Broadcast-to-animation gap**: Between receiving `turnPlayed` and the React effect starting animation — closed by `setPendingTurnUpdate` immediately setting `isAnimating = true`.
+
+### React Stale Closure Trap — Always Read Fresh from Store
+
+**In `useCallback` handlers that need the LATEST state for blocking decisions, read directly from `useGameStore.getState()`, NOT from captured React state.**
+
+React's `useCallback` captures variable values at render time. When a user clicks rapidly:
+1. First click triggers callback → state updated via Zustand
+2. React hasn't re-rendered yet
+3. Second click triggers callback → **still has OLD captured values!**
+
+```typescript
+// BAD — stale closure, captures values at render time
+const movePending = useGameStore((s) => s.movePending);
+const handleClick = useCallback(() => {
+  if (movePending) return; // ← STALE! Can be false even after setMovePending(true)
+}, [movePending]);
+
+// GOOD — reads fresh value every time
+const handleClick = useCallback(() => {
+  const { movePending } = useGameStore.getState(); // ← FRESH every call
+  if (movePending) return;
+}, []);
+```
+
+This applies to ALL blocking guards (`isAnimating`, `movePending`, `isMyTurn`) in click handlers.
+
 ### File Size Limit
 
 **No single code file should exceed ~800 lines.**

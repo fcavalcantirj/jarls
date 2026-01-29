@@ -12,13 +12,13 @@ This document captures all rule clarifications and design decisions made during 
 
 ### Scope
 
-| Item | Decision |
-|------|----------|
-| Platform | Web (browser-based) |
-| MVP Player Count | 2-player only (architecture supports 2-6) |
-| AI Opponent | Yes |
-| Multiplayer | Online (not hot-seat) |
-| Optional Rules | None in v1 (Fog of War, Draft Shields, Sudden Death, Team Mode deferred) |
+| Item             | Decision                                                                 |
+| ---------------- | ------------------------------------------------------------------------ |
+| Platform         | Web (browser-based)                                                      |
+| MVP Player Count | 2-player only (architecture supports 2-6)                                |
+| AI Opponent      | Yes                                                                      |
+| Multiplayer      | Online (not hot-seat)                                                    |
+| Optional Rules   | None in v1 (Fog of War, Draft Shields, Sudden Death, Team Mode deferred) |
 
 ---
 
@@ -121,10 +121,12 @@ F1 (friendly) is pushed along with enemies.
 **Jarls CANNOT be pushed onto the Throne.**
 
 The Throne acts as a compression point for ALL pieces:
+
 - Warriors compress at Throne (cannot enter)
 - Jarls compress at Throne (cannot be pushed onto it)
 
 This means:
+
 - Victory requires **voluntary** movement onto the Throne
 - A Jarl can never be "accidentally" placed on the Throne
 - There is no scenario where a Jarl sits on the Throne without winning
@@ -147,6 +149,7 @@ Victory is **immediate** when a Jarl voluntarily moves onto the Throne during th
 ### Turn Timeout
 
 When a player's turn timer expires:
+
 - Turn is **auto-skipped**
 - Player's pieces remain in current positions
 - No penalty beyond losing the turn
@@ -179,6 +182,7 @@ Shields and other pieces do NOT affect distance calculation.
 ### Elimination
 
 When starvation triggers and a player has no Warriors:
+
 - Jarl is **immediately eliminated** after the 5-round grace period
 - No partial damage or health system
 
@@ -200,11 +204,11 @@ The game is called **Jarls** (not "Norse Wars").
 
 ## Reference: Strength Values
 
-| Piece | Strength |
-|-------|----------|
-| Warrior | 1 |
-| Jarl | 2 |
-| Shield | ∞ (immovable) |
+| Piece   | Strength      |
+| ------- | ------------- |
+| Warrior | 1             |
+| Jarl    | 2             |
+| Shield  | ∞ (immovable) |
 
 ## Reference: Attack Formula
 
@@ -236,6 +240,6 @@ IF Attack ≤ Defense THEN Blocked (attacker stops adjacent)
 
 ---
 
-*Document Version: 1.0*
-*Created: 2026-01-25*
-*Based on interview session with game designer*
+_Document Version: 1.0_
+_Created: 2026-01-25_
+_Based on interview session with game designer_

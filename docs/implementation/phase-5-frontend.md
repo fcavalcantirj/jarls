@@ -13,9 +13,11 @@ Implement the web-based game client with hex grid rendering, input handling, and
 ## Task 5.1: Hex Grid Rendering
 
 ### Description
+
 Render the game board using honeycomb-grid and Canvas/SVG.
 
 ### Work Items
+
 - [ ] Set up Vite + TypeScript project
 - [ ] Install honeycomb-grid
 - [ ] Create `BoardRenderer` class
@@ -28,11 +30,13 @@ Render the game board using honeycomb-grid and Canvas/SVG.
 - [ ] Implement smooth 60fps rendering
 
 ### Tech Choices
+
 - **Rendering:** Canvas for performance (PixiJS optional for effects)
 - **Hex Library:** honeycomb-grid for coordinate math
 - **State Management:** Simple store or Zustand
 
 ### Board Renderer
+
 ```typescript
 import { defineHex, Grid, Orientation } from 'honeycomb-grid';
 import { GameState, Piece, AxialCoord } from '@jarls/shared';
@@ -55,8 +59,8 @@ const DEFAULT_CONFIG: RenderConfig = {
     hexBorder: '#636e72',
     throne: '#ffd700',
     shield: '#7f8c8d',
-    players: ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c']
-  }
+    players: ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c'],
+  },
 };
 
 export class BoardRenderer {
@@ -73,7 +77,7 @@ export class BoardRenderer {
     // Set up hex definition
     const Hex = defineHex({
       dimensions: this.config.hexSize,
-      orientation: Orientation.POINTY
+      orientation: Orientation.POINTY,
     });
 
     // Grid will be set when rendering state
@@ -105,13 +109,13 @@ export class BoardRenderer {
 
     // Render shields
     state.pieces
-      .filter(p => p.type === 'shield')
-      .forEach(shield => this.renderShield(shield, centerX, centerY));
+      .filter((p) => p.type === 'shield')
+      .forEach((shield) => this.renderShield(shield, centerX, centerY));
 
     // Render pieces
     state.pieces
-      .filter(p => p.type !== 'shield')
-      .forEach(piece => this.renderPiece(piece, state, centerX, centerY));
+      .filter((p) => p.type !== 'shield')
+      .forEach((piece) => this.renderPiece(piece, state, centerX, centerY));
   }
 
   private renderBoardHexes(state: GameState, centerX: number, centerY: number): void {
@@ -176,14 +180,12 @@ export class BoardRenderer {
     const pixel = this.hexToPixel(piece.position, centerX, centerY);
 
     // Get player color
-    const playerIndex = state.players.findIndex(p => p.id === piece.owner);
+    const playerIndex = state.players.findIndex((p) => p.id === piece.owner);
     const color = config.colors.players[playerIndex] || '#ffffff';
 
     // Draw piece
     ctx.beginPath();
-    const radius = piece.type === 'jarl'
-      ? config.hexSize * 0.45
-      : config.hexSize * 0.3;
+    const radius = piece.type === 'jarl' ? config.hexSize * 0.45 : config.hexSize * 0.3;
     ctx.arc(pixel.x, pixel.y, radius, 0, Math.PI * 2);
     ctx.fillStyle = color;
     ctx.fill();
@@ -215,7 +217,7 @@ export class BoardRenderer {
     }
 
     // Valid moves
-    highlights.validMoves?.forEach(move => {
+    highlights.validMoves?.forEach((move) => {
       const pixel = this.hexToPixel(move.to, centerX, centerY);
       ctx.beginPath();
       this.drawHexPath(pixel.x, pixel.y);
@@ -240,8 +242,8 @@ export class BoardRenderer {
 
   private hexToPixel(hex: AxialCoord, centerX: number, centerY: number): { x: number; y: number } {
     const size = this.config.hexSize;
-    const x = centerX + size * (Math.sqrt(3) * hex.q + Math.sqrt(3) / 2 * hex.r);
-    const y = centerY + size * (3 / 2 * hex.r);
+    const x = centerX + size * (Math.sqrt(3) * hex.q + (Math.sqrt(3) / 2) * hex.r);
+    const y = centerY + size * ((3 / 2) * hex.r);
     return { x, y };
   }
 
@@ -250,8 +252,8 @@ export class BoardRenderer {
     const px = x - centerX;
     const py = y - centerY;
 
-    const q = (Math.sqrt(3) / 3 * px - 1 / 3 * py) / size;
-    const r = (2 / 3 * py) / size;
+    const q = ((Math.sqrt(3) / 3) * px - (1 / 3) * py) / size;
+    const r = ((2 / 3) * py) / size;
 
     return this.roundHex(q, r);
   }
@@ -310,6 +312,7 @@ interface RenderHighlights {
 ```
 
 ### Definition of Done
+
 - [ ] Board renders correctly for all player counts (2-6)
 - [ ] Pieces are visually distinguishable by player
 - [ ] Jarls are visually distinct from Warriors
@@ -318,6 +321,7 @@ interface RenderHighlights {
 - [ ] Smooth 60fps rendering
 
 ### Test Cases
+
 ```typescript
 // Visual regression tests with screenshots
 describe('Board Rendering', () => {
@@ -356,9 +360,11 @@ describe('Board Rendering', () => {
 ## Task 5.2: Input Handling
 
 ### Description
+
 Handle player input for piece selection and move execution.
 
 ### Work Items
+
 - [ ] Implement click/tap detection
 - [ ] Implement piece selection
 - [ ] Implement destination selection
@@ -368,6 +374,7 @@ Handle player input for piece selection and move execution.
 - [ ] Implement drag-and-drop (optional)
 
 ### Input Handler
+
 ```typescript
 export class InputHandler {
   private renderer: BoardRenderer;
@@ -409,9 +416,7 @@ export class InputHandler {
 
     // Check if clicking on valid move destination
     if (this.selectedPiece) {
-      const move = this.validMoves.find(
-        m => m.to.q === hex.q && m.to.r === hex.r
-      );
+      const move = this.validMoves.find((m) => m.to.q === hex.q && m.to.r === hex.r);
 
       if (move) {
         this.executeMove(move);
@@ -434,9 +439,7 @@ export class InputHandler {
     const hex = this.getHexFromEvent(event);
     if (!hex) return;
 
-    const move = this.validMoves.find(
-      m => m.to.q === hex.q && m.to.r === hex.r
-    );
+    const move = this.validMoves.find((m) => m.to.q === hex.q && m.to.r === hex.r);
 
     // Update hover state for combat preview
     if (move?.combat) {
@@ -451,7 +454,7 @@ export class InputHandler {
     const touch = event.touches[0];
     const mouseEvent = new MouseEvent('click', {
       clientX: touch.clientX,
-      clientY: touch.clientY
+      clientY: touch.clientY,
     });
     this.handleClick(mouseEvent);
   }
@@ -477,7 +480,7 @@ export class InputHandler {
   private executeMove(move: ValidMove): void {
     const command: MoveCommand = {
       pieceId: this.selectedPiece!,
-      to: move.to
+      to: move.to,
     };
 
     this.socket.emit('playTurn', { command }, (response) => {
@@ -497,9 +500,7 @@ export class InputHandler {
   }
 
   private getPieceAt(hex: AxialCoord): Piece | undefined {
-    return this.state?.pieces.find(
-      p => p.position.q === hex.q && p.position.r === hex.r
-    );
+    return this.state?.pieces.find((p) => p.position.q === hex.q && p.position.r === hex.r);
   }
 
   private getHexFromEvent(event: MouseEvent): AxialCoord | null {
@@ -514,12 +515,12 @@ export class InputHandler {
 
   private updateHighlights(): void {
     const selected = this.selectedPiece
-      ? this.state?.pieces.find(p => p.id === this.selectedPiece)?.position
+      ? this.state?.pieces.find((p) => p.id === this.selectedPiece)?.position
       : undefined;
 
     this.renderer.render(this.state!, {
       selected,
-      validMoves: this.validMoves
+      validMoves: this.validMoves,
     });
   }
 
@@ -538,6 +539,7 @@ export class InputHandler {
 ```
 
 ### Definition of Done
+
 - [ ] Piece selection works with click/tap
 - [ ] Valid moves highlight on selection
 - [ ] Clicking destination executes move
@@ -546,6 +548,7 @@ export class InputHandler {
 - [ ] Cannot interact when not your turn
 
 ### Test Cases
+
 ```typescript
 // E2E tests with Playwright
 describe('Input Handling', () => {
@@ -592,9 +595,11 @@ describe('Input Handling', () => {
 ## Task 5.3: Move Animation
 
 ### Description
+
 Animate piece movements and game events.
 
 ### Work Items
+
 - [ ] Implement piece movement animation
 - [ ] Implement chain push stagger animation
 - [ ] Implement elimination animation
@@ -604,6 +609,7 @@ Animate piece movements and game events.
 - [ ] Optional: Sound effects
 
 ### Animation System
+
 ```typescript
 interface Animation {
   pieceId: string;
@@ -653,7 +659,7 @@ export class AnimationSystem {
           to: this.hexToPixel(event.to),
           duration: moveDuration,
           delay: baseDelay + depth * staggerDelay,
-          easing: event.type === 'PUSH' ? easeOutBack : easeOutQuad
+          easing: event.type === 'PUSH' ? easeOutBack : easeOutQuad,
         });
       }
 
@@ -667,7 +673,7 @@ export class AnimationSystem {
           easing: easeInQuad,
           onComplete: () => {
             // Could trigger particle effect here
-          }
+          },
         });
       }
     });
@@ -739,7 +745,7 @@ export class AnimationSystem {
     const distance = 300; // Off screen distance
     return {
       x: pixel.x + Math.cos(angle) * distance,
-      y: pixel.y + Math.sin(angle) * distance
+      y: pixel.y + Math.sin(angle) * distance,
     };
   }
 }
@@ -761,6 +767,7 @@ function easeInQuad(t: number): number {
 ```
 
 ### Definition of Done
+
 - [ ] Moves animate smoothly
 - [ ] Chain pushes stagger visually
 - [ ] Eliminations are dramatic (piece flies off)
@@ -768,12 +775,13 @@ function easeInQuad(t: number): number {
 - [ ] 60fps maintained during animations
 
 ### Test Cases
+
 ```typescript
 describe('Animation System', () => {
   test('completes animation in expected time', async () => {
     const animation = new AnimationSystem(renderer);
     const events: GameEvent[] = [
-      { type: 'MOVE', pieceId: 'p1', from: { q: 0, r: 0 }, to: { q: 1, r: 0 } }
+      { type: 'MOVE', pieceId: 'p1', from: { q: 0, r: 0 }, to: { q: 1, r: 0 } },
     ];
 
     const start = performance.now();
@@ -795,15 +803,15 @@ describe('Animation System', () => {
     });
 
     const events: GameEvent[] = [
-      { type: 'PUSH', pieceId: 'p1', from: {q:0,r:0}, to: {q:1,r:0}, depth: 0 },
-      { type: 'PUSH', pieceId: 'p2', from: {q:1,r:0}, to: {q:2,r:0}, depth: 1 },
+      { type: 'PUSH', pieceId: 'p1', from: { q: 0, r: 0 }, to: { q: 1, r: 0 }, depth: 0 },
+      { type: 'PUSH', pieceId: 'p2', from: { q: 1, r: 0 }, to: { q: 2, r: 0 }, depth: 1 },
     ];
 
     await animation.animate(events, state);
 
     // p2 should start after p1
-    const p1Start = positions.find(p => p.pieceId === 'p1')!.time;
-    const p2Start = positions.find(p => p.pieceId === 'p2')!.time;
+    const p1Start = positions.find((p) => p.pieceId === 'p1')!.time;
+    const p2Start = positions.find((p) => p.pieceId === 'p2')!.time;
 
     expect(p2Start - p1Start).toBeGreaterThan(50); // Stagger delay
   });
@@ -815,9 +823,11 @@ describe('Animation System', () => {
 ## Task 5.4: Game UI
 
 ### Description
+
 Implement all UI elements for game information and controls.
 
 ### Work Items
+
 - [ ] Turn indicator (whose turn, timer)
 - [ ] Player list with piece counts
 - [ ] Move history panel (optional)
@@ -828,6 +838,7 @@ Implement all UI elements for game information and controls.
 - [ ] Responsive layout
 
 ### UI Components
+
 ```typescript
 // React components (or similar framework)
 
@@ -964,6 +975,7 @@ function StarvationSelection({ choices, playerId, onSelect }) {
 ```
 
 ### Definition of Done
+
 - [ ] All game state clearly visible
 - [ ] Turn indicator shows whose turn + timer
 - [ ] Player list shows piece counts
@@ -973,6 +985,7 @@ function StarvationSelection({ choices, playerId, onSelect }) {
 - [ ] Responsive on mobile
 
 ### Test Cases
+
 ```typescript
 // E2E tests
 describe('Game UI', () => {
@@ -1021,9 +1034,11 @@ describe('Game UI', () => {
 ## Task 5.5: Lobby UI
 
 ### Description
+
 Implement game lobby for creating/joining games.
 
 ### Work Items
+
 - [ ] Game creation form
 - [ ] Active games list
 - [ ] Join game flow
@@ -1032,6 +1047,7 @@ Implement game lobby for creating/joining games.
 - [ ] Spectator mode entry
 
 ### Lobby Components
+
 ```typescript
 // Create Game Form
 function CreateGameForm({ onCreate }) {
@@ -1178,6 +1194,7 @@ function GameLobby({ game, playerId, onStart, onLeave }) {
 ```
 
 ### Definition of Done
+
 - [ ] Can create games with options
 - [ ] Can see and join available games
 - [ ] Lobby shows connected players
@@ -1190,10 +1207,12 @@ function GameLobby({ game, playerId, onStart, onLeave }) {
 ## Phase 5 Checklist
 
 ### Prerequisites
+
 - [ ] Phase 3 complete (network layer)
 - [ ] Phase 4 complete or skipped
 
 ### Completion Criteria
+
 - [ ] Task 5.1 complete (rendering)
 - [ ] Task 5.2 complete (input)
 - [ ] Task 5.3 complete (animation)
@@ -1203,10 +1222,11 @@ function GameLobby({ game, playerId, onStart, onLeave }) {
 - [ ] Works on mobile
 
 ### Handoff to Phase 6
+
 - Full client implemented
 - Playable end-to-end
 - Ready for polish and deployment
 
 ---
 
-*Phase 5 Status: Not Started*
+_Phase 5 Status: Not Started_

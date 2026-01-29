@@ -13,8 +13,12 @@ import { registerSocketHandlers } from './socket/handlers.js';
 const app: Express = express();
 const gameManager = new GameManager();
 
-// Security headers
-app.use(helmet());
+// Security headers - configure for SPA with inline scripts
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Disable CSP to allow Vite's inline scripts
+  })
+);
 
 // JSON body parser
 app.use(express.json());

@@ -44,11 +44,16 @@ jest.unstable_mockModule('../../redis/client', () => ({
   },
 }));
 
-// Dynamic imports after mocking (db + redis only)
-const { GameManager } = await import('../../game/manager.js');
-const { registerSocketHandlers } = await import('../handlers.js');
-const { createSession } = await import('../../services/session.js');
-const { getValidMoves } = await import('@jarls/shared');
+// Dynamic imports after mocking - loaded in beforeAll
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let GameManager: any, registerSocketHandlers: any, createSession: any, getValidMoves: any;
+
+beforeAll(async () => {
+  ({ GameManager } = await import('../../game/manager.js'));
+  ({ registerSocketHandlers } = await import('../handlers.js'));
+  ({ createSession } = await import('../../services/session.js'));
+  ({ getValidMoves } = await import('@jarls/shared'));
+});
 
 // We need these types for runtime use
 type GameState = import('@jarls/shared').GameState;

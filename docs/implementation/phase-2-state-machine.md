@@ -13,9 +13,11 @@ Implement XState v5 state machine for game lifecycle management with PostgreSQL 
 ## Task 2.1: XState Machine Definition
 
 ### Description
+
 Define the complete game state machine with all states, transitions, guards, and actions.
 
 ### Work Items
+
 - [ ] Install XState v5: `npm install xstate`
 - [ ] Define machine input types
 - [ ] Define all states: lobby, setup, playing (with substates), starvation, ended
@@ -26,6 +28,7 @@ Define the complete game state machine with all states, transitions, guards, and
 - [ ] Define context initialization
 
 ### State Diagram
+
 ```
                     ┌─────────┐
                     │  lobby  │
@@ -61,6 +64,7 @@ Define the complete game state machine with all states, transitions, guards, and
 ```
 
 ### Machine Definition
+
 ```typescript
 import { setup, assign, createActor, and, not } from 'xstate';
 import { GameState, GameEvent, MoveCommand, Player } from '@jarls/shared';
@@ -81,12 +85,11 @@ const gameMachine = setup({
   types: {
     context: {} as MachineContext,
     events: {} as MachineEvent,
-    input: {} as { gameId: string; config: GameConfig }
+    input: {} as { gameId: string; config: GameConfig },
   },
 
   guards: {
-    hasEnoughPlayers: ({ context }) =>
-      context.players.filter(p => !p.isEliminated).length >= 2,
+    hasEnoughPlayers: ({ context }) => context.players.filter((p) => !p.isEliminated).length >= 2,
 
     isPlayersTurn: ({ context, event }) => {
       if (!('playerId' in event)) return false;
@@ -106,26 +109,45 @@ const gameMachine = setup({
       context.roundsWithoutElimination >= context.config.starvationRounds,
 
     allStarvationChoicesMade: ({ context }) =>
-      context.pendingStarvation?.every(c => c.choice !== undefined) ?? false
+      context.pendingStarvation?.every((c) => c.choice !== undefined) ?? false,
   },
 
   actions: {
-    addPlayer: assign({ /* ... */ }),
-    removePlayer: assign({ /* ... */ }),
-    initializeBoard: assign({ /* ... */ }),
-    applyMove: assign({ /* ... */ }),
-    advanceTurn: assign({ /* ... */ }),
-    checkWinConditions: assign({ /* ... */ }),
-    triggerStarvation: assign({ /* ... */ }),
-    resolveStarvation: assign({ /* ... */ }),
-    recordStarvationChoice: assign({ /* ... */ }),
-    setWinner: assign({ /* ... */ })
+    addPlayer: assign({
+      /* ... */
+    }),
+    removePlayer: assign({
+      /* ... */
+    }),
+    initializeBoard: assign({
+      /* ... */
+    }),
+    applyMove: assign({
+      /* ... */
+    }),
+    advanceTurn: assign({
+      /* ... */
+    }),
+    checkWinConditions: assign({
+      /* ... */
+    }),
+    triggerStarvation: assign({
+      /* ... */
+    }),
+    resolveStarvation: assign({
+      /* ... */
+    }),
+    recordStarvationChoice: assign({
+      /* ... */
+    }),
+    setWinner: assign({
+      /* ... */
+    }),
   },
 
   delays: {
-    turnTimeout: ({ context }) =>
-      (context.config.turnTimerSeconds ?? 60) * 1000
-  }
+    turnTimeout: ({ context }) => (context.config.turnTimerSeconds ?? 60) * 1000,
+  },
 }).createMachine({
   id: 'jarlsGame',
   initial: 'lobby',
@@ -138,14 +160,14 @@ const gameMachine = setup({
         PLAYER_LEFT: { actions: 'removePlayer' },
         START_GAME: {
           guard: 'hasEnoughPlayers',
-          target: 'setup'
-        }
-      }
+          target: 'setup',
+        },
+      },
     },
 
     setup: {
       entry: 'initializeBoard',
-      always: { target: 'playing' }
+      always: { target: 'playing' },
     },
 
     playing: {
@@ -155,62 +177,63 @@ const gameMachine = setup({
           after: {
             turnTimeout: {
               target: 'turnEnding',
-              actions: 'advanceTurn'
-            }
+              actions: 'advanceTurn',
+            },
           },
           on: {
             MAKE_MOVE: {
               guard: and(['isPlayersTurn', 'isValidMove']),
               actions: ['applyMove', 'checkWinConditions'],
-              target: 'turnEnding'
+              target: 'turnEnding',
             },
             END_TURN: {
               guard: 'isPlayersTurn',
-              target: 'turnEnding'
+              target: 'turnEnding',
             },
             SURRENDER: {
               guard: 'isPlayersTurn',
               actions: ['eliminatePlayer', 'checkWinConditions'],
-              target: 'turnEnding'
-            }
-          }
+              target: 'turnEnding',
+            },
+          },
         },
         turnEnding: {
           entry: 'advanceTurn',
           always: [
             { guard: 'isGameOver', target: '#jarlsGame.ended' },
             { guard: 'hasStarvation', target: '#jarlsGame.starvation' },
-            { target: 'awaitingMove' }
-          ]
-        }
-      }
+            { target: 'awaitingMove' },
+          ],
+        },
+      },
     },
 
     starvation: {
       entry: 'triggerStarvation',
       on: {
         STARVATION_CHOICE: {
-          actions: 'recordStarvationChoice'
-        }
+          actions: 'recordStarvationChoice',
+        },
       },
       always: [
         {
           guard: and(['allStarvationChoicesMade']),
           actions: ['resolveStarvation', 'checkWinConditions'],
-          target: 'playing'
-        }
-      ]
+          target: 'playing',
+        },
+      ],
     },
 
     ended: {
       type: 'final',
-      entry: 'setWinner'
-    }
-  }
+      entry: 'setWinner',
+    },
+  },
 });
 ```
 
 ### Definition of Done
+
 - [ ] Machine compiles without TypeScript errors
 - [ ] All states reachable via valid transitions
 - [ ] Guards prevent all invalid transitions
@@ -218,6 +241,7 @@ const gameMachine = setup({
 - [ ] Machine matches ruleset v0.4.1
 
 ### Test Cases
+
 ```typescript
 describe('Game State Machine', () => {
   test('starts in lobby state', () => {
@@ -255,7 +279,7 @@ describe('Game State Machine', () => {
     actor.send({
       type: 'MAKE_MOVE',
       playerId: 'p2',
-      command: { pieceId: 'p2_w1', to: { q: 1, r: 0 } }
+      command: { pieceId: 'p2_w1', to: { q: 1, r: 0 } },
     });
 
     expect(actor.getSnapshot().context).toEqual(beforeContext);
@@ -267,7 +291,7 @@ describe('Game State Machine', () => {
     actor.send({
       type: 'MAKE_MOVE',
       playerId: 'p1',
-      command: { pieceId: 'p1_j', to: THRONE }
+      command: { pieceId: 'p1_j', to: THRONE },
     });
 
     expect(actor.getSnapshot().value).toBe('ended');
@@ -277,7 +301,7 @@ describe('Game State Machine', () => {
   test('turn timer advances turn', async () => {
     const actor = createStartedGame({ turnTimerSeconds: 1 });
 
-    await new Promise(r => setTimeout(r, 1100));
+    await new Promise((r) => setTimeout(r, 1100));
 
     expect(actor.getSnapshot().context.currentPlayerIndex).toBe(1);
   });
@@ -289,9 +313,11 @@ describe('Game State Machine', () => {
 ## Task 2.2: Game Persistence
 
 ### Description
+
 Implement save/restore for game state using PostgreSQL.
 
 ### Work Items
+
 - [ ] Implement `GamePersistence` class
 - [ ] Implement `save(gameId, actor, event?)` → saves snapshot + event
 - [ ] Implement `restore(gameId)` → returns actor with restored state
@@ -300,6 +326,7 @@ Implement save/restore for game state using PostgreSQL.
 - [ ] Implement transaction wrapper
 
 ### Persistence Service
+
 ```typescript
 import { Pool } from 'pg';
 import { createActor, ActorRefFrom } from 'xstate';
@@ -321,37 +348,47 @@ export class GamePersistence {
       await client.query('BEGIN');
 
       // Optimistic locking: version must match
-      const result = await client.query(`
+      const result = await client.query(
+        `
         UPDATE game_snapshots
         SET state_snapshot = $2, version = $3, updated_at = now(), status = $4
         WHERE game_id = $1 AND version = $3 - 1
         RETURNING *
-      `, [gameId, JSON.stringify(snapshot), version, snapshot.value]);
+      `,
+        [gameId, JSON.stringify(snapshot), version, snapshot.value]
+      );
 
       if (result.rowCount === 0) {
         // Either doesn't exist or version mismatch
-        const exists = await client.query(
-          'SELECT version FROM game_snapshots WHERE game_id = $1',
-          [gameId]
-        );
+        const exists = await client.query('SELECT version FROM game_snapshots WHERE game_id = $1', [
+          gameId,
+        ]);
 
         if (exists.rowCount === 0) {
           // First save
-          await client.query(`
+          await client.query(
+            `
             INSERT INTO game_snapshots (game_id, state_snapshot, version, status)
             VALUES ($1, $2, $3, $4)
-          `, [gameId, JSON.stringify(snapshot), version, snapshot.value]);
+          `,
+            [gameId, JSON.stringify(snapshot), version, snapshot.value]
+          );
         } else {
-          throw new Error(`Version conflict: expected ${exists.rows[0].version + 1}, got ${version}`);
+          throw new Error(
+            `Version conflict: expected ${exists.rows[0].version + 1}, got ${version}`
+          );
         }
       }
 
       // Append event to log
       if (event) {
-        await client.query(`
+        await client.query(
+          `
           INSERT INTO game_events (game_id, event_type, payload, version)
           VALUES ($1, $2, $3, $4)
-        `, [gameId, event.type, JSON.stringify(event), version]);
+        `,
+          [gameId, event.type, JSON.stringify(event), version]
+        );
       }
 
       await client.query('COMMIT');
@@ -393,7 +430,7 @@ export class GamePersistence {
 
     // Create fresh actor and replay
     const actor = createActor(gameMachine, {
-      input: { gameId, config: initialSnapshot.context.config }
+      input: { gameId, config: initialSnapshot.context.config },
     });
     actor.start();
 
@@ -410,15 +447,16 @@ export class GamePersistence {
       'SELECT payload, created_at FROM game_events WHERE game_id = $1 ORDER BY version',
       [gameId]
     );
-    return result.rows.map(r => ({
+    return result.rows.map((r) => ({
       ...JSON.parse(r.payload),
-      timestamp: r.created_at
+      timestamp: r.created_at,
     }));
   }
 }
 ```
 
 ### Definition of Done
+
 - [ ] Game survives server restart
 - [ ] Event log captures all game events
 - [ ] Replay produces identical state to snapshot
@@ -426,6 +464,7 @@ export class GamePersistence {
 - [ ] Version conflicts detected and reported
 
 ### Test Cases
+
 ```typescript
 describe('Game Persistence', () => {
   let persistence: GamePersistence;
@@ -471,8 +510,7 @@ describe('Game Persistence', () => {
 
     await persistence.save('test-game-1', actor1!);
 
-    await expect(persistence.save('test-game-1', actor2!))
-      .rejects.toThrow('Version conflict');
+    await expect(persistence.save('test-game-1', actor2!)).rejects.toThrow('Version conflict');
   });
 });
 ```
@@ -482,9 +520,11 @@ describe('Game Persistence', () => {
 ## Task 2.3: Game Manager
 
 ### Description
+
 Manage multiple concurrent games in memory with persistence backing.
 
 ### Work Items
+
 - [ ] Implement `GameManager` class
 - [ ] Implement `create(config)` → creates new game
 - [ ] Implement `join(gameId, playerName)` → adds player to lobby
@@ -496,6 +536,7 @@ Manage multiple concurrent games in memory with persistence backing.
 - [ ] Implement recovery on server start
 
 ### Game Manager
+
 ```typescript
 import { createActor, ActorRefFrom } from 'xstate';
 import { v4 as uuid } from 'uuid';
@@ -513,7 +554,7 @@ export class GameManager {
     const fullConfig = { ...DEFAULT_CONFIG, ...config };
 
     const actor = createActor(gameMachine, {
-      input: { gameId, config: fullConfig }
+      input: { gameId, config: fullConfig },
     });
     actor.start();
 
@@ -558,11 +599,7 @@ export class GameManager {
     actor.send({ type: 'START_GAME' });
   }
 
-  async makeMove(
-    gameId: string,
-    playerId: string,
-    command: MoveCommand
-  ): Promise<MoveResult> {
+  async makeMove(gameId: string, playerId: string, command: MoveCommand): Promise<MoveResult> {
     const actor = await this.getActor(gameId);
     if (!actor) throw new GameNotFoundError(gameId);
 
@@ -580,7 +617,7 @@ export class GameManager {
     return {
       success: true,
       events: afterSnapshot.context.lastMoveEvents,
-      newState: afterSnapshot.context
+      newState: afterSnapshot.context,
     };
   }
 
@@ -600,7 +637,7 @@ export class GameManager {
           status: snapshot.value as string,
           playerCount: snapshot.context.players.length,
           maxPlayers: snapshot.context.config.playerCount,
-          createdAt: snapshot.context.createdAt
+          createdAt: snapshot.context.createdAt,
         });
       }
     }
@@ -641,6 +678,7 @@ export class GameManager {
 ```
 
 ### Definition of Done
+
 - [ ] Multiple games can run concurrently
 - [ ] Games are isolated from each other
 - [ ] Memory cleaned up when game ends
@@ -648,6 +686,7 @@ export class GameManager {
 - [ ] List API works correctly
 
 ### Test Cases
+
 ```typescript
 describe('Game Manager', () => {
   let manager: GameManager;
@@ -677,8 +716,7 @@ describe('Game Manager', () => {
     await manager.join(gameId, 'Bob');
     await manager.start(gameId);
 
-    await expect(manager.join(gameId, 'Charlie'))
-      .rejects.toThrow(GameAlreadyStartedError);
+    await expect(manager.join(gameId, 'Charlie')).rejects.toThrow(GameAlreadyStartedError);
   });
 
   test('makeMove returns result', async () => {
@@ -709,10 +747,12 @@ describe('Game Manager', () => {
 ## Phase 2 Checklist
 
 ### Prerequisites
+
 - [ ] Phase 1 complete (all game logic)
 - [ ] Database set up (Phase 0)
 
 ### Completion Criteria
+
 - [ ] Task 2.1 complete (state machine)
 - [ ] Task 2.2 complete (persistence)
 - [ ] Task 2.3 complete (game manager)
@@ -721,6 +761,7 @@ describe('Game Manager', () => {
 - [ ] Integration tests pass
 
 ### Handoff to Phase 3
+
 - State machine manages game lifecycle
 - Persistence layer saves/restores games
 - Game manager handles multiple games
@@ -728,4 +769,4 @@ describe('Game Manager', () => {
 
 ---
 
-*Phase 2 Status: Not Started*
+_Phase 2 Status: Not Started_

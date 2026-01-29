@@ -16,8 +16,13 @@ jest.unstable_mockModule('../../db', () => ({
   },
 }));
 
-const { saveSnapshot, loadSnapshot, VersionConflictError, saveEvent, loadEvents } =
-  await import('../persistence');
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let saveSnapshot: any, loadSnapshot: any, VersionConflictError: any, saveEvent: any, loadEvents: any;
+
+beforeAll(async () => {
+  ({ saveSnapshot, loadSnapshot, VersionConflictError, saveEvent, loadEvents } =
+    await import('../persistence'));
+});
 
 describe('persistence integration tests', () => {
   beforeAll(async () => {
