@@ -31,7 +31,6 @@ export default function CreateGameForm() {
   const [boardSize, setBoardSize] = useState<BoardSize>('default');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPromptEditor, setShowPromptEditor] = useState(false);
   const [customPrompt, setCustomPrompt] = useState('');
 
   const handleSubmit = useCallback(
@@ -139,12 +138,15 @@ export default function CreateGameForm() {
   // Whether to show the Groq badge (when Groq AI is selected)
   const showGroqBadge = opponentType === 'ai' && aiType === 'groq';
 
+  // Use wide layout when Groq is selected (for two-column on desktop)
+  const useWideLayout = showGroqBadge;
+
   return (
     <div style={containerStyle}>
       <h2 style={titleStyle}>Create Game</h2>
 
-      <form onSubmit={handleSubmit} style={formStyle}>
-        {/* Player Name */}
+      <form onSubmit={handleSubmit} style={useWideLayout ? formStyleWide : formStyle}>
+        {/* Common fields - always shown at top */}
         <label style={labelStyle}>
           Your Name
           <input
@@ -158,7 +160,6 @@ export default function CreateGameForm() {
           />
         </label>
 
-        {/* Opponent Type */}
         <label style={labelStyle}>
           Opponent
           <div style={radioGroupStyle}>
@@ -179,131 +180,150 @@ export default function CreateGameForm() {
           </div>
         </label>
 
-        {/* AI Configuration (shown only when AI selected) */}
+        {/* AI Type - shown when AI is selected */}
         {opponentType === 'ai' && (
-          <>
-            {/* AI Type */}
-            <label style={labelStyle}>
-              AI Type
-              <div style={radioGroupStyle}>
-                <button
-                  type="button"
-                  style={radioButtonStyle(aiType === 'local')}
-                  onClick={() => setAIType('local')}
-                >
-                  Local (Fast)
-                </button>
-                <button
-                  type="button"
-                  style={radioButtonStyle(aiType === 'groq')}
-                  onClick={() => setAIType('groq')}
-                >
-                  Groq LLM
-                </button>
-              </div>
-            </label>
-
-            {/* Groq Model Selection */}
-            {aiType === 'groq' && (
-              <>
-                <label style={labelStyle}>
-                  Model
-                  <select
-                    value={groqModel}
-                    onChange={(e) => setGroqModel(e.target.value as GroqModel)}
-                    style={selectStyle}
-                  >
-                    {GROQ_MODELS.map((model) => (
-                      <option key={model} value={model}>
-                        {GROQ_MODEL_NAMES[model]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label style={labelStyle}>
-                  Difficulty
-                  <select
-                    value={groqDifficulty}
-                    onChange={(e) => setGroqDifficulty(e.target.value as GroqDifficulty)}
-                    style={selectStyle}
-                  >
-                    <option value="beginner">Beginner</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="hard">Hard</option>
-                  </select>
-                </label>
-
-                {/* Edit Prompt Button */}
-                <button
-                  type="button"
-                  style={editPromptButtonStyle}
-                  onClick={() => setShowPromptEditor(!showPromptEditor)}
-                >
-                  {showPromptEditor ? 'Hide Prompt Editor' : 'Edit Prompt ✏️'}
-                </button>
-
-                {/* Custom Prompt Textarea */}
-                {showPromptEditor && (
-                  <label style={labelStyle}>
-                    Custom Prompt
-                    <textarea
-                      value={customPrompt || defaultPrompt}
-                      onChange={(e) => setCustomPrompt(e.target.value)}
-                      style={textareaStyle}
-                      rows={8}
-                      maxLength={5000}
-                    />
-                    <div style={promptFooterStyle}>
-                      {customPrompt && (
-                        <button
-                          type="button"
-                          onClick={() => setCustomPrompt('')}
-                          style={resetPromptButtonStyle}
-                        >
-                          Reset to default
-                        </button>
-                      )}
-                      <span style={charCountStyle}>
-                        {(customPrompt || defaultPrompt).length}/5000
-                      </span>
-                    </div>
-                  </label>
-                )}
-              </>
-            )}
-          </>
+          <label style={labelStyle}>
+            AI Type
+            <div style={radioGroupStyle}>
+              <button
+                type="button"
+                style={radioButtonStyle(aiType === 'local')}
+                onClick={() => setAIType('local')}
+              >
+                Local (Fast)
+              </button>
+              <button
+                type="button"
+                style={radioButtonStyle(aiType === 'groq')}
+                onClick={() => setAIType('groq')}
+              >
+                Groq LLM
+              </button>
+            </div>
+          </label>
         )}
 
-        {/* Turn Timer */}
-        <label style={labelStyle}>
-          Turn Timer
-          <select
-            value={turnTimer}
-            onChange={(e) => setTurnTimer(e.target.value as TurnTimer)}
-            style={selectStyle}
-          >
-            <option value="none">No Timer</option>
-            <option value="30">30 seconds</option>
-            <option value="60">60 seconds</option>
-            <option value="120">120 seconds</option>
-          </select>
-        </label>
+        {/* Two-column layout for Groq-specific settings on desktop */}
+        {useWideLayout ? (
+          <div style={twoColumnGridStyle}>
+            {/* Left column - Groq settings + game settings */}
+            <div style={columnStyle}>
+              <label style={labelStyle}>
+                Model
+                <select
+                  value={groqModel}
+                  onChange={(e) => setGroqModel(e.target.value as GroqModel)}
+                  style={selectStyle}
+                >
+                  {GROQ_MODELS.map((model) => (
+                    <option key={model} value={model}>
+                      {GROQ_MODEL_NAMES[model]}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-        {/* Board Size */}
-        <label style={labelStyle}>
-          Board Size
-          <select
-            value={boardSize}
-            onChange={(e) => setBoardSize(e.target.value as BoardSize)}
-            style={selectStyle}
-          >
-            <option value="default">Default (37 hexes)</option>
-            <option value="4">Medium (61 hexes)</option>
-            <option value="5">Large (91 hexes)</option>
-            <option value="6">Extra Large (127 hexes)</option>
-          </select>
-        </label>
+              <label style={labelStyle}>
+                Difficulty
+                <select
+                  value={groqDifficulty}
+                  onChange={(e) => setGroqDifficulty(e.target.value as GroqDifficulty)}
+                  style={selectStyle}
+                >
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </label>
+
+              <label style={labelStyle}>
+                Turn Timer
+                <select
+                  value={turnTimer}
+                  onChange={(e) => setTurnTimer(e.target.value as TurnTimer)}
+                  style={selectStyle}
+                >
+                  <option value="none">No Timer</option>
+                  <option value="30">30 seconds</option>
+                  <option value="60">60 seconds</option>
+                  <option value="120">120 seconds</option>
+                </select>
+              </label>
+
+              <label style={labelStyle}>
+                Board Size
+                <select
+                  value={boardSize}
+                  onChange={(e) => setBoardSize(e.target.value as BoardSize)}
+                  style={selectStyle}
+                >
+                  <option value="default">Default (37 hexes)</option>
+                  <option value="4">Medium (61 hexes)</option>
+                  <option value="5">Large (91 hexes)</option>
+                  <option value="6">Extra Large (127 hexes)</option>
+                </select>
+              </label>
+            </div>
+
+            {/* Right column - prompt editor */}
+            <div style={columnStyle}>
+              <label style={{ ...labelStyle, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <span>System Prompt</span>
+                  {customPrompt && (
+                    <button
+                      type="button"
+                      onClick={() => setCustomPrompt('')}
+                      style={resetPromptButtonStyle}
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+                <textarea
+                  value={customPrompt || defaultPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  style={{ ...textareaStyle, flex: 1, minHeight: '280px' }}
+                  maxLength={5000}
+                />
+                <span style={charCountStyle}>{(customPrompt || defaultPrompt).length}/5000</span>
+              </label>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Single column - non-Groq game settings */}
+            <label style={labelStyle}>
+              Turn Timer
+              <select
+                value={turnTimer}
+                onChange={(e) => setTurnTimer(e.target.value as TurnTimer)}
+                style={selectStyle}
+              >
+                <option value="none">No Timer</option>
+                <option value="30">30 seconds</option>
+                <option value="60">60 seconds</option>
+                <option value="120">120 seconds</option>
+              </select>
+            </label>
+
+            <label style={labelStyle}>
+              Board Size
+              <select
+                value={boardSize}
+                onChange={(e) => setBoardSize(e.target.value as BoardSize)}
+                style={selectStyle}
+              >
+                <option value="default">Default (37 hexes)</option>
+                <option value="4">Medium (61 hexes)</option>
+                <option value="5">Large (91 hexes)</option>
+                <option value="6">Extra Large (127 hexes)</option>
+              </select>
+            </label>
+          </>
+        )}
 
         {/* Error */}
         {error && <p style={errorStyle}>{error}</p>}
@@ -363,6 +383,26 @@ const formStyle: React.CSSProperties = {
   maxWidth: '360px',
 };
 
+const formStyleWide: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '16px',
+  width: '100%',
+  maxWidth: '800px',
+};
+
+const twoColumnGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(280px, 1fr) minmax(300px, 1.5fr)',
+  gap: '24px',
+};
+
+const columnStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '16px',
+};
+
 const labelStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
@@ -411,13 +451,6 @@ const charCountStyle: React.CSSProperties = {
   color: '#666',
 };
 
-const promptFooterStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginTop: '4px',
-};
-
 const resetPromptButtonStyle: React.CSSProperties = {
   padding: '4px 8px',
   borderRadius: '4px',
@@ -449,18 +482,6 @@ function radioButtonStyle(active: boolean): React.CSSProperties {
     textAlign: 'center',
   };
 }
-
-const editPromptButtonStyle: React.CSSProperties = {
-  padding: '8px 12px',
-  borderRadius: '6px',
-  border: '1px dashed #666',
-  backgroundColor: 'transparent',
-  color: '#888',
-  fontFamily: 'monospace',
-  fontSize: '12px',
-  cursor: 'pointer',
-  textAlign: 'center',
-};
 
 const errorStyle: React.CSSProperties = {
   margin: 0,
