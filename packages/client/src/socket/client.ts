@@ -15,7 +15,7 @@ export interface ClientToServerEvents {
     callback: (response: JoinGameResponse) => void
   ) => void;
   playTurn: (
-    payload: { gameId: string; command: MoveCommand },
+    payload: { gameId: string; command: MoveCommand; turnNumber?: number },
     callback: (response: PlayTurnResponse) => void
   ) => void;
   startGame: (payload: { gameId: string }, callback: (response: StartGameResponse) => void) => void;
