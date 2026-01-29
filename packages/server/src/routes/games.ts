@@ -11,6 +11,10 @@ const joinGameSchema = z.object({
   playerName: z.string().min(1).max(30),
 });
 
+const addAISchema = z.object({
+  difficulty: z.enum(['random', 'heuristic']),
+});
+
 const createGameSchema = z.object({
   playerCount: z.number().int().min(2).max(6).optional().default(2),
   turnTimerMs: z
@@ -155,6 +159,34 @@ export function createGameRoutes(manager: GameManager): Router {
       }
     }
   );
+
+  /**
+   * POST /api/games/:id/ai
+   * Add an AI player to the game. Requires auth.
+   */
+  router.post('/:id/ai', authenticateSession, (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+
+      const parsed = addAISchema.safeParse(req.body);
+      if (!parsed.success) {
+        throw new ValidationError(parsed.error.issues.map((i) => i.message).join(', '));
+      }
+
+      const { difficulty } = parsed.data;
+
+      const snapshot = manager.getState(id);
+      if (!snapshot) {
+        throw new GameNotFoundError(id);
+      }
+
+      const aiPlayerId = manager.addAIPlayer(id, difficulty);
+
+      res.json({ aiPlayerId });
+    } catch (err) {
+      next(err);
+    }
+  });
 
   /**
    * GET /api/games/:id/valid-moves/:pieceId

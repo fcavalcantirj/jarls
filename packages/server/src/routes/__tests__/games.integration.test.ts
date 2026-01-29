@@ -33,7 +33,11 @@ jest.unstable_mockModule('../../redis/client', () => ({
 
 // Dynamic imports after mocking - loaded in beforeAll
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let GameManager: any, createGameRoutes: any, errorMiddleware: any, createSession: any, validateSession: any;
+let GameManager: any,
+  createGameRoutes: any,
+  errorMiddleware: any,
+  createSession: any,
+  validateSession: any;
 
 beforeAll(async () => {
   ({ GameManager } = await import('../../game/manager'));
@@ -451,6 +455,131 @@ describe('REST API integration tests', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({ moves: [] });
+    });
+  });
+
+  // ── POST /api/games/:id/ai (add AI player) ────────────────────
+
+  describe('POST /api/games/:id/ai', () => {
+    it('returns 401 without auth', async () => {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      const response = await request(app)
+        .post(`/api/games/${gameId}/ai`)
+        .send({ difficulty: 'heuristic' });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('returns 404 for non-existent game', async () => {
+      const token = await createSession('nonexistent', 'p1', 'Test');
+
+      const response = await request(app)
+        .post('/api/games/nonexistent/ai')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ difficulty: 'heuristic' });
+
+      expect(response.status).toBe(404);
+    });
+
+    it('adds AI player to game and returns aiPlayerId', async () => {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      const joinRes = await request(app)
+        .post(`/api/games/${gameId}/join`)
+        .send({ playerName: 'Ragnar' });
+      const token = joinRes.body.sessionToken;
+
+      const response = await request(app)
+        .post(`/api/games/${gameId}/ai`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ difficulty: 'heuristic' });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('aiPlayerId');
+      expect(typeof response.body.aiPlayerId).toBe('string');
+    });
+
+    it('AI player shows up in game listing after add', async () => {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      const joinRes = await request(app)
+        .post(`/api/games/${gameId}/join`)
+        .send({ playerName: 'Ragnar' });
+      const token = joinRes.body.sessionToken;
+
+      await request(app)
+        .post(`/api/games/${gameId}/ai`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ difficulty: 'random' });
+
+      const listRes = await request(app).get('/api/games');
+      const game = listRes.body.games.find((g: { gameId: string }) => g.gameId === gameId);
+
+      expect(game.playerCount).toBe(2);
+      expect(game.players).toHaveLength(2);
+      // AI player has a Norse name
+      expect(game.players[1].name).toBeTruthy();
+    });
+
+    it('returns 400 for invalid difficulty', async () => {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      const joinRes = await request(app)
+        .post(`/api/games/${gameId}/join`)
+        .send({ playerName: 'Ragnar' });
+      const token = joinRes.body.sessionToken;
+
+      const response = await request(app)
+        .post(`/api/games/${gameId}/ai`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ difficulty: 'impossible' });
+
+      expect(response.status).toBe(400);
+    });
+
+    it('returns error when game is full', async () => {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      const join1 = await request(app).post(`/api/games/${gameId}/join`).send({ playerName: 'P1' });
+      const token = join1.body.sessionToken;
+
+      await request(app).post(`/api/games/${gameId}/join`).send({ playerName: 'P2' });
+
+      const response = await request(app)
+        .post(`/api/games/${gameId}/ai`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ difficulty: 'heuristic' });
+
+      expect(response.status).toBe(500);
+    });
+
+    it('returns error when game already started', async () => {
+      const createRes = await request(app).post('/api/games').send({});
+      const gameId = createRes.body.gameId;
+
+      const join1 = await request(app)
+        .post(`/api/games/${gameId}/join`)
+        .send({ playerName: 'Host' });
+      const hostToken = join1.body.sessionToken;
+      const hostPlayerId = join1.body.playerId;
+
+      await request(app).post(`/api/games/${gameId}/join`).send({ playerName: 'Guest' });
+
+      // Start the game
+      manager.start(gameId, hostPlayerId);
+
+      const response = await request(app)
+        .post(`/api/games/${gameId}/ai`)
+        .set('Authorization', `Bearer ${hostToken}`)
+        .send({ difficulty: 'heuristic' });
+
+      expect(response.status).toBe(500);
     });
   });
 
