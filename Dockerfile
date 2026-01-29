@@ -53,12 +53,14 @@ COPY --from=build /app/tsconfig.base.json ./
 COPY --from=build /app/packages/shared/tsconfig.json packages/shared/
 COPY --from=build /app/packages/server/tsconfig.json packages/server/
 
-# Copy server migrations
+# Copy server migrations and startup script
 COPY --from=build /app/packages/server/migrations packages/server/migrations
+COPY packages/server/start.sh /app/packages/server/start.sh
+RUN chmod +x /app/packages/server/start.sh
 
-EXPOSE 3000
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-8080}/health || exit 1
 
-CMD ["pnpm", "--filter", "@jarls/server", "exec", "tsx", "dist/index.js"]
+CMD ["sh", "packages/server/start.sh"]
