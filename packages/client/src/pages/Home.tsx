@@ -45,9 +45,7 @@ export default function Home() {
         <Link to="/lobby/games" style={secondaryButtonStyle}>
           <span style={buttonIconStyle}>🛡</span>
           Browse Games
-          {stats && stats.openLobbies > 0 && (
-            <span style={badgeStyle}>{stats.openLobbies}</span>
-          )}
+          {stats && stats.openLobbies > 0 && <span style={badgeStyle}>{stats.openLobbies}</span>}
         </Link>
       </div>
 
@@ -56,15 +54,15 @@ export default function Home() {
         <h3 style={statsHeaderStyle}>Live Activity</h3>
         <div style={statsGridStyle}>
           <div style={statCardStyle}>
-            <span style={statValueStyle}>{loading ? '...' : stats?.openLobbies ?? 0}</span>
+            <span style={statValueStyle}>{loading ? '...' : (stats?.openLobbies ?? 0)}</span>
             <span style={statLabelStyle}>Open Lobbies</span>
           </div>
           <div style={statCardStyle}>
-            <span style={statValueStyle}>{loading ? '...' : stats?.gamesInProgress ?? 0}</span>
+            <span style={statValueStyle}>{loading ? '...' : (stats?.gamesInProgress ?? 0)}</span>
             <span style={statLabelStyle}>In Progress</span>
           </div>
           <div style={statCardStyle}>
-            <span style={statValueStyle}>{loading ? '...' : stats?.totalGames ?? 0}</span>
+            <span style={statValueStyle}>{loading ? '...' : (stats?.totalGames ?? 0)}</span>
             <span style={statLabelStyle}>Total Games</span>
           </div>
         </div>
@@ -73,10 +71,19 @@ export default function Home() {
       {/* Game Description */}
       <div style={descriptionStyle}>
         <p>
-          Command your Jarl and warriors on a hexagonal battlefield.
-          Push enemies off the edge or capture the throne to claim victory.
+          Command your Jarl and warriors on a hexagonal battlefield. Push enemies off the edge or
+          capture the throne to claim victory.
         </p>
       </div>
+
+      {/* Powered by Groq Badge */}
+      <a href="https://groq.com" target="_blank" rel="noopener noreferrer" style={groqBadgeStyle}>
+        <img
+          src="https://console.groq.com/powered-by-groq-dark.svg"
+          alt="Powered by Groq for fast inference."
+          style={groqBadgeImgStyle}
+        />
+      </a>
     </div>
   );
 }
@@ -109,7 +116,8 @@ const titleStyle: React.CSSProperties = {
 };
 
 const titleGradientStyle: React.CSSProperties = {
-  background: 'linear-gradient(135deg, #ffd700 0%, #ff8c00 25%, #ffd700 50%, #ffa500 75%, #ffd700 100%)',
+  background:
+    'linear-gradient(135deg, #ffd700 0%, #ff8c00 25%, #ffd700 50%, #ffa500 75%, #ffd700 100%)',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
   backgroundClip: 'text',
@@ -243,4 +251,14 @@ const descriptionStyle: React.CSSProperties = {
   fontSize: '0.9rem',
   lineHeight: '1.6',
   padding: '0 20px',
+};
+
+const groqBadgeStyle: React.CSSProperties = {
+  marginTop: '8px',
+  opacity: 0.7,
+  transition: 'opacity 0.2s',
+};
+
+const groqBadgeImgStyle: React.CSSProperties = {
+  height: '32px',
 };

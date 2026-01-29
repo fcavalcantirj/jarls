@@ -156,6 +156,20 @@ export default function CreateGameForm() {
               <option value="groq">Smart (Groq LLM)</option>
               <option value="random">Random</option>
             </select>
+            {aiDifficulty === 'groq' && (
+              <a
+                href="https://groq.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ marginTop: '8px', alignSelf: 'center' }}
+              >
+                <img
+                  src="https://console.groq.com/powered-by-groq-dark.svg"
+                  alt="Powered by Groq for fast inference."
+                  style={{ height: '24px' }}
+                />
+              </a>
+            )}
           </label>
         )}
 
