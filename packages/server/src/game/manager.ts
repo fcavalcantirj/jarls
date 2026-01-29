@@ -9,6 +9,7 @@ import { RandomAI } from '../ai/random';
 import { HeuristicAI } from '../ai/heuristic-ai';
 import { GroqAI } from '../ai/groq-ai';
 import { generateNorseName } from '../ai/names';
+import { ConfigurationError } from '../errors/index';
 
 /**
  * Validate game state integrity - check for corrupted state like duplicate positions.
@@ -706,7 +707,7 @@ export class GameManager {
     if (difficulty === 'groq') {
       const apiKey = process.env.GROQ_API_KEY;
       if (!apiKey) {
-        throw new Error('GROQ_API_KEY environment variable not set');
+        throw new ConfigurationError('Groq AI is not available - GROQ_API_KEY not configured');
       }
       ai = new GroqAI(apiKey);
     } else if (difficulty === 'heuristic') {

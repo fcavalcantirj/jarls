@@ -43,3 +43,10 @@ export class ValidationError extends GameError {
     this.name = 'ValidationError';
   }
 }
+
+export class ConfigurationError extends GameError {
+  constructor(message: string) {
+    super('CONFIGURATION_ERROR', message, 503);
+    this.name = 'ConfigurationError';
+  }
+}

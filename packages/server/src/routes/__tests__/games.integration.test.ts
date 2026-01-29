@@ -581,6 +581,36 @@ describe('REST API integration tests', () => {
 
       expect(response.status).toBe(500);
     });
+
+    it('returns proper error when GROQ_API_KEY not set for groq difficulty', async () => {
+      // Save original env
+      const originalKey = process.env.GROQ_API_KEY;
+      delete process.env.GROQ_API_KEY;
+
+      try {
+        const createRes = await request(app).post('/api/games').send({});
+        const gameId = createRes.body.gameId;
+
+        const joinRes = await request(app)
+          .post(`/api/games/${gameId}/join`)
+          .send({ playerName: 'Ragnar' });
+        const token = joinRes.body.sessionToken;
+
+        const response = await request(app)
+          .post(`/api/games/${gameId}/ai`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ difficulty: 'groq' });
+
+        expect(response.status).toBe(503);
+        expect(response.body.error).toBe('CONFIGURATION_ERROR');
+        expect(response.body.message).toContain('Groq AI is not available');
+      } finally {
+        // Restore env
+        if (originalKey) {
+          process.env.GROQ_API_KEY = originalKey;
+        }
+      }
+    });
   });
 
   // ── Full game lifecycle ───────────────────────────────────────
