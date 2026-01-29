@@ -70,9 +70,10 @@ describe('resolveCompression', () => {
       // No pieces should be eliminated
       expect(result.newState.pieces).toHaveLength(3);
 
-      // Attacker should move to defender's original position
+      // When defender can't move (no room for compression), attacker stays at attackerFrom
+      // This prevents the duplicate positions bug
       const attackerInNewState = result.newState.pieces.find((p) => p.id === 'attacker');
-      expect(attackerInNewState?.position).toEqual({ q: 1, r: 0 });
+      expect(attackerInNewState?.position).toEqual({ q: -1, r: 0 }); // Stays at attackerFrom
 
       // Defender cannot move (blocked by shield at q=2)
       const defenderInNewState = result.newState.pieces.find((p) => p.id === 'defender');
@@ -226,13 +227,14 @@ describe('resolveCompression', () => {
       // No pieces eliminated
       expect(result.newState.pieces).toHaveLength(2);
 
-      // Attacker takes defender's position
+      // When defender can't move (adjacent to throne), attacker stays at attackerFrom
+      // This prevents duplicate positions bug
       const attackerInNewState = result.newState.pieces.find((p) => p.id === 'attacker');
-      expect(attackerInNewState?.position).toEqual({ q: 1, r: 0 });
+      expect(attackerInNewState?.position).toEqual({ q: 3, r: 0 }); // Stays at attackerFrom
 
-      // Defender cannot enter throne, stays put (but attacker took its position...)
-      // In reality, compression means the push "fails" to move pieces but attacker still advances
-      // Actually, I need to reconsider the compression semantics here.
+      // Defender cannot enter throne, stays put
+      const defenderInNewState = result.newState.pieces.find((p) => p.id === 'defender');
+      expect(defenderInNewState?.position).toEqual({ q: 1, r: 0 });
     });
 
     it('should compress a Jarl against the throne (Jarl cannot be pushed onto throne)', () => {
@@ -356,7 +358,8 @@ describe('resolveCompression', () => {
       if (moveEvent?.type === 'MOVE') {
         expect(moveEvent.pieceId).toBe('attacker');
         expect(moveEvent.from).toEqual({ q: -1, r: 0 });
-        expect(moveEvent.to).toEqual({ q: 1, r: 0 });
+        // When defender can't move (no room), attacker stays at attackerFrom
+        expect(moveEvent.to).toEqual({ q: -1, r: 0 });
         expect(moveEvent.hasMomentum).toBe(true);
       }
     });

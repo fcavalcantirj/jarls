@@ -135,9 +135,9 @@ describe('resolvePush', () => {
       expect(result.eliminatedPieceIds).toHaveLength(0);
       expect(result.newState.pieces).toHaveLength(3);
 
-      // Attacker should take defender's original position
+      // When defender can't move (blocked by shield), attacker stays at attackerFrom
       const attackerInNewState = result.newState.pieces.find((p) => p.id === 'attacker');
-      expect(attackerInNewState?.position).toEqual({ q: 0, r: 0 });
+      expect(attackerInNewState?.position).toEqual({ q: -2, r: 0 }); // Stays at attackerFrom
     });
 
     it('should route to resolveCompression when chain terminates at throne', () => {
@@ -168,9 +168,10 @@ describe('resolvePush', () => {
       // Verify compression behavior: no eliminations
       expect(result.eliminatedPieceIds).toHaveLength(0);
 
-      // Attacker should take defender's original position
+      // When defender can't move (no room for compression - adjacent to throne),
+      // attacker stays at attackerFrom to prevent duplicate positions bug
       const attackerInNewState = result.newState.pieces.find((p) => p.id === 'attacker');
-      expect(attackerInNewState?.position).toEqual({ q: 1, r: 0 });
+      expect(attackerInNewState?.position).toEqual({ q: 3, r: 0 }); // Stays at attackerFrom
     });
   });
 

@@ -159,9 +159,9 @@ describe('resolveCompression - edge cases and scenarios', () => {
         chain
       );
 
-      // Attacker moves to defender's position
+      // When defender can't move, attacker stays at attackerFrom
       const attackerInNewState = result.newState.pieces.find((p) => p.id === 'attacker');
-      expect(attackerInNewState?.position).toEqual({ q: 0, r: 0 });
+      expect(attackerInNewState?.position).toEqual({ q: 2, r: 0 }); // Stays at attackerFrom
     });
 
     it('should work when compressing West against throne', () => {
@@ -197,9 +197,9 @@ describe('resolveCompression - edge cases and scenarios', () => {
         chain
       );
 
-      // Attacker moves to defender's position
+      // When defender can't move, attacker stays at attackerFrom
       const attackerInNewState = result.newState.pieces.find((p) => p.id === 'attacker');
-      expect(attackerInNewState?.position).toEqual({ q: 1, r: 0 });
+      expect(attackerInNewState?.position).toEqual({ q: 3, r: 0 }); // Stays at attackerFrom
 
       // Defender cannot enter throne, so no PUSH event
       const pushEvents = result.events.filter((e) => e.type === 'PUSH');
@@ -244,8 +244,9 @@ describe('resolveCompression - edge cases and scenarios', () => {
         chain
       );
 
+      // When defender can't move, attacker stays at attackerFrom
       const attackerInNewState = result.newState.pieces.find((p) => p.id === 'attacker');
-      expect(attackerInNewState?.position).toEqual({ q: 0, r: 0 });
+      expect(attackerInNewState?.position).toEqual({ q: 0, r: -2 });
     });
   });
 
@@ -345,8 +346,9 @@ describe('resolveCompression - edge cases and scenarios', () => {
       // Verify result
       expect(result.newState.pieces).toHaveLength(3);
 
+      // When defender can't move, attacker stays at attackerFrom
       const jarlInNewState = result.newState.pieces.find((p) => p.id === 'jarl-p1');
-      expect(jarlInNewState?.position).toEqual({ q: 0, r: 0 });
+      expect(jarlInNewState?.position).toEqual({ q: -2, r: 0 });
 
       // Events should include MOVE for Jarl
       const moveEvent = result.events.find((e) => e.type === 'MOVE');

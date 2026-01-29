@@ -399,18 +399,11 @@ export function resolveCompression(
     }
   }
 
-  // Create MOVE event for attacker (placed first for proper event ordering)
-  const moveEvent: MoveEvent = {
-    type: 'MOVE',
-    pieceId: attacker.id,
-    from: attackerFrom,
-    to: defenderPosition,
-    hasMomentum,
-  };
-  events.push(moveEvent);
-
   // New positions for chain pieces - each shifts one toward blocker
   const newPositions = new Map<string, AxialCoord>();
+
+  // Track if the defender (first piece) moved - only then can attacker take their spot
+  let defenderMoved = false;
 
   // For each piece in the chain, move it one position in push direction
   for (let i = 0; i < chain.pieces.length; i++) {
@@ -431,6 +424,11 @@ export function resolveCompression(
       // Piece moves to new position
       newPositions.set(piece.id, newPos);
 
+      // Track if the first piece (defender) moved
+      if (i === 0) {
+        defenderMoved = true;
+      }
+
       // Create PUSH event
       const pushEvent: PushEvent = {
         type: 'PUSH',
@@ -444,8 +442,23 @@ export function resolveCompression(
     }
   }
 
-  // Attacker moves to defender's original position
-  newPositions.set(attacker.id, defenderPosition);
+  // Determine attacker's final position
+  // Attacker only moves to defender's position if defender actually moved (made room)
+  // If defender couldn't move (adjacent to blocker), attacker stays at attackerFrom
+  const attackerDestination = defenderMoved ? defenderPosition : attackerFrom;
+
+  // Always set attacker position explicitly to ensure consistency
+  newPositions.set(attacker.id, attackerDestination);
+
+  // Create MOVE event for attacker (insert at beginning for proper event ordering)
+  const moveEvent: MoveEvent = {
+    type: 'MOVE',
+    pieceId: attacker.id,
+    from: attackerFrom,
+    to: attackerDestination,
+    hasMomentum,
+  };
+  events.unshift(moveEvent);
 
   // Create the new pieces array with updated positions
   const newPieces = state.pieces.map((piece) => {
