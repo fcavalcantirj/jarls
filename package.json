@@ -23,7 +23,7 @@
     "db:rollback": "pnpm --filter @jarls/server db:rollback",
     "db:create-migration": "pnpm --filter @jarls/server db:create-migration",
     "test:e2e": "npx playwright test",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
