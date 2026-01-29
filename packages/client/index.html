@@ -5,13 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Jarls</title>
     <style>
+      :root {
+        --padding-page: 20px;
+        --font-size-base: 14px;
+      }
+
+      @media (max-width: 480px) {
+        :root {
+          --padding-page: 12px;
+          --font-size-base: 13px;
+        }
+      }
+
       * { box-sizing: border-box; }
       html, body, #root {
         margin: 0;
         padding: 0;
         height: 100%;
         background: #0d1117;
+        overflow: hidden;
       }
+
+      img { max-width: 100%; height: auto; }
     </style>
   </head>
   <body>

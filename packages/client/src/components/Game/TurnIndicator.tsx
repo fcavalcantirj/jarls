@@ -12,20 +12,20 @@ export default function TurnIndicator() {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
-        padding: '8px 16px',
-        borderRadius: '8px',
+        gap: '6px',
+        padding: '6px 12px',
+        borderRadius: '6px',
         backgroundColor: '#1a1a2e',
         border: `2px solid ${currentPlayer.color}`,
         color: '#e0e0e0',
         fontFamily: 'monospace',
-        fontSize: '14px',
+        fontSize: '13px',
       }}
     >
       <span
         style={{
-          width: '12px',
-          height: '12px',
+          width: '10px',
+          height: '10px',
           borderRadius: '50%',
           backgroundColor: currentPlayer.color,
           display: 'inline-block',

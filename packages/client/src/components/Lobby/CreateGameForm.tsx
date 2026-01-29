@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../../store/gameStore';
 import type { GroqModel, GroqDifficulty, AIConfig } from '@jarls/shared';
-import { GROQ_MODEL_NAMES, DEFAULT_GROQ_MODEL } from '@jarls/shared';
+import { GROQ_MODEL_NAMES, DEFAULT_GROQ_MODEL, DIFFICULTY_PROMPTS } from '@jarls/shared';
 
 type OpponentType = 'human' | 'ai';
 type AIType = 'local' | 'groq';
@@ -133,6 +133,12 @@ export default function CreateGameForm() {
 
   const isValid = playerName.trim().length > 0;
 
+  // Get the default prompt for the current difficulty to show in the textarea
+  const defaultPrompt = useMemo(() => DIFFICULTY_PROMPTS[groqDifficulty], [groqDifficulty]);
+
+  // Whether to show the Groq badge (when Groq AI is selected)
+  const showGroqBadge = opponentType === 'ai' && aiType === 'groq';
+
   return (
     <div style={containerStyle}>
       <h2 style={titleStyle}>Create Game</h2>
@@ -240,32 +246,30 @@ export default function CreateGameForm() {
                 {/* Custom Prompt Textarea */}
                 {showPromptEditor && (
                   <label style={labelStyle}>
-                    Custom Prompt (optional)
+                    Custom Prompt
                     <textarea
-                      value={customPrompt}
+                      value={customPrompt || defaultPrompt}
                       onChange={(e) => setCustomPrompt(e.target.value)}
-                      placeholder="Leave empty to use the default prompt for the selected difficulty..."
                       style={textareaStyle}
-                      rows={6}
+                      rows={8}
                       maxLength={5000}
                     />
-                    <span style={charCountStyle}>{customPrompt.length}/5000 characters</span>
+                    <div style={promptFooterStyle}>
+                      {customPrompt && (
+                        <button
+                          type="button"
+                          onClick={() => setCustomPrompt('')}
+                          style={resetPromptButtonStyle}
+                        >
+                          Reset to default
+                        </button>
+                      )}
+                      <span style={charCountStyle}>
+                        {(customPrompt || defaultPrompt).length}/5000
+                      </span>
+                    </div>
                   </label>
                 )}
-
-                {/* Powered by Groq badge */}
-                <a
-                  href="https://groq.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ alignSelf: 'center', marginTop: '4px' }}
-                >
-                  <img
-                    src="https://console.groq.com/powered-by-groq-dark.svg"
-                    alt="Powered by Groq for fast inference."
-                    style={{ height: '24px' }}
-                  />
-                </a>
               </>
             )}
           </>
@@ -312,6 +316,22 @@ export default function CreateGameForm() {
         >
           {submitting ? 'Creating...' : 'Create Game'}
         </button>
+
+        {/* Powered by Groq badge - shown at bottom when Groq is selected */}
+        {showGroqBadge && (
+          <a
+            href="https://groq.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ alignSelf: 'center', marginTop: '8px' }}
+          >
+            <img
+              src="https://console.groq.com/powered-by-groq-dark.svg"
+              alt="Powered by Groq for fast inference."
+              style={{ height: '24px', maxWidth: '100%' }}
+            />
+          </a>
+        )}
       </form>
     </div>
   );
@@ -323,9 +343,10 @@ const containerStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '32px 16px',
+  padding: '24px 16px',
   fontFamily: 'monospace',
   color: '#e0e0e0',
+  overflow: 'auto',
 };
 
 const titleStyle: React.CSSProperties = {
@@ -337,7 +358,7 @@ const titleStyle: React.CSSProperties = {
 const formStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
-  gap: '20px',
+  gap: '16px',
   width: '100%',
   maxWidth: '360px',
 };
@@ -388,7 +409,24 @@ const textareaStyle: React.CSSProperties = {
 const charCountStyle: React.CSSProperties = {
   fontSize: '11px',
   color: '#666',
-  alignSelf: 'flex-end',
+};
+
+const promptFooterStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginTop: '4px',
+};
+
+const resetPromptButtonStyle: React.CSSProperties = {
+  padding: '4px 8px',
+  borderRadius: '4px',
+  border: '1px solid #555',
+  backgroundColor: 'transparent',
+  color: '#888',
+  fontFamily: 'monospace',
+  fontSize: '11px',
+  cursor: 'pointer',
 };
 
 const radioGroupStyle: React.CSSProperties = {

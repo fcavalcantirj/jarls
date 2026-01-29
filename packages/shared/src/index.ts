@@ -147,3 +147,13 @@ export {
   resolveStarvation,
   incrementJarlGracePeriods,
 } from './starvation.js';
+
+// Re-export AI prompts
+export {
+  GAME_RULES,
+  BEGINNER_PROMPT,
+  INTERMEDIATE_PROMPT,
+  HARD_PROMPT,
+  DIFFICULTY_PROMPTS,
+  getSystemPromptForDifficulty,
+} from './prompts.js';

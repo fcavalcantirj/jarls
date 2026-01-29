@@ -95,21 +95,21 @@ const containerStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '40px 20px',
+  justifyContent: 'center',
+  padding: 'var(--padding-page)',
   background: 'linear-gradient(180deg, #0d1117 0%, #161b22 50%, #0d1117 100%)',
   color: '#e0e0e0',
   fontFamily: 'monospace',
-  gap: '32px',
-  overflowY: 'auto',
+  gap: '16px',
+  overflow: 'hidden',
 };
 
 const heroStyle: React.CSSProperties = {
   textAlign: 'center',
-  marginBottom: '8px',
 };
 
 const titleStyle: React.CSSProperties = {
-  fontSize: '4rem',
+  fontSize: 'clamp(2rem, 8vw, 4rem)',
   margin: 0,
   letterSpacing: '0.2em',
   textShadow: '0 0 40px rgba(255, 215, 0, 0.3)',
@@ -197,15 +197,15 @@ const badgeStyle: React.CSSProperties = {
 const statsContainerStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '400px',
-  padding: '20px',
+  padding: '12px 16px',
   background: 'rgba(22, 27, 34, 0.8)',
   borderRadius: '12px',
   border: '1px solid #30363d',
 };
 
 const statsHeaderStyle: React.CSSProperties = {
-  margin: '0 0 16px 0',
-  fontSize: '0.9rem',
+  margin: '0 0 8px 0',
+  fontSize: '0.8rem',
   color: '#8b949e',
   textTransform: 'uppercase',
   letterSpacing: '0.1em',
@@ -222,14 +222,14 @@ const statCardStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '12px 8px',
+  padding: '8px 4px',
   background: 'rgba(13, 17, 23, 0.6)',
   borderRadius: '8px',
   border: '1px solid #21262d',
 };
 
 const statValueStyle: React.CSSProperties = {
-  fontSize: '1.8rem',
+  fontSize: 'clamp(1.2rem, 4vw, 1.8rem)',
   fontWeight: 'bold',
   background: 'linear-gradient(135deg, #58a6ff 0%, #1f6feb 100%)',
   WebkitBackgroundClip: 'text',
@@ -248,17 +248,18 @@ const descriptionStyle: React.CSSProperties = {
   maxWidth: '400px',
   textAlign: 'center',
   color: '#8b949e',
-  fontSize: '0.9rem',
-  lineHeight: '1.6',
-  padding: '0 20px',
+  fontSize: 'clamp(0.75rem, 2.5vw, 0.9rem)',
+  lineHeight: '1.5',
+  padding: '0 var(--padding-page)',
 };
 
 const groqBadgeStyle: React.CSSProperties = {
-  marginTop: '8px',
+  marginTop: '4px',
   opacity: 0.7,
   transition: 'opacity 0.2s',
 };
 
 const groqBadgeImgStyle: React.CSSProperties = {
   height: '32px',
+  maxWidth: '100%',
 };

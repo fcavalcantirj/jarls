@@ -97,31 +97,32 @@ const PlayerRow: React.FC<PlayerRowProps> = ({ player, warriors, jarlAlive, isCu
 
 const containerStyle: React.CSSProperties = {
   background: '#1a1a2e',
-  borderRadius: '8px',
-  padding: '12px',
+  borderRadius: '6px',
+  padding: '8px',
   fontFamily: 'monospace',
+  fontSize: '12px',
 };
 
 const headerStyle: React.CSSProperties = {
   color: '#888',
-  fontSize: '11px',
+  fontSize: '10px',
   textTransform: 'uppercase',
   letterSpacing: '1px',
-  marginBottom: '8px',
+  marginBottom: '6px',
 };
 
 const rowStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '6px 8px',
+  padding: '4px 6px',
   borderRadius: '4px',
-  marginBottom: '4px',
+  marginBottom: '2px',
 };
 
 const statsStyle: React.CSSProperties = {
   display: 'flex',
-  gap: '8px',
+  gap: '6px',
   alignItems: 'center',
 };
 
