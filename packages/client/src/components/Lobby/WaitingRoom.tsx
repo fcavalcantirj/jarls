@@ -16,6 +16,7 @@ export default function WaitingRoom({ gameId }: WaitingRoomProps) {
   const connectionStatus = useGameStore((s) => s.connectionStatus);
 
   const setGameState = useGameStore((s) => s.setGameState);
+  const setPlayer = useGameStore((s) => s.setPlayer);
 
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +41,10 @@ export default function WaitingRoom({ gameId }: WaitingRoomProps) {
     socket.emit('joinGame', { gameId, sessionToken }, (response) => {
       if (response.success) {
         setJoined(true);
-        // Store the game state returned from server
+        // Store player ID and game state from server response
+        if (response.playerId) {
+          setPlayer(response.playerId);
+        }
         if (response.gameState) {
           setGameState(response.gameState);
         }
@@ -48,7 +52,7 @@ export default function WaitingRoom({ gameId }: WaitingRoomProps) {
         setError(response.error ?? 'Failed to join game room');
       }
     });
-  }, [socket, sessionToken, gameId, joined, connectionStatus]);
+  }, [socket, sessionToken, gameId, joined, connectionStatus, setPlayer, setGameState]);
 
   // Navigate to game page when the game starts (phase changes from lobby)
   useEffect(() => {
