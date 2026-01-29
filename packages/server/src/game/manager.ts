@@ -1,10 +1,17 @@
 import { createActor, type Actor, type Subscription } from 'xstate';
 import { gameMachine } from './machine';
 import type { GameMachineContext, GameMachineInput } from './types';
-import type { GameConfig, GameState, MoveCommand, MoveResult, Piece } from '@jarls/shared';
+import type {
+  GameConfig,
+  GameState,
+  MoveCommand,
+  MoveResult,
+  Piece,
+  AIConfig,
+} from '@jarls/shared';
 import { generateId, applyMove } from '@jarls/shared';
 import { saveSnapshot, saveEvent, loadActiveSnapshots } from './persistence';
-import type { AIPlayer, AIDifficulty } from '../ai/types';
+import type { AIPlayer, AIDifficulty, ConfigurableAIPlayer } from '../ai/types';
 import { RandomAI } from '../ai/random';
 import { HeuristicAI } from '../ai/heuristic-ai';
 import { GroqAI } from '../ai/groq-ai';
@@ -727,12 +734,123 @@ export class GameManager {
   }
 
   /**
+   * Add an AI player to a game with full configuration.
+   * Creates an AI instance based on config, joins the game with a Norse name,
+   * and tracks the AI player for automatic move generation.
+   * Returns the generated player ID for the AI.
+   */
+  addAIPlayerWithConfig(gameId: string, config: AIConfig): string {
+    const managed = this.games.get(gameId);
+    if (!managed) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+
+    const snapshot = managed.actor.getSnapshot();
+    const stateName = getStateName(snapshot.value);
+    if (stateName !== 'lobby') {
+      throw new Error(`Cannot add AI player in state: ${stateName}`);
+    }
+
+    const context = snapshot.context as GameMachineContext;
+    if (context.players.length >= context.config.playerCount) {
+      throw new Error('Game is full');
+    }
+
+    // Create AI instance based on config
+    let ai: AIPlayer;
+    if (config.type === 'groq') {
+      const apiKey = process.env.GROQ_API_KEY;
+      if (!apiKey) {
+        throw new ConfigurationError('Groq AI is not available - GROQ_API_KEY not configured');
+      }
+      ai = new GroqAI(apiKey, config);
+    } else {
+      // Local AI uses heuristic
+      ai = new HeuristicAI(500, 1500);
+    }
+
+    // Join as a player with a Norse name
+    const playerName = generateNorseName();
+    const playerId = this.join(gameId, playerName);
+
+    // Track the AI player
+    managed.aiPlayers.push({ playerId, ai });
+
+    return playerId;
+  }
+
+  /**
+   * Update the AI configuration for an AI player mid-game.
+   * Only works for Groq AI players that implement ConfigurableAIPlayer.
+   * Returns the updated configuration.
+   */
+  updateAIConfig(gameId: string, playerId: string, config: Partial<AIConfig>): AIConfig {
+    const managed = this.games.get(gameId);
+    if (!managed) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+
+    const aiPlayer = managed.aiPlayers.find((ap) => ap.playerId === playerId);
+    if (!aiPlayer) {
+      throw new Error(`No AI player found with ID: ${playerId}`);
+    }
+
+    // Check if the AI supports configuration updates
+    if (!this.isConfigurableAI(aiPlayer.ai)) {
+      throw new Error('This AI type does not support configuration updates');
+    }
+
+    // Update the configuration
+    aiPlayer.ai.updateConfig(config);
+
+    return aiPlayer.ai.getConfig();
+  }
+
+  /**
+   * Get the current AI configuration for an AI player.
+   */
+  getAIConfig(gameId: string, playerId: string): AIConfig | null {
+    const managed = this.games.get(gameId);
+    if (!managed) return null;
+
+    const aiPlayer = managed.aiPlayers.find((ap) => ap.playerId === playerId);
+    if (!aiPlayer) return null;
+
+    if (this.isConfigurableAI(aiPlayer.ai)) {
+      return aiPlayer.ai.getConfig();
+    }
+
+    // For non-configurable AI, return a default config
+    return {
+      type: 'local',
+      difficulty: 'intermediate',
+    };
+  }
+
+  /**
+   * Check if an AI player implements ConfigurableAIPlayer interface.
+   */
+  private isConfigurableAI(ai: AIPlayer): ai is ConfigurableAIPlayer {
+    return 'getConfig' in ai && 'updateConfig' in ai;
+  }
+
+  /**
    * Check if a player is an AI player in the given game.
    */
   isAIPlayer(gameId: string, playerId: string): boolean {
     const managed = this.games.get(gameId);
     if (!managed) return false;
     return managed.aiPlayers.some((ap) => ap.playerId === playerId);
+  }
+
+  /**
+   * Get the AI player ID for a game, if any.
+   * Returns the first AI player found, or null if none.
+   */
+  getAIPlayerId(gameId: string): string | null {
+    const managed = this.games.get(gameId);
+    if (!managed || managed.aiPlayers.length === 0) return null;
+    return managed.aiPlayers[0].playerId;
   }
 
   /**

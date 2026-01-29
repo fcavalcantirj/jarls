@@ -15,6 +15,20 @@ const addAISchema = z.object({
   difficulty: z.enum(['random', 'heuristic', 'groq']),
 });
 
+// Schema for the new AI configuration endpoints
+const addAIWithConfigSchema = z.object({
+  type: z.enum(['local', 'groq']),
+  model: z.enum(['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'gemma2-9b-it']).optional(),
+  difficulty: z.enum(['beginner', 'intermediate', 'hard']),
+  customPrompt: z.string().max(5000).optional(),
+});
+
+const updateAIConfigSchema = z.object({
+  model: z.enum(['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'gemma2-9b-it']).optional(),
+  difficulty: z.enum(['beginner', 'intermediate', 'hard']).optional(),
+  customPrompt: z.string().max(5000).optional(),
+});
+
 const createGameSchema = z.object({
   playerCount: z.number().int().min(2).max(6).optional().default(2),
   turnTimerMs: z
@@ -163,26 +177,100 @@ export function createGameRoutes(manager: GameManager): Router {
   /**
    * POST /api/games/:id/ai
    * Add an AI player to the game. Requires auth.
+   * Supports both legacy format (difficulty only) and new format (full config).
    */
   router.post('/:id/ai', authenticateSession, (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = req.params.id as string;
-
-      const parsed = addAISchema.safeParse(req.body);
-      if (!parsed.success) {
-        throw new ValidationError(parsed.error.issues.map((i) => i.message).join(', '));
-      }
-
-      const { difficulty } = parsed.data;
 
       const snapshot = manager.getState(id);
       if (!snapshot) {
         throw new GameNotFoundError(id);
       }
 
+      // Try new config format first
+      const configParsed = addAIWithConfigSchema.safeParse(req.body);
+      if (configParsed.success) {
+        const aiPlayerId = manager.addAIPlayerWithConfig(id, configParsed.data);
+        const aiConfig = manager.getAIConfig(id, aiPlayerId);
+        res.json({ aiPlayerId, aiConfig });
+        return;
+      }
+
+      // Fall back to legacy format
+      const legacyParsed = addAISchema.safeParse(req.body);
+      if (!legacyParsed.success) {
+        throw new ValidationError(legacyParsed.error.issues.map((i) => i.message).join(', '));
+      }
+
+      const { difficulty } = legacyParsed.data;
       const aiPlayerId = manager.addAIPlayer(id, difficulty);
 
       res.json({ aiPlayerId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  /**
+   * PATCH /api/games/:id/ai
+   * Update AI configuration mid-game. Requires auth.
+   */
+  router.patch(
+    '/:id/ai',
+    authenticateSession,
+    (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const id = req.params.id as string;
+
+        const parsed = updateAIConfigSchema.safeParse(req.body);
+        if (!parsed.success) {
+          throw new ValidationError(parsed.error.issues.map((i) => i.message).join(', '));
+        }
+
+        const snapshot = manager.getState(id);
+        if (!snapshot) {
+          throw new GameNotFoundError(id);
+        }
+
+        // Find the AI player in the game
+        const aiPlayerId = manager.getAIPlayerId(id);
+        if (!aiPlayerId) {
+          throw new ValidationError('No AI player in this game');
+        }
+
+        // Update the AI configuration
+        const config = manager.updateAIConfig(id, aiPlayerId, parsed.data);
+
+        res.json({ config });
+      } catch (err) {
+        next(err);
+      }
+    }
+  );
+
+  /**
+   * GET /api/games/:id/ai
+   * Get current AI configuration. Requires auth.
+   */
+  router.get('/:id/ai', authenticateSession, (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+
+      const snapshot = manager.getState(id);
+      if (!snapshot) {
+        throw new GameNotFoundError(id);
+      }
+
+      // Find the AI player in the game
+      const aiPlayerId = manager.getAIPlayerId(id);
+      if (!aiPlayerId) {
+        throw new ValidationError('No AI player in this game');
+      }
+
+      const config = manager.getAIConfig(id, aiPlayerId);
+
+      res.json({ aiPlayerId, config });
     } catch (err) {
       next(err);
     }

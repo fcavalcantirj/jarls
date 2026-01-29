@@ -4,38 +4,64 @@ import type {
   StarvationCandidates,
   StarvationChoice,
   AxialCoord,
+  GroqModel,
+  AIConfig,
 } from '@jarls/shared';
+import { DEFAULT_GROQ_MODEL } from '@jarls/shared';
 import { getValidMoves } from '@jarls/shared';
-import type { AIPlayer } from './types.js';
+import type { AIPlayer, ConfigurableAIPlayer } from './types.js';
+import { getSystemPromptForDifficulty, buildUserPrompt } from './prompts.js';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-/** Available Groq models optimized for game AI */
-export type GroqModel =
-  | 'llama-3.1-8b-instant' // Fast, cheap - default
-  | 'openai/gpt-oss-20b' // Fastest (1000 t/s)
-  | 'meta-llama/llama-4-scout-17b-16e-instruct' // Smart, preview
-  | 'llama-3.3-70b-versatile'; // Most capable
-
 /**
  * AI player powered by Groq's fast LLM inference.
+ * Uses rules-based prompts that vary by difficulty level.
  * Falls back to random moves if API fails or rate limited.
  */
-export class GroqAI implements AIPlayer {
+export class GroqAI implements AIPlayer, ConfigurableAIPlayer {
   readonly difficulty = 'groq' as const;
-  readonly model: GroqModel;
 
   private readonly apiKey: string;
+  private config: AIConfig;
   maxRetries = 3;
   private retryDelayMs = 1000;
 
-  constructor(apiKey: string, model: GroqModel = 'llama-3.1-8b-instant') {
+  constructor(apiKey: string, config?: Partial<AIConfig>) {
     this.apiKey = apiKey;
-    this.model = model;
+    this.config = {
+      type: 'groq',
+      model: config?.model ?? DEFAULT_GROQ_MODEL,
+      difficulty: config?.difficulty ?? 'intermediate',
+      customPrompt: config?.customPrompt,
+    };
+  }
+
+  /** Get the current model */
+  get model(): GroqModel {
+    return this.config.model ?? DEFAULT_GROQ_MODEL;
+  }
+
+  /** Get the current AI configuration */
+  getConfig(): AIConfig {
+    return { ...this.config };
+  }
+
+  /** Update the AI configuration */
+  updateConfig(newConfig: Partial<AIConfig>): void {
+    if (newConfig.model !== undefined) {
+      this.config.model = newConfig.model;
+    }
+    if (newConfig.difficulty !== undefined) {
+      this.config.difficulty = newConfig.difficulty;
+    }
+    if (newConfig.customPrompt !== undefined) {
+      this.config.customPrompt = newConfig.customPrompt;
+    }
   }
 
   async generateMove(state: GameState, playerId: string): Promise<MoveCommand> {
-    // Get all valid moves for context
+    // Get all valid moves for validation
     const validMoves = this.getAllValidMoves(state, playerId);
 
     if (validMoves.length === 0) {
@@ -48,7 +74,8 @@ export class GroqAI implements AIPlayer {
     }
 
     try {
-      const response = await this.callGroqAPI(this.buildMovePrompt(state, playerId, validMoves));
+      const messages = this.buildMovePrompt(state, playerId);
+      const response = await this.callGroqAPI(messages);
 
       const move = this.parseMoveResponse(response);
       if (move && this.isValidMove(move, validMoves)) {
@@ -146,41 +173,15 @@ export class GroqAI implements AIPlayer {
     throw lastError ?? new Error('Rate limit exceeded after max retries');
   }
 
-  private buildMovePrompt(
-    state: GameState,
-    playerId: string,
-    validMoves: MoveCommand[]
-  ): { role: string; content: string }[] {
-    const player = state.players.find((p) => p.id === playerId);
+  private buildMovePrompt(state: GameState, playerId: string): { role: string; content: string }[] {
+    // Get system prompt based on difficulty (or custom prompt)
+    const systemPrompt = getSystemPromptForDifficulty(
+      this.config.difficulty,
+      this.config.customPrompt
+    );
 
-    const myPieces = state.pieces.filter((p) => p.playerId === playerId);
-    const enemyPieces = state.pieces.filter((p) => p.playerId && p.playerId !== playerId);
-    const throne = { q: 0, r: 0 };
-
-    const systemPrompt = `You are a tactical AI for Jarls, a Viking board game.
-Your goal: Get your Jarl to the throne (0,0) OR eliminate the enemy Jarl.
-Rules:
-- Jarls are kings, Warriors are soldiers
-- Moving into an enemy pushes them (can push off board edge = elimination)
-- Reaching throne with Jarl = instant win
-- Protect your Jarl, hunt the enemy Jarl
-
-Respond ONLY with JSON: {"pieceId": "...", "destination": {"q": N, "r": N}}`;
-
-    const userPrompt = `Turn ${state.turnNumber}. You are ${player?.name}.
-
-Your pieces:
-${myPieces.map((p) => `- ${p.id} (${p.type}) at (${p.position.q},${p.position.r})`).join('\n')}
-
-Enemy pieces:
-${enemyPieces.map((p) => `- ${p.id} (${p.type}) at (${p.position.q},${p.position.r})`).join('\n')}
-
-Throne at: (${throne.q},${throne.r})
-
-Valid moves:
-${validMoves.map((m) => `${m.pieceId} -> (${m.destination.q},${m.destination.r})`).join('\n')}
-
-Choose the best tactical move. JSON only:`;
+    // Build user prompt with game state (rules-based, no pre-computed moves)
+    const userPrompt = buildUserPrompt(state, playerId);
 
     return [
       { role: 'system', content: systemPrompt },

@@ -5,9 +5,27 @@ import type {
   ValidMove,
   MoveCommand,
   StarvationCandidates,
+  AIConfig,
+  GroqModel,
+  GroqDifficulty,
 } from '@jarls/shared';
 
 // ── Event types (mirroring server socket types) ──────────────────────────
+
+export interface UpdateAIConfigPayload {
+  gameId: string;
+  config: {
+    model?: GroqModel;
+    difficulty?: GroqDifficulty;
+    customPrompt?: string;
+  };
+}
+
+export interface UpdateAIConfigResponse {
+  success: boolean;
+  error?: string;
+  config?: AIConfig;
+}
 
 export interface ClientToServerEvents {
   joinGame: (
@@ -22,6 +40,10 @@ export interface ClientToServerEvents {
   starvationChoice: (
     payload: { gameId: string; pieceId: string },
     callback: (response: StarvationChoiceResponse) => void
+  ) => void;
+  updateAIConfig: (
+    payload: UpdateAIConfigPayload,
+    callback: (response: UpdateAIConfigResponse) => void
   ) => void;
 }
 
@@ -41,6 +63,7 @@ export interface ServerToClientEvents {
   playerLeft: (data: { playerId: string; gameState: GameState }) => void;
   playerReconnected: (data: { playerId: string; playerName: string; gameState: GameState }) => void;
   starvationRequired: (data: { candidates: StarvationCandidates; timeoutMs: number }) => void;
+  aiConfigUpdated: (data: { config: AIConfig }) => void;
   error: (data: { code: string; message: string }) => void;
 }
 

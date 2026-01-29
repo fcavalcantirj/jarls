@@ -1,25 +1,38 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../../store/gameStore';
+import type { GroqModel, GroqDifficulty, AIConfig } from '@jarls/shared';
+import { GROQ_MODEL_NAMES, DEFAULT_GROQ_MODEL } from '@jarls/shared';
 
 type OpponentType = 'human' | 'ai';
-type AIDifficulty = 'random' | 'heuristic' | 'groq';
+type AIType = 'local' | 'groq';
 type TurnTimer = 'none' | '30' | '60' | '120';
 type BoardSize = 'default' | '4' | '5' | '6';
+
+const GROQ_MODELS: GroqModel[] = [
+  'llama-3.1-8b-instant',
+  'llama-3.3-70b-versatile',
+  'gemma2-9b-it',
+];
 
 export default function CreateGameForm() {
   const navigate = useNavigate();
   const setSession = useGameStore((s) => s.setSession);
   const setPlayer = useGameStore((s) => s.setPlayer);
   const clearGame = useGameStore((s) => s.clearGame);
+  const setAIConfig = useGameStore((s) => s.setAIConfig);
 
   const [playerName, setPlayerName] = useState('');
   const [opponentType, setOpponentType] = useState<OpponentType>('human');
-  const [aiDifficulty, setAIDifficulty] = useState<AIDifficulty>('heuristic');
+  const [aiType, setAIType] = useState<AIType>('local');
+  const [groqModel, setGroqModel] = useState<GroqModel>(DEFAULT_GROQ_MODEL);
+  const [groqDifficulty, setGroqDifficulty] = useState<GroqDifficulty>('intermediate');
   const [turnTimer, setTurnTimer] = useState<TurnTimer>('none');
   const [boardSize, setBoardSize] = useState<BoardSize>('default');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPromptEditor, setShowPromptEditor] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState('');
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -65,19 +78,31 @@ export default function CreateGameForm() {
         setSession(sessionToken);
         setPlayer(playerId);
 
-        // 4. If AI opponent, add AI player via API
+        // 4. If AI opponent, add AI player via API with full config
         if (opponentType === 'ai') {
+          const aiConfig: AIConfig = {
+            type: aiType,
+            difficulty: groqDifficulty,
+            ...(aiType === 'groq' && { model: groqModel }),
+            ...(customPrompt.trim() && { customPrompt: customPrompt.trim() }),
+          };
+
           const aiRes = await fetch(`/api/games/${gameId}/ai`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${sessionToken}`,
             },
-            body: JSON.stringify({ difficulty: aiDifficulty }),
+            body: JSON.stringify(aiConfig),
           });
           if (!aiRes.ok) {
             const body = await aiRes.json().catch(() => ({}));
             throw new Error(body.message ?? 'Failed to add AI player');
+          }
+
+          const aiResponse = (await aiRes.json()) as { aiPlayerId: string; aiConfig?: AIConfig };
+          if (aiResponse.aiConfig) {
+            setAIConfig(aiResponse.aiConfig);
           }
         }
 
@@ -91,13 +116,18 @@ export default function CreateGameForm() {
     [
       playerName,
       opponentType,
-      aiDifficulty,
+      aiType,
+      groqModel,
+      groqDifficulty,
+      customPrompt,
       turnTimer,
       boardSize,
       submitting,
       navigate,
       setSession,
       setPlayer,
+      setAIConfig,
+      clearGame,
     ]
   );
 
@@ -143,34 +173,102 @@ export default function CreateGameForm() {
           </div>
         </label>
 
-        {/* AI Difficulty (shown only when AI selected) */}
+        {/* AI Configuration (shown only when AI selected) */}
         {opponentType === 'ai' && (
-          <label style={labelStyle}>
-            AI Difficulty
-            <select
-              value={aiDifficulty}
-              onChange={(e) => setAIDifficulty(e.target.value as AIDifficulty)}
-              style={selectStyle}
-            >
-              <option value="heuristic">Normal (Local)</option>
-              <option value="groq">Smart (Groq LLM)</option>
-              <option value="random">Random</option>
-            </select>
-            {aiDifficulty === 'groq' && (
-              <a
-                href="https://groq.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ marginTop: '8px', alignSelf: 'center' }}
-              >
-                <img
-                  src="https://console.groq.com/powered-by-groq-dark.svg"
-                  alt="Powered by Groq for fast inference."
-                  style={{ height: '24px' }}
-                />
-              </a>
+          <>
+            {/* AI Type */}
+            <label style={labelStyle}>
+              AI Type
+              <div style={radioGroupStyle}>
+                <button
+                  type="button"
+                  style={radioButtonStyle(aiType === 'local')}
+                  onClick={() => setAIType('local')}
+                >
+                  Local (Fast)
+                </button>
+                <button
+                  type="button"
+                  style={radioButtonStyle(aiType === 'groq')}
+                  onClick={() => setAIType('groq')}
+                >
+                  Groq LLM
+                </button>
+              </div>
+            </label>
+
+            {/* Groq Model Selection */}
+            {aiType === 'groq' && (
+              <>
+                <label style={labelStyle}>
+                  Model
+                  <select
+                    value={groqModel}
+                    onChange={(e) => setGroqModel(e.target.value as GroqModel)}
+                    style={selectStyle}
+                  >
+                    {GROQ_MODELS.map((model) => (
+                      <option key={model} value={model}>
+                        {GROQ_MODEL_NAMES[model]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label style={labelStyle}>
+                  Difficulty
+                  <select
+                    value={groqDifficulty}
+                    onChange={(e) => setGroqDifficulty(e.target.value as GroqDifficulty)}
+                    style={selectStyle}
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </label>
+
+                {/* Edit Prompt Button */}
+                <button
+                  type="button"
+                  style={editPromptButtonStyle}
+                  onClick={() => setShowPromptEditor(!showPromptEditor)}
+                >
+                  {showPromptEditor ? 'Hide Prompt Editor' : 'Edit Prompt ✏️'}
+                </button>
+
+                {/* Custom Prompt Textarea */}
+                {showPromptEditor && (
+                  <label style={labelStyle}>
+                    Custom Prompt (optional)
+                    <textarea
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      placeholder="Leave empty to use the default prompt for the selected difficulty..."
+                      style={textareaStyle}
+                      rows={6}
+                      maxLength={5000}
+                    />
+                    <span style={charCountStyle}>{customPrompt.length}/5000 characters</span>
+                  </label>
+                )}
+
+                {/* Powered by Groq badge */}
+                <a
+                  href="https://groq.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ alignSelf: 'center', marginTop: '4px' }}
+                >
+                  <img
+                    src="https://console.groq.com/powered-by-groq-dark.svg"
+                    alt="Powered by Groq for fast inference."
+                    style={{ height: '24px' }}
+                  />
+                </a>
+              </>
             )}
-          </label>
+          </>
         )}
 
         {/* Turn Timer */}
@@ -274,6 +372,25 @@ const selectStyle: React.CSSProperties = {
   outline: 'none',
 };
 
+const textareaStyle: React.CSSProperties = {
+  padding: '10px 12px',
+  borderRadius: '6px',
+  border: '2px solid #555',
+  backgroundColor: '#1a1a2e',
+  color: '#fff',
+  fontFamily: 'monospace',
+  fontSize: '12px',
+  outline: 'none',
+  resize: 'vertical',
+  minHeight: '100px',
+};
+
+const charCountStyle: React.CSSProperties = {
+  fontSize: '11px',
+  color: '#666',
+  alignSelf: 'flex-end',
+};
+
 const radioGroupStyle: React.CSSProperties = {
   display: 'flex',
   gap: '8px',
@@ -294,6 +411,18 @@ function radioButtonStyle(active: boolean): React.CSSProperties {
     textAlign: 'center',
   };
 }
+
+const editPromptButtonStyle: React.CSSProperties = {
+  padding: '8px 12px',
+  borderRadius: '6px',
+  border: '1px dashed #666',
+  backgroundColor: 'transparent',
+  color: '#888',
+  fontFamily: 'monospace',
+  fontSize: '12px',
+  cursor: 'pointer',
+  textAlign: 'center',
+};
 
 const errorStyle: React.CSSProperties = {
   margin: 0,

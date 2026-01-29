@@ -12,6 +12,8 @@ import type {
   PlayTurnResponse,
   StarvationChoicePayload,
   StarvationChoiceResponse,
+  UpdateAIConfigPayload,
+  UpdateAIConfigResponse,
 } from './types.js';
 import type { GameManager } from '../game/manager.js';
 import type { GameMachineContext } from '../game/types.js';
@@ -46,6 +48,7 @@ export function registerSocketHandlers(io: TypedServer, gameManager: GameManager
     handleStartGame(socket, io, gameManager);
     handlePlayTurn(socket, io, gameManager);
     handleStarvationChoice(socket, io, gameManager);
+    handleUpdateAIConfig(socket, io, gameManager);
     handleDisconnect(socket, io, gameManager);
   });
 }
@@ -405,6 +408,51 @@ function checkAndBroadcastStarvation(
   });
 
   console.log(`Starvation triggered in game ${gameId}`);
+}
+
+// ── updateAIConfig Handler ────────────────────────────────────────────────
+
+function handleUpdateAIConfig(
+  socket: TypedSocket,
+  io: TypedServer,
+  gameManager: GameManager
+): void {
+  socket.on(
+    'updateAIConfig',
+    (payload: UpdateAIConfigPayload, callback: (r: UpdateAIConfigResponse) => void) => {
+      const { gameId, config } = payload;
+      const { playerId } = socket.data;
+
+      // Check if socket is associated with a game
+      if (!playerId || socket.data.gameId !== gameId) {
+        callback({ success: false, error: 'Not joined to this game' });
+        return;
+      }
+
+      try {
+        // Find the AI player in the game
+        const aiPlayerId = gameManager.getAIPlayerId(gameId);
+        if (!aiPlayerId) {
+          callback({ success: false, error: 'No AI player in this game' });
+          return;
+        }
+
+        // Update the AI configuration
+        const updatedConfig = gameManager.updateAIConfig(gameId, aiPlayerId, config);
+
+        // Broadcast the config update to all players in the room
+        io.to(gameId).emit('aiConfigUpdated', { config: updatedConfig });
+
+        console.log(`AI config updated in game ${gameId}:`, updatedConfig);
+
+        callback({ success: true, config: updatedConfig });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        console.error(`Error updating AI config in game ${gameId}:`, err);
+        callback({ success: false, error: message });
+      }
+    }
+  );
 }
 
 // ── disconnect Handler ──────────────────────────────────────────────────

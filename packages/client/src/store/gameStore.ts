@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { GameState, ValidMove, CombatResult, GameEvent } from '@jarls/shared';
+import type { GameState, ValidMove, CombatResult, GameEvent, AIConfig } from '@jarls/shared';
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -26,6 +26,8 @@ export interface GameStore {
   isAnimating: boolean;
   /** Whether a move has been sent to the server and we're awaiting the response. */
   movePending: boolean;
+  /** AI opponent configuration (if playing against AI) */
+  aiConfig: AIConfig | null;
 
   // Actions
   setGameState: (state: GameState) => void;
@@ -43,6 +45,7 @@ export interface GameStore {
   clearPendingTurnUpdate: () => void;
   setIsAnimating: (animating: boolean) => void;
   setMovePending: (pending: boolean) => void;
+  setAIConfig: (config: AIConfig | null) => void;
 }
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -59,6 +62,7 @@ export const useGameStore = create<GameStore>((set) => ({
   pendingTurnUpdate: null,
   isAnimating: false,
   movePending: false,
+  aiConfig: null,
 
   // Actions
   setGameState: (gameState) => set({ gameState }),
@@ -82,6 +86,7 @@ export const useGameStore = create<GameStore>((set) => ({
       pendingTurnUpdate: null,
       isAnimating: false,
       movePending: false,
+      aiConfig: null,
     }),
   setError: (message) => set({ errorMessage: message }),
   clearError: () => set({ errorMessage: null }),
@@ -92,6 +97,7 @@ export const useGameStore = create<GameStore>((set) => ({
   clearPendingTurnUpdate: () => set({ pendingTurnUpdate: null }),
   setIsAnimating: (isAnimating) => set({ isAnimating }),
   setMovePending: (movePending) => set({ movePending }),
+  setAIConfig: (aiConfig) => set({ aiConfig }),
 }));
 
 // Computed selectors

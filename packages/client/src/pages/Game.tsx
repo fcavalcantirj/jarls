@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
 import { useSocket } from '../hooks/useSocket';
@@ -7,6 +7,8 @@ import TurnIndicator from '../components/Game/TurnIndicator';
 import PlayerList from '../components/Game/PlayerList';
 import GameEndModal from '../components/Modals/GameEndModal';
 import HelpModal from '../components/Modals/HelpModal';
+import AISettingsModal from '../components/Modals/AISettingsModal';
+import type { AIConfig } from '@jarls/shared';
 
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -14,10 +16,13 @@ export default function Game() {
   const gameState = useGameStore((s) => s.gameState);
   const sessionToken = useGameStore((s) => s.sessionToken);
   const connectionStatus = useGameStore((s) => s.connectionStatus);
+  const aiConfig = useGameStore((s) => s.aiConfig);
+  const setAIConfig = useGameStore((s) => s.setAIConfig);
 
   const [joined, setJoined] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [aiSettingsOpen, setAISettingsOpen] = useState(false);
 
   // Join the socket room once connected
   useEffect(() => {
@@ -33,6 +38,21 @@ export default function Game() {
     });
   }, [socket, sessionToken, gameId, joined, connectionStatus]);
 
+  // Listen for AI config updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleAIConfigUpdated = (data: { config: AIConfig }) => {
+      setAIConfig(data.config);
+    };
+
+    socket.on('aiConfigUpdated', handleAIConfigUpdated);
+
+    return () => {
+      socket.off('aiConfigUpdated', handleAIConfigUpdated);
+    };
+  }, [socket, setAIConfig]);
+
   // Timeout: if we're stuck loading for too long, show an error
   useEffect(() => {
     if (gameState || error) return; // Already loaded or errored
@@ -45,6 +65,22 @@ export default function Game() {
 
     return () => clearTimeout(timeout);
   }, [gameState, error]);
+
+  // Handle AI settings save
+  const handleSaveAISettings = useCallback(
+    (config: Partial<AIConfig>) => {
+      if (!socket || !gameId) return;
+
+      socket.emit('updateAIConfig', { gameId, config }, (response) => {
+        if (response.success && response.config) {
+          setAIConfig(response.config);
+        } else {
+          console.error('Failed to update AI config:', response.error);
+        }
+      });
+    },
+    [socket, gameId, setAIConfig]
+  );
 
   if (!gameId) {
     return (
@@ -108,6 +144,8 @@ export default function Game() {
     );
   }
 
+  const showAISettings = aiConfig !== null;
+
   return (
     <div style={pageStyle}>
       {/* Header bar */}
@@ -115,6 +153,15 @@ export default function Game() {
         <TurnIndicator />
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
           <PlayerList />
+          {showAISettings && (
+            <button
+              style={settingsButtonStyle}
+              onClick={() => setAISettingsOpen(true)}
+              title="AI Settings"
+            >
+              &#9881;
+            </button>
+          )}
           <button style={helpButtonStyle} onClick={() => setHelpOpen(true)} title="How to Play">
             ?
           </button>
@@ -129,6 +176,11 @@ export default function Game() {
       {/* Modals */}
       <GameEndModal />
       <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <AISettingsModal
+        isOpen={aiSettingsOpen}
+        onClose={() => setAISettingsOpen(false)}
+        onSave={handleSaveAISettings}
+      />
     </div>
   );
 }
@@ -185,4 +237,20 @@ const helpButtonStyle: React.CSSProperties = {
   fontWeight: 'bold',
   cursor: 'pointer',
   flexShrink: 0,
+};
+
+const settingsButtonStyle: React.CSSProperties = {
+  width: '32px',
+  height: '32px',
+  borderRadius: '50%',
+  border: '2px solid #555',
+  backgroundColor: 'transparent',
+  color: '#888',
+  fontFamily: 'monospace',
+  fontSize: '16px',
+  cursor: 'pointer',
+  flexShrink: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 };
