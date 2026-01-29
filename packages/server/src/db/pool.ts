@@ -22,8 +22,23 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
   try {
     return await pool.query<T>(text, params);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('Database query error:', { text, message });
+    // Log detailed error info for debugging
+    const errorInfo: Record<string, unknown> = { text };
+    if (err instanceof Error) {
+      errorInfo.message = err.message;
+      errorInfo.name = err.name;
+      errorInfo.stack = err.stack;
+      // PostgreSQL errors have additional fields
+      const pgErr = err as unknown as Record<string, unknown>;
+      if (pgErr.code) errorInfo.code = pgErr.code;
+      if (pgErr.detail) errorInfo.detail = pgErr.detail;
+      if (pgErr.constraint) errorInfo.constraint = pgErr.constraint;
+      if (pgErr.column) errorInfo.column = pgErr.column;
+      if (pgErr.table) errorInfo.table = pgErr.table;
+    } else {
+      errorInfo.rawError = String(err);
+    }
+    console.error('Database query error:', JSON.stringify(errorInfo, null, 2));
     throw err;
   }
 }
