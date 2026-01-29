@@ -12,7 +12,7 @@ const joinGameSchema = z.object({
 });
 
 const addAISchema = z.object({
-  difficulty: z.enum(['random', 'heuristic']),
+  difficulty: z.enum(['random', 'heuristic', 'groq']),
 });
 
 const createGameSchema = z.object({

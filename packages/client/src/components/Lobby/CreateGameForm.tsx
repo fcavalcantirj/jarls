@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../../store/gameStore';
 
 type OpponentType = 'human' | 'ai';
-type AIDifficulty = 'random' | 'heuristic';
+type AIDifficulty = 'random' | 'heuristic' | 'groq';
 type TurnTimer = 'none' | '30' | '60' | '120';
 type BoardSize = 'default' | '4' | '5' | '6';
 
@@ -88,7 +88,17 @@ export default function CreateGameForm() {
         setSubmitting(false);
       }
     },
-    [playerName, opponentType, aiDifficulty, turnTimer, boardSize, submitting, navigate, setSession, setPlayer]
+    [
+      playerName,
+      opponentType,
+      aiDifficulty,
+      turnTimer,
+      boardSize,
+      submitting,
+      navigate,
+      setSession,
+      setPlayer,
+    ]
   );
 
   const isValid = playerName.trim().length > 0;
@@ -142,7 +152,8 @@ export default function CreateGameForm() {
               onChange={(e) => setAIDifficulty(e.target.value as AIDifficulty)}
               style={selectStyle}
             >
-              <option value="heuristic">Normal</option>
+              <option value="heuristic">Normal (Local)</option>
+              <option value="groq">Smart (Groq LLM)</option>
               <option value="random">Random</option>
             </select>
           </label>

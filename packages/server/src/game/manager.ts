@@ -7,6 +7,7 @@ import { saveSnapshot, saveEvent, loadActiveSnapshots } from './persistence';
 import type { AIPlayer, AIDifficulty } from '../ai/types';
 import { RandomAI } from '../ai/random';
 import { HeuristicAI } from '../ai/heuristic-ai';
+import { GroqAI } from '../ai/groq-ai';
 import { generateNorseName } from '../ai/names';
 
 /**
@@ -701,8 +702,18 @@ export class GameManager {
     }
 
     // Create AI instance based on difficulty
-    const ai: AIPlayer =
-      difficulty === 'heuristic' ? new HeuristicAI(500, 1500) : new RandomAI(500, 1500);
+    let ai: AIPlayer;
+    if (difficulty === 'groq') {
+      const apiKey = process.env.GROQ_API_KEY;
+      if (!apiKey) {
+        throw new Error('GROQ_API_KEY environment variable not set');
+      }
+      ai = new GroqAI(apiKey);
+    } else if (difficulty === 'heuristic') {
+      ai = new HeuristicAI(500, 1500);
+    } else {
+      ai = new RandomAI(500, 1500);
+    }
 
     // Join as a player with a Norse name
     const playerName = generateNorseName();

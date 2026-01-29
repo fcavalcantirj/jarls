@@ -1,7 +1,7 @@
 import type { GameState, MoveCommand, StarvationCandidates, StarvationChoice } from '@jarls/shared';
 
 /** AI difficulty levels */
-export type AIDifficulty = 'random' | 'heuristic';
+export type AIDifficulty = 'random' | 'heuristic' | 'groq';
 
 /** Interface that all AI player implementations must satisfy */
 export interface AIPlayer {
