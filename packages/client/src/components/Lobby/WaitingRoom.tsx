@@ -15,6 +15,8 @@ export default function WaitingRoom({ gameId }: WaitingRoomProps) {
   const sessionToken = useGameStore((s) => s.sessionToken);
   const connectionStatus = useGameStore((s) => s.connectionStatus);
 
+  const setGameState = useGameStore((s) => s.setGameState);
+
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
@@ -38,6 +40,10 @@ export default function WaitingRoom({ gameId }: WaitingRoomProps) {
     socket.emit('joinGame', { gameId, sessionToken }, (response) => {
       if (response.success) {
         setJoined(true);
+        // Store the game state returned from server
+        if (response.gameState) {
+          setGameState(response.gameState);
+        }
       } else {
         setError(response.error ?? 'Failed to join game room');
       }

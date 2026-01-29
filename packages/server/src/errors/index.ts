@@ -50,3 +50,10 @@ export class ConfigurationError extends GameError {
     this.name = 'ConfigurationError';
   }
 }
+
+export class DatabaseUnavailableError extends GameError {
+  constructor(message = 'Database is temporarily unavailable') {
+    super('DATABASE_UNAVAILABLE', message, 503);
+    this.name = 'DatabaseUnavailableError';
+  }
+}
