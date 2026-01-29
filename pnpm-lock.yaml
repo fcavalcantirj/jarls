@@ -120,6 +120,9 @@ importers:
       socket.io:
         specifier: ^4.8.3
         version: 4.8.3
+      tsx:
+        specifier: ^4.7.0
+        version: 4.21.0
       xstate:
         specifier: '5'
         version: 5.26.0
@@ -154,9 +157,6 @@ importers:
       supertest:
         specifier: ^7.2.2
         version: 7.2.2
-      tsx:
-        specifier: ^4.7.0
-        version: 4.21.0
       typescript:
         specifier: ^5.3.0
         version: 5.9.3
