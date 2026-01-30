@@ -240,6 +240,6 @@ MIT
 
 _Human provides direction. AI does the work. Tests prove it works._
 
-Made with mass amounts of mass and mass amounts of mass and Claude Code
+Made with mass amounts of coffee and Claude Code
 
 </div>
