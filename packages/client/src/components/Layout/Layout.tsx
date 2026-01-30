@@ -1,16 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useState, useEffect, type ReactNode } from 'react';
-
-const MOBILE_BREAKPOINT = 768;
-const LANDSCAPE_BOARD_HEIGHT_VW = 90;
-
-function isMobileDevice() {
-  return window.innerWidth <= MOBILE_BREAKPOINT;
-}
-
-function isLandscapeOrientation() {
-  return window.innerWidth > window.innerHeight;
-}
+import type { ReactNode } from 'react';
+import '../../styles/layout.css';
 
 interface LayoutProps {
   children: ReactNode;
@@ -19,47 +9,9 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const isGamePage = location.pathname.startsWith('/game/');
-  const [isLandscapeMobile, setIsLandscapeMobile] = useState(
-    () => isMobileDevice() && isLandscapeOrientation()
-  );
-
-  // Detect landscape mobile for scroll handling
-  useEffect(() => {
-    const checkOrientation = () => {
-      setIsLandscapeMobile(isMobileDevice() && isLandscapeOrientation());
-    };
-
-    checkOrientation();
-    window.addEventListener('resize', checkOrientation);
-    window.addEventListener('orientationchange', checkOrientation);
-    return () => {
-      window.removeEventListener('resize', checkOrientation);
-      window.removeEventListener('orientationchange', checkOrientation);
-    };
-  }, []);
-
-  // Allow scroll in landscape mobile on game pages
-  const dynamicLayoutStyle: React.CSSProperties = {
-    ...layoutStyle,
-    ...(isLandscapeMobile &&
-      isGamePage && {
-        overflow: 'auto',
-        height: 'auto',
-        minHeight: '100vh',
-      }),
-  };
-
-  const dynamicMainStyle: React.CSSProperties = {
-    ...mainStyle,
-    ...(isLandscapeMobile &&
-      isGamePage && {
-        flex: 'none',
-        minHeight: `${LANDSCAPE_BOARD_HEIGHT_VW}vw`,
-      }),
-  };
 
   return (
-    <div style={dynamicLayoutStyle}>
+    <div className="layout">
       <header style={headerStyle}>
         <Link to="/" style={logoStyle}>
           Jarls
@@ -84,7 +36,12 @@ export default function Layout({ children }: LayoutProps) {
         </nav>
       </header>
 
-      <main style={dynamicMainStyle}>{children}</main>
+      <main
+        className={isGamePage ? 'layout-main' : undefined}
+        style={isGamePage ? undefined : mainStyle}
+      >
+        {children}
+      </main>
 
       <footer style={footerStyle}>
         {isGamePage ? (
@@ -96,14 +53,6 @@ export default function Layout({ children }: LayoutProps) {
     </div>
   );
 }
-
-const layoutStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  height: '100vh',
-  overflow: 'hidden',
-  backgroundColor: '#0d1117',
-};
 
 const headerStyle: React.CSSProperties = {
   display: 'flex',

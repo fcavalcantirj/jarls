@@ -10,17 +10,6 @@ import HelpModal from '../components/Modals/HelpModal';
 import AISettingsModal from '../components/Modals/AISettingsModal';
 import type { AIConfig } from '@jarls/shared';
 
-const MOBILE_BREAKPOINT = 768;
-const LANDSCAPE_BOARD_HEIGHT_VW = 90; // Board height as % of viewport width in landscape
-
-function isMobileDevice() {
-  return window.innerWidth <= MOBILE_BREAKPOINT;
-}
-
-function isLandscapeOrientation() {
-  return window.innerWidth > window.innerHeight;
-}
-
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
   const socket = useSocket(gameId ?? null);
@@ -34,20 +23,17 @@ export default function Game() {
   const [error, setError] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [aiSettingsOpen, setAISettingsOpen] = useState(false);
-  const [isPortraitMobile, setIsPortraitMobile] = useState(
-    () => isMobileDevice() && !isLandscapeOrientation()
-  );
-  const [isLandscapeMobile, setIsLandscapeMobile] = useState(
-    () => isMobileDevice() && isLandscapeOrientation()
-  );
+  const [isPortraitMobile, setIsPortraitMobile] = useState(() => {
+    const isMobile = window.innerWidth <= 768;
+    return isMobile && window.innerHeight > window.innerWidth;
+  });
 
-  // Detect portrait/landscape orientation on mobile
+  // Detect portrait orientation on mobile (for rotate modal)
   useEffect(() => {
     const checkOrientation = () => {
-      const mobile = isMobileDevice();
-      const landscape = isLandscapeOrientation();
-      setIsPortraitMobile(mobile && !landscape);
-      setIsLandscapeMobile(mobile && landscape);
+      const isMobile = window.innerWidth <= 768;
+      const isPortrait = window.innerHeight > window.innerWidth;
+      setIsPortraitMobile(isMobile && isPortrait);
     };
 
     checkOrientation();
@@ -181,25 +167,8 @@ export default function Game() {
 
   const showAISettings = aiConfig !== null;
 
-  // Dynamic styles for landscape mobile
-  const dynamicPageStyle: React.CSSProperties = {
-    ...pageStyle,
-    ...(isLandscapeMobile && {
-      overflow: 'auto',
-      minHeight: '100%',
-    }),
-  };
-
-  const dynamicBoardContainerStyle: React.CSSProperties = {
-    ...boardContainerStyle,
-    ...(isLandscapeMobile && {
-      minHeight: `${LANDSCAPE_BOARD_HEIGHT_VW}vw`,
-      flex: 'none',
-    }),
-  };
-
   return (
-    <div style={dynamicPageStyle}>
+    <div style={pageStyle}>
       {/* Landscape warning overlay for portrait mobile */}
       {isPortraitMobile && (
         <div style={landscapeWarningStyle}>
@@ -231,7 +200,7 @@ export default function Game() {
       </div>
 
       {/* Board area */}
-      <div style={dynamicBoardContainerStyle} data-testid="board-container">
+      <div style={boardContainerStyle} data-testid="board-container">
         <Board />
       </div>
 
@@ -252,7 +221,6 @@ const pageStyle: React.CSSProperties = {
   flexDirection: 'column',
   flex: 1,
   backgroundColor: '#0d1117',
-  overflow: 'hidden',
 };
 
 const headerStyle: React.CSSProperties = {
