@@ -60,7 +60,7 @@ export type {
 // Re-export AI configuration constants
 export { GROQ_MODEL_NAMES, DEFAULT_GROQ_MODEL, DEFAULT_AI_CONFIG } from './types.js';
 
-export const VERSION = '0.2.0';
+export const VERSION = '0.2.9';
 
 // Re-export all hex coordinate functions from hex.ts
 export {
