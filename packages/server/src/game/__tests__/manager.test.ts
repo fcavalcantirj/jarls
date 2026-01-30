@@ -224,13 +224,16 @@ describe('GameManager', () => {
       const gameId = await manager.create({ config: createTestConfig() });
       const games = manager.listGames();
 
-      expect(games[0]).toEqual({
+      expect(games[0]).toMatchObject({
         gameId,
         status: 'lobby',
         playerCount: 0,
         maxPlayers: 2,
         players: [],
+        boardRadius: 3,
+        turnTimerMs: null,
       });
+      expect(games[0].createdAt).toBeDefined();
     });
 
     it('filters games by status', async () => {
@@ -740,6 +743,118 @@ describe('GameManager', () => {
       mockQuery.mockRejectedValueOnce(new Error('Connection refused'));
 
       await expect(manager.pingDatabase()).rejects.toThrow('Connection refused');
+    });
+  });
+
+  describe('AI player turn handling', () => {
+    it('AI player is tracked when added to game', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+      manager.join(gameId, 'Human');
+
+      // Add AI player
+      const aiPlayerId = manager.addAIPlayer(gameId, 'random');
+
+      // Verify AI is tracked
+      expect(manager.isAIPlayer(gameId, aiPlayerId)).toBe(true);
+    });
+
+    it('AI player has isAI flag set in game state', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+      manager.join(gameId, 'Human');
+      manager.addAIPlayer(gameId, 'random');
+
+      const snapshot = manager.getState(gameId);
+      const context = snapshot!.context as any;
+      const aiPlayer = context.players.find((p: any) => p.name !== 'Human');
+
+      expect(aiPlayer.isAI).toBe(true);
+    });
+
+    it('AI makes a move when it becomes their turn', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+      const humanId = manager.join(gameId, 'Human');
+      const aiPlayerId = manager.addAIPlayer(gameId, 'random');
+
+      // Start the game
+      manager.start(gameId, humanId);
+
+      // Get initial state
+      let snapshot = manager.getState(gameId);
+      let context = snapshot!.context as any;
+      const initialTurn = context.turnNumber;
+      const firstPlayer = context.currentPlayerId;
+
+      // Verify game state is correct
+      expect(context.phase).toBe('playing');
+      expect(context.pieces.length).toBeGreaterThan(0);
+
+      // If human goes first, make a move
+      if (firstPlayer === humanId) {
+        const { getValidMoves } = await import('@jarls/shared');
+
+        // Find a human piece that has valid moves (some pieces may be surrounded)
+        const humanPieces = context.pieces.filter((p: any) => p.playerId === humanId);
+        let humanPiece = null;
+        let moves: any[] = [];
+
+        for (const piece of humanPieces) {
+          const pieceMoves = getValidMoves(context, piece.id);
+          if (pieceMoves.length > 0) {
+            humanPiece = piece;
+            moves = pieceMoves;
+            break;
+          }
+        }
+
+        expect(humanPiece).not.toBeNull();
+        expect(moves.length).toBeGreaterThan(0);
+
+        const moveResult = await manager.makeMove(gameId, humanId, {
+          pieceId: humanPiece!.id,
+          destination: moves[0].destination,
+        });
+
+        // Verify human move succeeded
+        expect(moveResult.success).toBe(true);
+
+        // Verify turn advanced after human move
+        snapshot = manager.getState(gameId);
+        context = snapshot!.context as any;
+        expect(context.turnNumber).toBe(initialTurn + 1);
+        expect(context.currentPlayerId).toBe(aiPlayerId);
+
+        // Poll for AI to make its move (RandomAI has 500-1500ms delay)
+        const startTime = Date.now();
+        const maxWait = 3000; // 3 seconds max
+        while (Date.now() - startTime < maxWait) {
+          snapshot = manager.getState(gameId);
+          context = snapshot!.context as any;
+          if (context.turnNumber > initialTurn + 1) {
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
+        // Check that turn advanced (AI played)
+        expect(context.turnNumber).toBeGreaterThan(initialTurn + 1);
+      } else {
+        // AI goes first - poll for AI move
+        const startTime = Date.now();
+        const maxWait = 3000;
+        while (Date.now() - startTime < maxWait) {
+          snapshot = manager.getState(gameId);
+          context = snapshot!.context as any;
+          if (context.turnNumber > initialTurn) {
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
+        expect(context.turnNumber).toBeGreaterThan(initialTurn);
+      }
     });
   });
 });

@@ -791,9 +791,9 @@ export class GameManager {
       ai = new HeuristicAI(500, 1500);
     }
 
-    // Join as a player with a Norse name
+    // Join as a player with a Norse name (marked as AI)
     const playerName = generateNorseName();
-    const playerId = this.join(gameId, playerName);
+    const playerId = this.join(gameId, playerName, true); // BUG FIX: was missing isAI=true
 
     // Track the AI player
     managed.aiPlayers.push({ playerId, ai });
@@ -883,6 +883,11 @@ export class GameManager {
     const stateValue = snapshot.value;
     const context = snapshot.context as GameMachineContext;
 
+    // DEBUG: Log every call to handleAITurn
+    console.log(
+      `[handleAITurn] gameId=${gameId} state=${JSON.stringify(stateValue)} currentPlayer=${context.currentPlayerId} turn=${context.turnNumber} aiPlayers=[${managedGame.aiPlayers.map((ap) => ap.playerId).join(',')}]`
+    );
+
     // Check if we're in the awaitingMove substate of playing
     const isAwaitingMove =
       typeof stateValue === 'object' &&
@@ -891,15 +896,22 @@ export class GameManager {
       (stateValue as Record<string, string>).playing === 'awaitingMove';
 
     if (!isAwaitingMove) {
+      console.log(`[handleAITurn] Not in awaitingMove state, skipping`);
       // Also handle starvation state for AI players
       this.handleAIStarvation(gameId, managedGame, snapshot);
       return;
     }
 
     const currentPlayerId = context.currentPlayerId;
-    if (!currentPlayerId) return;
+    if (!currentPlayerId) {
+      console.log(`[handleAITurn] No currentPlayerId, skipping`);
+      return;
+    }
 
     const aiPlayer = managedGame.aiPlayers.find((ap) => ap.playerId === currentPlayerId);
+    console.log(
+      `[handleAITurn] Looking for AI player ${currentPlayerId} in aiPlayers: found=${!!aiPlayer}`
+    );
     if (!aiPlayer) {
       // Log when we expect AI to play but can't find it
       const currentPlayerData = context.players.find((p) => p.id === currentPlayerId);
