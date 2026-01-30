@@ -23,24 +23,6 @@ export default function Game() {
   const [error, setError] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [aiSettingsOpen, setAISettingsOpen] = useState(false);
-  const [isPortraitMobile, setIsPortraitMobile] = useState(false);
-
-  // Detect portrait orientation on mobile
-  useEffect(() => {
-    const checkOrientation = () => {
-      const isMobile = window.innerWidth <= 768;
-      const isPortrait = window.innerHeight > window.innerWidth;
-      setIsPortraitMobile(isMobile && isPortrait);
-    };
-
-    checkOrientation();
-    window.addEventListener('resize', checkOrientation);
-    window.addEventListener('orientationchange', checkOrientation);
-    return () => {
-      window.removeEventListener('resize', checkOrientation);
-      window.removeEventListener('orientationchange', checkOrientation);
-    };
-  }, []);
 
   // Join the socket room once connected
   useEffect(() => {
@@ -166,16 +148,6 @@ export default function Game() {
 
   return (
     <div style={pageStyle}>
-      {/* Landscape warning overlay for portrait mobile */}
-      {isPortraitMobile && (
-        <div style={landscapeWarningStyle}>
-          <span style={{ fontSize: '48px' }}>↻</span>
-          <p style={{ margin: '16px 0 0 0', fontSize: '16px', textAlign: 'center' }}>
-            Rotate your device to landscape for the best experience
-          </p>
-        </div>
-      )}
-
       {/* Header bar */}
       <div style={headerStyle}>
         <TurnIndicator />
@@ -281,21 +253,4 @@ const settingsButtonStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-};
-
-const landscapeWarningStyle: React.CSSProperties = {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: 'rgba(13, 17, 23, 0.95)',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: '#ffd700',
-  fontFamily: 'monospace',
-  zIndex: 1000,
-  padding: '20px',
 };
