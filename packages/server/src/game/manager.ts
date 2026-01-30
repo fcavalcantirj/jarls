@@ -11,6 +11,7 @@ import type {
 } from '@jarls/shared';
 import { generateId, applyMove } from '@jarls/shared';
 import { saveSnapshot, saveEvent, loadActiveSnapshots } from './persistence';
+import { query } from '../db/pool';
 import type { AIPlayer, AIDifficulty, ConfigurableAIPlayer } from '../ai/types';
 import { RandomAI } from '../ai/random';
 import { HeuristicAI } from '../ai/heuristic-ai';
@@ -316,6 +317,15 @@ export class GameManager {
   }
 
   /**
+   * Ping the database to wake it up (useful for Railway's sleeping Postgres).
+   * Returns true if successful, throws on error.
+   */
+  async pingDatabase(): Promise<boolean> {
+    await query('SELECT 1');
+    return true;
+  }
+
+  /**
    * Get stats for the dashboard.
    * openLobbies only counts joinable lobbies (not full, not stale >1hr).
    */
@@ -366,7 +376,7 @@ export class GameManager {
    * and returns the generated player ID.
    * Throws if the game doesn't exist or is not in the lobby state.
    */
-  join(gameId: string, playerName: string): string {
+  join(gameId: string, playerName: string, isAI = false): string {
     const managed = this.games.get(gameId);
     if (!managed) {
       throw new Error(`Game not found: ${gameId}`);
@@ -388,6 +398,7 @@ export class GameManager {
       type: 'PLAYER_JOINED',
       playerId,
       playerName,
+      isAI,
     });
 
     return playerId;
@@ -723,9 +734,9 @@ export class GameManager {
       ai = new RandomAI(500, 1500);
     }
 
-    // Join as a player with a Norse name
+    // Join as a player with a Norse name (marked as AI)
     const playerName = generateNorseName();
-    const playerId = this.join(gameId, playerName);
+    const playerId = this.join(gameId, playerName, true);
 
     // Track the AI player
     managed.aiPlayers.push({ playerId, ai });
@@ -887,7 +898,7 @@ export class GameManager {
 
     // Generate and execute the AI move asynchronously
     const gameState = context as GameState;
-    const timeoutMs = 2000;
+    const timeoutMs = 10000; // 10 seconds for Groq API calls
 
     const movePromise = Promise.race([
       aiPlayer.ai.generateMove(gameState, currentPlayerId),

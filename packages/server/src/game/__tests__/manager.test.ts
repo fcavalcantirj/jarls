@@ -15,6 +15,9 @@ const mockLoadActiveSnapshotsFn = jest
   .fn<(...args: any[]) => Promise<any[]>>()
   .mockResolvedValue([]);
 
+// Mock for db pool query
+const mockQueryFn = jest.fn<(...args: any[]) => Promise<any>>().mockResolvedValue({ rows: [] });
+
 // Mock persistence module before importing GameManager
 jest.unstable_mockModule('../persistence', () => ({
   saveSnapshot: mockSaveSnapshotFn,
@@ -25,7 +28,13 @@ jest.unstable_mockModule('../persistence', () => ({
   VersionConflictError: class VersionConflictError extends Error {},
 }));
 
+// Mock db pool module
+jest.unstable_mockModule('../../db/pool', () => ({
+  query: mockQueryFn,
+}));
+
 const { GameManager } = await import('../manager');
+const mockQuery = mockQueryFn;
 
 const mockSaveSnapshot = mockSaveSnapshotFn;
 const mockSaveEvent = mockSaveEventFn;
@@ -712,6 +721,25 @@ describe('GameManager', () => {
       manager.shutdown();
 
       expect(manager.gameCount).toBe(0);
+    });
+  });
+
+  describe('pingDatabase', () => {
+    it('executes SELECT 1 to wake the database', async () => {
+      manager = new GameManager();
+      mockQuery.mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
+
+      const result = await manager.pingDatabase();
+
+      expect(result).toBe(true);
+      expect(mockQuery).toHaveBeenCalledWith('SELECT 1');
+    });
+
+    it('throws if database is unavailable', async () => {
+      manager = new GameManager();
+      mockQuery.mockRejectedValueOnce(new Error('Connection refused'));
+
+      await expect(manager.pingDatabase()).rejects.toThrow('Connection refused');
     });
   });
 });

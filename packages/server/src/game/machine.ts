@@ -270,6 +270,7 @@ export const gameMachine = setup({
                 name: event.playerName,
                 color: context.players.length === 0 ? '#e63946' : '#457b9d',
                 isEliminated: false,
+                isAI: event.isAI ?? false,
                 roundsSinceLastWarrior: null,
               };
               return [...context.players, newPlayer];

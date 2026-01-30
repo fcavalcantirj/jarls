@@ -86,11 +86,18 @@ export function createGameRoutes(manager: GameManager): Router {
 
   /**
    * GET /api/games/stats
-   * Get dashboard stats.
+   * Get dashboard stats. Also pings the database to wake it up.
    */
-  router.get('/stats', (_req: Request, res: Response, next: NextFunction) => {
+  router.get('/stats', async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const stats = manager.getStats();
+
+      // Ping database to wake it up (fire-and-forget, don't block response)
+      // This ensures the DB is ready when user creates a game
+      manager.pingDatabase().catch((err) => {
+        console.warn('Database ping failed (may be waking up):', err.message);
+      });
+
       res.json(stats);
     } catch (err) {
       next(err);

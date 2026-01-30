@@ -55,6 +55,8 @@ export interface Player {
   name: string;
   color: string;
   isEliminated: boolean;
+  /** Whether this player is controlled by AI */
+  isAI?: boolean;
   /**
    * Tracks how many rounds since this player lost their last Warrior.
    * null/undefined = player still has Warriors (or has never had them removed).

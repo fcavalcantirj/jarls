@@ -41,6 +41,7 @@ export interface PlayerJoinedMachineEvent {
   type: 'PLAYER_JOINED';
   playerId: string;
   playerName: string;
+  isAI?: boolean;
 }
 
 /** Event: A player left the game */

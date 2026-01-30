@@ -7,6 +7,8 @@ export default function TurnIndicator() {
 
   if (!gameState || !currentPlayer) return null;
 
+  const isAIThinking = currentPlayer.isAI && !isMyTurn;
+
   return (
     <div
       style={{
@@ -30,6 +32,7 @@ export default function TurnIndicator() {
           backgroundColor: currentPlayer.color,
           display: 'inline-block',
           flexShrink: 0,
+          animation: isAIThinking ? 'pulse 1s ease-in-out infinite' : 'none',
         }}
       />
       <span style={{ fontWeight: 'bold' }}>{currentPlayer.name}</span>
@@ -48,6 +51,28 @@ export default function TurnIndicator() {
           Your Turn
         </span>
       )}
+      {isAIThinking && (
+        <span
+          style={{
+            marginLeft: '4px',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            backgroundColor: '#f39c12',
+            color: '#000',
+            fontWeight: 'bold',
+            fontSize: '12px',
+            animation: 'pulse 1s ease-in-out infinite',
+          }}
+        >
+          AI Thinking...
+        </span>
+      )}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      `}</style>
     </div>
   );
 }
