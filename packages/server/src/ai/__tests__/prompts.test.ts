@@ -40,6 +40,7 @@ function createTestState(): GameState {
     roundsSinceElimination: 0,
     winnerId: null,
     winCondition: null,
+    moveHistory: [],
   };
 }
 
@@ -169,6 +170,87 @@ describe('AI Prompts', () => {
       const prompt = buildUserPrompt(state, 'player1');
       // Should not contain a list of valid moves like "Valid moves:" section
       expect(prompt).not.toContain('Valid moves:');
+    });
+
+    it('includes recent moves section when history exists', () => {
+      const state = createTestState();
+      state.moveHistory = [
+        {
+          turnNumber: 1,
+          playerId: 'player1',
+          playerName: 'Player 1',
+          pieceId: 'p1-w1',
+          pieceType: 'warrior',
+          from: { q: -2, r: 2 },
+          to: { q: -1, r: 1 },
+        },
+        {
+          turnNumber: 2,
+          playerId: 'player2',
+          playerName: 'Player 2',
+          pieceId: 'p2-jarl',
+          pieceType: 'jarl',
+          from: { q: 2, r: 0 },
+          to: { q: 1, r: 0 },
+        },
+      ];
+      const prompt = buildUserPrompt(state, 'player1');
+
+      expect(prompt).toContain('RECENT MOVES');
+      expect(prompt).toContain('Turn 1: Player 1 moved warrior from (-2,2) to (-1,1)');
+      expect(prompt).toContain('Turn 2: Player 2 moved jarl from (2,0) to (1,0)');
+    });
+
+    it('does not include recent moves section when history is empty', () => {
+      const state = createTestState();
+      state.moveHistory = [];
+      const prompt = buildUserPrompt(state, 'player1');
+
+      expect(prompt).not.toContain('RECENT MOVES');
+    });
+
+    it('includes captured piece in move history entry', () => {
+      const state = createTestState();
+      state.moveHistory = [
+        {
+          turnNumber: 3,
+          playerId: 'player1',
+          playerName: 'Player 1',
+          pieceId: 'p1-w1',
+          pieceType: 'warrior',
+          from: { q: 0, r: 1 },
+          to: { q: 1, r: 0 },
+          captured: 'p2-w2',
+        },
+      ];
+      const prompt = buildUserPrompt(state, 'player1');
+
+      expect(prompt).toContain('CAPTURED p2-w2');
+    });
+
+    it('only shows last 6 moves in history', () => {
+      const state = createTestState();
+      state.moveHistory = [];
+      // Create 10 moves
+      for (let i = 1; i <= 10; i++) {
+        state.moveHistory.push({
+          turnNumber: i,
+          playerId: i % 2 === 1 ? 'player1' : 'player2',
+          playerName: i % 2 === 1 ? 'Player 1' : 'Player 2',
+          pieceId: `piece-${i}`,
+          pieceType: 'warrior',
+          from: { q: i, r: 0 },
+          to: { q: i - 1, r: 0 },
+        });
+      }
+      const prompt = buildUserPrompt(state, 'player1');
+
+      // Should contain turns 5-10 (last 6)
+      expect(prompt).toContain('Turn 5:');
+      expect(prompt).toContain('Turn 10:');
+      // Should NOT contain turns 1-4
+      expect(prompt).not.toContain('Turn 1:');
+      expect(prompt).not.toContain('Turn 4:');
     });
   });
 });

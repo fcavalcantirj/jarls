@@ -1,4 +1,4 @@
-import type { GameState } from '@jarls/shared';
+import type { GameState, MoveHistoryEntry } from '@jarls/shared';
 
 // Re-export prompts from shared package
 export {
@@ -9,6 +9,29 @@ export {
   DIFFICULTY_PROMPTS,
   getSystemPromptForDifficulty,
 } from '@jarls/shared';
+
+/**
+ * Format a single move history entry for the AI prompt.
+ */
+function formatMoveEntry(entry: MoveHistoryEntry): string {
+  const captured = entry.captured ? `, CAPTURED ${entry.captured}` : '';
+  return `Turn ${entry.turnNumber}: ${entry.playerName} moved ${entry.pieceType} from (${entry.from.q},${entry.from.r}) to (${entry.to.q},${entry.to.r})${captured}`;
+}
+
+/**
+ * Build the recent moves section for the AI prompt.
+ * Shows the last 6 moves to give AI context about game evolution.
+ */
+function buildRecentMovesSection(state: GameState): string {
+  const recentMoves = (state.moveHistory ?? []).slice(-6);
+  if (recentMoves.length === 0) {
+    return '';
+  }
+  return `=== RECENT MOVES ===
+${recentMoves.map(formatMoveEntry).join('\n')}
+
+`;
+}
 
 /**
  * Build the user prompt with current game state.
@@ -48,12 +71,15 @@ export function buildUserPrompt(state: GameState, playerId: string): string {
       )
     : 0;
 
+  // Build recent moves section
+  const recentMovesSection = buildRecentMovesSection(state);
+
   return `Turn ${state.turnNumber}. You are "${player?.name || playerId}".
 
 Board radius: ${state.config.boardRadius}
 Throne (win condition): (0,0)
 
-=== YOUR PIECES ===
+${recentMovesSection}=== YOUR PIECES ===
 **YOUR JARL** (MOVE THIS TO THRONE TO WIN):
   ${myJarl ? `${myJarl.id} at (${myJarl.position.q},${myJarl.position.r}) - ${jarlDist} hexes from throne` : 'ELIMINATED'}
 

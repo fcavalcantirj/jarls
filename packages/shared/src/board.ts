@@ -799,6 +799,7 @@ export function createInitialState(
     roundsSinceElimination: 0,
     winnerId: null,
     winCondition: null,
+    moveHistory: [],
   };
 
   return gameState;

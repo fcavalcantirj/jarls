@@ -46,6 +46,7 @@ function createTestState(): GameState {
     roundsSinceElimination: 0,
     winnerId: null,
     winCondition: null,
+    moveHistory: [],
   };
 }
 

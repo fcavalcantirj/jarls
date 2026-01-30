@@ -107,6 +107,24 @@ export interface GameState {
   roundsSinceElimination: number;
   winnerId: string | null;
   winCondition: 'throne' | 'lastStanding' | null;
+  moveHistory: MoveHistoryEntry[];
+}
+
+// ============================================================================
+// Move History Types
+// ============================================================================
+
+/** Entry recording a single move in the game history */
+export interface MoveHistoryEntry {
+  turnNumber: number;
+  playerId: string;
+  playerName: string;
+  pieceId: string;
+  pieceType: 'jarl' | 'warrior';
+  from: AxialCoord;
+  to: AxialCoord;
+  /** The pieceId of a piece that was eliminated (pushed off board) by this move */
+  captured?: string;
 }
 
 // ============================================================================

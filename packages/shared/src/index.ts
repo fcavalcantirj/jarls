@@ -49,6 +49,8 @@ export type {
   StarvationCandidates,
   StarvationChoice,
   StarvationResult,
+  // Move History Types
+  MoveHistoryEntry,
   // AI Configuration Types
   GroqModel,
   GroqDifficulty,

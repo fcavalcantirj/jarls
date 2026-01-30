@@ -17,6 +17,7 @@ import type {
   LastStandingResult,
   WinConditionsResult,
   ReachableHex,
+  MoveHistoryEntry,
 } from './types.js';
 
 import { getNeighborAxial, getOppositeDirection, isOnBoardAxial } from './hex.js';
@@ -632,6 +633,35 @@ export function applyMove(state: GameState, playerId: string, command: MoveComma
     resultState = eliminationResult.newState;
     events.push(...eliminationResult.events);
   }
+
+  // Track the move in history
+  // Find the actual destination from the MOVE event (handles blocked attacks)
+  const moveEvent = events.find((e) => e.type === 'MOVE') as MoveEvent | undefined;
+  const actualDestination = moveEvent?.to ?? destination;
+
+  // Find first eliminated piece (for capture tracking)
+  const eliminatedEvent = events.find((e) => e.type === 'ELIMINATED' && e.cause === 'edge');
+  const capturedPieceId =
+    eliminatedEvent?.type === 'ELIMINATED' ? (eliminatedEvent as any).pieceId : undefined;
+
+  // Get player name
+  const player = state.players.find((p) => p.id === playerId);
+
+  const historyEntry: MoveHistoryEntry = {
+    turnNumber: state.turnNumber,
+    playerId: playerId,
+    playerName: player?.name ?? playerId,
+    pieceId: command.pieceId,
+    pieceType: piece.type as 'jarl' | 'warrior',
+    from: piece.position,
+    to: actualDestination,
+    ...(capturedPieceId && { captured: capturedPieceId }),
+  };
+
+  resultState = {
+    ...resultState,
+    moveHistory: [...(state.moveHistory ?? []), historyEntry],
+  };
 
   // Check win conditions
   // For throne victory, the piece ID to check is the one that moved (could be attacker taking throne)

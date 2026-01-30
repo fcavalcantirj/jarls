@@ -36,6 +36,7 @@ function createMockGameState(overrides?: Partial<GameState>): GameState {
     roundsSinceElimination: 0,
     winnerId: null,
     winCondition: null,
+    moveHistory: [],
     ...overrides,
   };
 }

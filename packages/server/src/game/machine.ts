@@ -26,6 +26,7 @@ function contextToGameState(context: GameMachineContext): GameState {
     roundsSinceElimination: context.roundsSinceElimination,
     winnerId: context.winnerId,
     winCondition: context.winCondition,
+    moveHistory: context.moveHistory ?? [],
   };
 }
 
@@ -258,6 +259,7 @@ export const gameMachine = setup({
     roundsSinceElimination: 0,
     winnerId: null,
     winCondition: null,
+    moveHistory: [],
     turnTimerMs: input.config.turnTimerMs ?? null,
     disconnectedPlayers: new Set<string>(),
     starvationChoices: [],
