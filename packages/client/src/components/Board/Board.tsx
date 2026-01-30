@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, type MouseEvent, type TouchEvent } from 'react';
+import { useRef, useEffect, useCallback, useState, type MouseEvent, type TouchEvent } from 'react';
 import { isOnBoardAxial, getValidMoves } from '@jarls/shared';
 import type { AxialCoord } from '@jarls/shared';
 import { useGameStore, selectIsMyTurn } from '../../store/gameStore';
@@ -16,6 +16,7 @@ export function Board() {
   const rendererRef = useRef<BoardRenderer | null>(null);
   const animationSystemRef = useRef(new AnimationSystem());
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [canvasHeight, setCanvasHeight] = useState<number | null>(null);
 
   const gameState = useGameStore((s) => s.gameState);
   const selectedPieceId = useGameStore((s) => s.selectedPieceId);
@@ -133,10 +134,21 @@ export function Board() {
 
     const handleResize = () => {
       const width = parent.clientWidth;
-      const height = parent.clientHeight;
+      let height = parent.clientHeight;
 
       // Skip if dimensions are zero (layout not yet computed)
       if (width === 0 || height === 0) return;
+
+      // Landscape mobile fix: use width-based height for larger board
+      const isMobile = window.innerWidth <= 768;
+      const isLandscape = window.innerWidth > window.innerHeight;
+      if (isMobile && isLandscape) {
+        // Make board square-ish based on width, allowing scroll
+        height = Math.max(height, width * 0.85);
+        setCanvasHeight(height);
+      } else {
+        setCanvasHeight(null);
+      }
 
       canvas.width = width;
       canvas.height = height;
@@ -348,21 +360,31 @@ export function Board() {
     if (hoveredCombat) useGameStore.getState().clearHoveredCombat();
   }, [hoveredCombat]);
 
+  // Dynamic height for landscape mobile (allows larger board with scroll)
+  const wrapperStyle: React.CSSProperties = {
+    position: 'relative',
+    width: '100%',
+    height: canvasHeight ? `${canvasHeight}px` : '100%',
+    minHeight: canvasHeight ? `${canvasHeight}px` : undefined,
+  };
+
+  const canvasStyle: React.CSSProperties = {
+    display: 'block',
+    width: '100%',
+    height: canvasHeight ? `${canvasHeight}px` : '100%',
+    cursor: isAnimating || movePending ? 'wait' : 'pointer',
+    touchAction: 'none',
+  };
+
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div style={wrapperStyle}>
       <canvas
         ref={canvasRef}
         onClick={handleClick}
         onTouchEnd={handleTouchEnd}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        style={{
-          display: 'block',
-          width: '100%',
-          height: '100%',
-          cursor: isAnimating || movePending ? 'wait' : 'pointer',
-          touchAction: 'none',
-        }}
+        style={canvasStyle}
       />
       {errorMessage && (
         <div
