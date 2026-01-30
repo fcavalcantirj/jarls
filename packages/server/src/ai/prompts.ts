@@ -23,26 +23,53 @@ export function buildUserPrompt(state: GameState, playerId: string): string {
   const enemyPieces = state.pieces.filter((p) => p.playerId && p.playerId !== playerId);
   const shields = state.pieces.filter((p) => p.type === 'shield');
 
+  // Separate Jarl from warriors for clarity
+  const myJarl = myPieces.find((p) => p.type === 'jarl');
+  const myWarriors = myPieces.filter((p) => p.type === 'warrior');
+  const enemyJarl = enemyPieces.find((p) => p.type === 'jarl');
+  const enemyWarriors = enemyPieces.filter((p) => p.type === 'warrior');
+
   const formatPiece = (p: { id: string; type: string; position: { q: number; r: number } }) =>
-    `  - ${p.id} (${p.type}) at (${p.position.q},${p.position.r})`;
+    `  - ${p.id} at (${p.position.q},${p.position.r})`;
+
+  // Calculate distance from throne for Jarls
+  const jarlDist = myJarl
+    ? Math.max(
+        Math.abs(myJarl.position.q),
+        Math.abs(myJarl.position.r),
+        Math.abs(-myJarl.position.q - myJarl.position.r)
+      )
+    : 0;
+  const enemyJarlDist = enemyJarl
+    ? Math.max(
+        Math.abs(enemyJarl.position.q),
+        Math.abs(enemyJarl.position.r),
+        Math.abs(-enemyJarl.position.q - enemyJarl.position.r)
+      )
+    : 0;
 
   return `Turn ${state.turnNumber}. You are "${player?.name || playerId}".
 
 Board radius: ${state.config.boardRadius}
-Throne at: (0,0)
+Throne (win condition): (0,0)
 
-Your pieces:
-${myPieces.map(formatPiece).join('\n')}
+=== YOUR PIECES ===
+**YOUR JARL** (MOVE THIS TO THRONE TO WIN):
+  ${myJarl ? `${myJarl.id} at (${myJarl.position.q},${myJarl.position.r}) - ${jarlDist} hexes from throne` : 'ELIMINATED'}
 
-Enemy pieces:
-${enemyPieces.map(formatPiece).join('\n')}
+Your Warriors:
+${myWarriors.map(formatPiece).join('\n')}
 
-${shields.length > 0 ? `Shields (neutral blockers):\n${shields.map(formatPiece).join('\n')}` : ''}
+=== ENEMY PIECES ===
+Enemy Jarl:
+  ${enemyJarl ? `${enemyJarl.id} at (${enemyJarl.position.q},${enemyJarl.position.r}) - ${enemyJarlDist} hexes from throne` : 'ELIMINATED'}
 
-Choose your move. Remember:
-- Jarl at (0,0) = instant win
-- Pushing enemy Jarl off edge = win
-- Don't get your Jarl pushed off edge!
+Enemy Warriors:
+${enemyWarriors.map(formatPiece).join('\n')}
+
+${shields.length > 0 ? `=== SHIELDS (blockers) ===\n${shields.map(formatPiece).join('\n')}` : ''}
+
+**GOAL: Move YOUR JARL to (0,0) to win instantly!**
 
 Your move (JSON only):`;
 }
