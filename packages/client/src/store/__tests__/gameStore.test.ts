@@ -57,6 +57,7 @@ describe('gameStore', () => {
       movePending: false,
       isAnimating: false,
       pendingTurnUpdate: null,
+      turnUpdateQueue: [],
     });
   });
 
@@ -154,7 +155,15 @@ describe('gameStore', () => {
       const newState = createMockGameState({ currentPlayerId: 'p2', turnNumber: 2 });
       useGameStore.getState().setPendingTurnUpdate({
         newState,
-        events: [{ type: 'MOVE', pieceId: 'piece-1', from: { q: 0, r: -3 }, to: { q: 0, r: -2 }, hasMomentum: false }],
+        events: [
+          {
+            type: 'MOVE',
+            pieceId: 'piece-1',
+            from: { q: 0, r: -3 },
+            to: { q: 0, r: -2 },
+            hasMomentum: false,
+          },
+        ],
       });
 
       const state = useGameStore.getState();
@@ -183,10 +192,114 @@ describe('gameStore', () => {
       const newState = createMockGameState({ currentPlayerId: 'p2' });
       useGameStore.getState().setPendingTurnUpdate({
         newState,
-        events: [{ type: 'MOVE', pieceId: 'piece-1', from: { q: 0, r: -3 }, to: { q: 0, r: -2 }, hasMomentum: false }],
+        events: [
+          {
+            type: 'MOVE',
+            pieceId: 'piece-1',
+            from: { q: 0, r: -3 },
+            to: { q: 0, r: -2 },
+            hasMomentum: false,
+          },
+        ],
       });
 
       expect(useGameStore.getState().isAnimating).toBe(true);
+    });
+
+    it('queues multiple turn updates when they arrive during animation', () => {
+      // Turn 5 arrives
+      const turn5State = createMockGameState({ turnNumber: 5, currentPlayerId: 'p1' });
+      useGameStore.getState().setPendingTurnUpdate({
+        newState: turn5State,
+        events: [
+          {
+            type: 'MOVE',
+            pieceId: 'piece-1',
+            from: { q: 0, r: 0 },
+            to: { q: 1, r: 0 },
+            hasMomentum: false,
+          },
+        ],
+      });
+
+      // Turn 6 arrives while turn 5 animation would be playing
+      const turn6State = createMockGameState({ turnNumber: 6, currentPlayerId: 'p2' });
+      useGameStore.getState().queueTurnUpdate({
+        newState: turn6State,
+        events: [
+          {
+            type: 'MOVE',
+            pieceId: 'piece-2',
+            from: { q: 1, r: 0 },
+            to: { q: 2, r: 0 },
+            hasMomentum: false,
+          },
+        ],
+      });
+
+      // Turn 7 arrives while turn 5 animation would still be playing
+      const turn7State = createMockGameState({ turnNumber: 7, currentPlayerId: 'p1' });
+      useGameStore.getState().queueTurnUpdate({
+        newState: turn7State,
+        events: [
+          {
+            type: 'MOVE',
+            pieceId: 'piece-3',
+            from: { q: 2, r: 0 },
+            to: { q: 3, r: 0 },
+            hasMomentum: false,
+          },
+        ],
+      });
+
+      // Should have 2 queued updates (turn 6 and 7) in addition to the current pending
+      expect(useGameStore.getState().turnUpdateQueue.length).toBe(2);
+
+      // First pending update is turn 5
+      expect(useGameStore.getState().pendingTurnUpdate?.newState.turnNumber).toBe(5);
+
+      // Queue should have turns 6 and 7 in order
+      expect(useGameStore.getState().turnUpdateQueue[0].newState.turnNumber).toBe(6);
+      expect(useGameStore.getState().turnUpdateQueue[1].newState.turnNumber).toBe(7);
+    });
+
+    it('processes queued updates when animation completes', () => {
+      // Turn 5 arrives
+      const turn5State = createMockGameState({ turnNumber: 5, currentPlayerId: 'p1' });
+      useGameStore.getState().setPendingTurnUpdate({
+        newState: turn5State,
+        events: [
+          {
+            type: 'MOVE',
+            pieceId: 'piece-1',
+            from: { q: 0, r: 0 },
+            to: { q: 1, r: 0 },
+            hasMomentum: false,
+          },
+        ],
+      });
+
+      // Queue turn 6
+      const turn6State = createMockGameState({ turnNumber: 6, currentPlayerId: 'p2' });
+      useGameStore.getState().queueTurnUpdate({
+        newState: turn6State,
+        events: [
+          {
+            type: 'MOVE',
+            pieceId: 'piece-2',
+            from: { q: 1, r: 0 },
+            to: { q: 2, r: 0 },
+            hasMomentum: false,
+          },
+        ],
+      });
+
+      // Simulate animation completing and shifting to next queued update
+      useGameStore.getState().shiftTurnUpdateQueue();
+
+      // Now pendingTurnUpdate should be turn 6
+      expect(useGameStore.getState().pendingTurnUpdate?.newState.turnNumber).toBe(6);
+      expect(useGameStore.getState().turnUpdateQueue.length).toBe(0);
     });
   });
 
@@ -213,9 +326,11 @@ describe('gameStore', () => {
 
     it('clears ended game state so new game does not show old game over screen', () => {
       // Simulate an ended game
-      useGameStore.getState().setGameState(
-        createMockGameState({ phase: 'ended', winnerId: 'p1', winCondition: 'throne' })
-      );
+      useGameStore
+        .getState()
+        .setGameState(
+          createMockGameState({ phase: 'ended', winnerId: 'p1', winCondition: 'throne' })
+        );
       useGameStore.getState().setPlayer('p1');
       useGameStore.getState().setSession('old-token');
 
@@ -246,6 +361,7 @@ describe('selectors', () => {
       movePending: false,
       isAnimating: false,
       pendingTurnUpdate: null,
+      turnUpdateQueue: [],
     });
   });
 

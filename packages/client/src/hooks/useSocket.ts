@@ -93,8 +93,17 @@ export function useSocket(gameId: string | null): GameSocket | null {
       // Log events for debugging
       events.forEach((e, i) => console.log(`[TURN PLAYED] event[${i}]:`, JSON.stringify(e)));
       if (events.length > 0) {
-        // Queue the update for animation playback — Board will apply state after animating
-        useGameStore.getState().setPendingTurnUpdate({ newState: data.newState, events });
+        const store = useGameStore.getState();
+        // If already animating, queue this update instead of overwriting
+        if (store.isAnimating) {
+          console.log(
+            `[TURN PLAYED] Animation in progress, queuing turn ${data.newState.turnNumber}`
+          );
+          store.queueTurnUpdate({ newState: data.newState, events });
+        } else {
+          // Queue the update for animation playback — Board will apply state after animating
+          store.setPendingTurnUpdate({ newState: data.newState, events });
+        }
         clearSelection();
       } else {
         // No events to animate — apply immediately

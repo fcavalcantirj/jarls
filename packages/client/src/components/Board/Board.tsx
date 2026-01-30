@@ -110,8 +110,15 @@ export function Board() {
       })
       .then(() => {
         // Animation complete — apply the new state
-        store.setIsAnimating(false);
         store.setGameState(newState);
+        // Check for queued updates (rapid AI moves)
+        const { turnUpdateQueue } = useGameStore.getState();
+        if (turnUpdateQueue.length > 0) {
+          console.log(`[ANIMATION] Complete, processing ${turnUpdateQueue.length} queued updates`);
+          store.shiftTurnUpdateQueue();
+        } else {
+          store.setIsAnimating(false);
+        }
       });
   }, [pendingTurnUpdate, gameState]);
 

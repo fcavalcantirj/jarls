@@ -22,6 +22,8 @@ export interface GameStore {
   hoverPosition: { x: number; y: number } | null;
   /** Queued turn update waiting for animation playback before state is applied. */
   pendingTurnUpdate: PendingTurnUpdate | null;
+  /** Queue of turn updates waiting to be processed (for rapid AI moves). */
+  turnUpdateQueue: PendingTurnUpdate[];
   /** Whether an animation is currently playing (blocks interaction). */
   isAnimating: boolean;
   /** Whether a move has been sent to the server and we're awaiting the response. */
@@ -42,13 +44,15 @@ export interface GameStore {
   setHoveredCombat: (combat: CombatResult, x: number, y: number) => void;
   clearHoveredCombat: () => void;
   setPendingTurnUpdate: (update: PendingTurnUpdate) => void;
+  queueTurnUpdate: (update: PendingTurnUpdate) => void;
+  shiftTurnUpdateQueue: () => void;
   clearPendingTurnUpdate: () => void;
   setIsAnimating: (animating: boolean) => void;
   setMovePending: (pending: boolean) => void;
   setAIConfig: (config: AIConfig | null) => void;
 }
 
-export const useGameStore = create<GameStore>((set) => ({
+export const useGameStore = create<GameStore>((set, get) => ({
   // Initial state
   gameState: null,
   playerId: null,
@@ -60,6 +64,7 @@ export const useGameStore = create<GameStore>((set) => ({
   hoveredCombat: null,
   hoverPosition: null,
   pendingTurnUpdate: null,
+  turnUpdateQueue: [],
   isAnimating: false,
   movePending: false,
   aiConfig: null,
@@ -84,6 +89,7 @@ export const useGameStore = create<GameStore>((set) => ({
       hoveredCombat: null,
       hoverPosition: null,
       pendingTurnUpdate: null,
+      turnUpdateQueue: [],
       isAnimating: false,
       movePending: false,
       aiConfig: null,
@@ -94,6 +100,17 @@ export const useGameStore = create<GameStore>((set) => ({
   clearHoveredCombat: () => set({ hoveredCombat: null, hoverPosition: null }),
   setPendingTurnUpdate: (update) =>
     set({ pendingTurnUpdate: update, isAnimating: true, movePending: false }),
+  queueTurnUpdate: (update) =>
+    set((state) => ({ turnUpdateQueue: [...state.turnUpdateQueue, update] })),
+  shiftTurnUpdateQueue: () => {
+    const { turnUpdateQueue } = get();
+    if (turnUpdateQueue.length === 0) {
+      set({ pendingTurnUpdate: null });
+      return;
+    }
+    const [next, ...rest] = turnUpdateQueue;
+    set({ pendingTurnUpdate: next, turnUpdateQueue: rest });
+  },
   clearPendingTurnUpdate: () => set({ pendingTurnUpdate: null }),
   setIsAnimating: (isAnimating) => set({ isAnimating }),
   setMovePending: (movePending) => set({ movePending }),
