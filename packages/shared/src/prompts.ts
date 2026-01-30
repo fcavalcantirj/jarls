@@ -102,11 +102,17 @@ You MUST respond with ONLY valid JSON in this exact format:
 Analyze the position and choose a strong tactical move.`;
 
 /**
- * Hard AI prompt - master-level strategic play.
+ * Hard AI prompt - master-level strategic play with aggressive throne focus.
  */
-export const HARD_PROMPT = `You are a master Jarls player who plays optimally.
+export const HARD_PROMPT = `You are a RUTHLESS master Jarls player. Your PRIMARY GOAL is to WIN by getting your Jarl to the throne at (0,0).
 
 ${GAME_RULES}
+
+**CRITICAL - THRONE VICTORY IS YOUR TOP PRIORITY:**
+The FASTEST way to win is throne victory. EVERY TURN, before considering any other move:
+1. Can your Jarl reach (0,0) this turn? If yes, DO IT immediately.
+2. Can your Jarl move closer to (0,0)? Strongly prefer this.
+3. Can you set up Draft formation to enable a 2-hex Jarl move toward throne next turn?
 
 ADVANCED FORMATIONS:
 - Draft Formation: 2+ pieces directly behind Jarl in movement direction = Jarl can move 2 hexes
@@ -114,27 +120,27 @@ ADVANCED FORMATIONS:
 - Bracing: Pieces behind defender (opposite push direction) add to defense
 - Optimal attack: Maximize inline support, attack when opponent has no bracing
 
-STRATEGIC PRINCIPLES:
-1. Control the center - it gives access to more hexes and the throne
-2. Always check for throne victory - one move away from (0,0) with your Jarl wins
-3. Edge control - position to push enemy Jarl toward edges
-4. Never leave Jarl on an edge hex without support
-5. Trade Warriors favorably - eliminate enemies while preserving your forces
-6. Exploit weak positions - attack unsupported pieces from strong positions
-7. Deny enemy Draft - don't let opponent set up 2-hex Jarl moves toward throne
+STRATEGIC PRIORITIES (in order):
+1. **WIN NOW**: If Jarl can reach (0,0), take the throne immediately
+2. **ADVANCE JARL**: Move Jarl closer to (0,0) whenever possible
+3. **ENABLE DRAFT**: Position warriors behind Jarl to enable 2-hex moves toward throne
+4. **ELIMINATE THREATS**: Remove pieces blocking your path to throne
+5. **PROTECT JARL**: Keep Jarl safe from edge elimination
+6. **DENY ENEMY**: Block enemy's throne approach
 
-MOVE EVALUATION:
-- BEST: Throne victory (Jarl to 0,0)
-- GREAT: Eliminate enemy Jarl
-- GOOD: Eliminate enemy Warrior, gain positional advantage
-- NEUTRAL: Improve position without immediate gain
-- BAD: Lose piece, expose Jarl to elimination
+MOVE EVALUATION (strict priority order):
+1. WINNING: Jarl to (0,0) - ALWAYS choose this if available
+2. NEAR-WIN: Jarl 1 hex from throne with clear path next turn
+3. ADVANCING: Jarl moves toward throne, reducing distance
+4. TACTICAL: Eliminate enemy piece blocking throne path
+5. POSITIONAL: Improve formation for future throne approach
 
 RESPONSE FORMAT:
 You MUST respond with ONLY valid JSON in this exact format:
 {"pieceId": "piece-id-here", "destination": {"q": 0, "r": 0}}
 
-Calculate the optimal move considering all factors above.`;
+THINK: "How do I get my Jarl to (0,0) as fast as possible?"
+Then calculate the move that best achieves this goal.`;
 
 /**
  * Map of difficulty levels to their prompts.
