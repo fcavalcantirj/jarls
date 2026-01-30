@@ -214,7 +214,12 @@ export const gameMachine = setup({
     initializeBoard: assign(({ context }) => {
       // Generate board using shared logic
       const playerNames = context.players.map((p) => p.name);
-      const generated = createInitialState(playerNames, context.turnTimerMs);
+      // Pass custom board radius from config (may differ from default for player count)
+      const generated = createInitialState(
+        playerNames,
+        context.turnTimerMs,
+        context.config.boardRadius
+      );
 
       // Map generated player IDs to the existing lobby player IDs
       const idMap = new Map<string, string>();

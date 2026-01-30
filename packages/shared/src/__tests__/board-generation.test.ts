@@ -16,6 +16,7 @@ import {
   calculateStartingPositions,
   rotateHex,
   generateSymmetricalShields,
+  createInitialState,
   CubeCoord,
   GameConfig,
 } from '../index';
@@ -780,6 +781,110 @@ describe('board generation', () => {
             expect(isOnEdgeAxial(shield, radius)).toBe(false);
             const dist = hexDistanceAxial(shield, { q: 0, r: 0 });
             expect(dist).toBeGreaterThan(0);
+          });
+        }
+      );
+    });
+  });
+
+  describe('createInitialState', () => {
+    describe('default board radius', () => {
+      it('should use default radius 3 for 2 players', () => {
+        const state = createInitialState(['Player 1', 'Player 2']);
+        expect(state.config.boardRadius).toBe(3);
+      });
+
+      it('should place Jarls on edge for default 2-player board', () => {
+        const state = createInitialState(['Player 1', 'Player 2']);
+        const jarls = state.pieces.filter((p) => p.type === 'jarl');
+
+        expect(jarls).toHaveLength(2);
+        jarls.forEach((jarl) => {
+          expect(isOnEdgeAxial(jarl.position, state.config.boardRadius)).toBe(true);
+        });
+      });
+    });
+
+    describe('custom board radius', () => {
+      it('should accept custom board radius that overrides default', () => {
+        // 2 players default to radius 3, but we request radius 5
+        const state = createInitialState(['Player 1', 'Player 2'], null, 5);
+        expect(state.config.boardRadius).toBe(5);
+      });
+
+      it('should place Jarls on edge of CUSTOM radius, not default', () => {
+        // This test verifies the bug fix: Jarls should be on edge of radius 5,
+        // not radius 3 (the default for 2 players)
+        const customRadius = 5;
+        const state = createInitialState(['Player 1', 'Player 2'], null, customRadius);
+
+        const jarls = state.pieces.filter((p) => p.type === 'jarl');
+        expect(jarls).toHaveLength(2);
+
+        jarls.forEach((jarl) => {
+          // Jarl should be on edge of the CUSTOM radius (5), not default (3)
+          expect(isOnEdgeAxial(jarl.position, customRadius)).toBe(true);
+
+          // Verify distance from center equals the custom radius
+          const distFromCenter = hexDistanceAxial(jarl.position, { q: 0, r: 0 });
+          expect(distFromCenter).toBe(customRadius);
+        });
+      });
+
+      it('should NOT place Jarls on default radius edge when custom radius is larger', () => {
+        const customRadius = 6;
+        const defaultRadius = 3; // Default for 2 players
+        const state = createInitialState(['Player 1', 'Player 2'], null, customRadius);
+
+        const jarls = state.pieces.filter((p) => p.type === 'jarl');
+
+        jarls.forEach((jarl) => {
+          // Should NOT be on edge of default radius (that would be a bug)
+          expect(isOnEdgeAxial(jarl.position, defaultRadius)).toBe(false);
+
+          // Should be on edge of custom radius
+          expect(isOnEdgeAxial(jarl.position, customRadius)).toBe(true);
+        });
+      });
+
+      it('should generate warriors between Jarl and throne on custom board', () => {
+        const customRadius = 5;
+        const state = createInitialState(['Player 1', 'Player 2'], null, customRadius);
+
+        const jarls = state.pieces.filter((p) => p.type === 'jarl');
+        const warriors = state.pieces.filter((p) => p.type === 'warrior');
+
+        // Each player should have 5 warriors (default for 2 players)
+        expect(warriors).toHaveLength(10);
+
+        // Warriors should be between Jarl and throne (closer to center than Jarl)
+        for (const player of state.players) {
+          const playerJarl = jarls.find((j) => j.playerId === player.id);
+          const playerWarriors = warriors.filter((w) => w.playerId === player.id);
+
+          expect(playerJarl).toBeDefined();
+          expect(playerWarriors).toHaveLength(5);
+
+          const jarlDist = hexDistanceAxial(playerJarl!.position, { q: 0, r: 0 });
+
+          // At least some warriors should be closer to center than the Jarl
+          const closerWarriors = playerWarriors.filter((w) => {
+            const wDist = hexDistanceAxial(w.position, { q: 0, r: 0 });
+            return wDist < jarlDist;
+          });
+          expect(closerWarriors.length).toBeGreaterThan(0);
+        }
+      });
+
+      it.each([4, 5, 6, 7, 8])(
+        'should place Jarls on edge for custom radius %i (2 players)',
+        (customRadius) => {
+          const state = createInitialState(['Player 1', 'Player 2'], null, customRadius);
+          const jarls = state.pieces.filter((p) => p.type === 'jarl');
+
+          jarls.forEach((jarl) => {
+            expect(isOnEdgeAxial(jarl.position, customRadius)).toBe(true);
+            expect(hexDistanceAxial(jarl.position, { q: 0, r: 0 })).toBe(customRadius);
           });
         }
       );

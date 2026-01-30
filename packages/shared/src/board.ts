@@ -682,12 +682,14 @@ export function generateId(): string {
  *
  * @param playerNames - Array of player names (2-6 players)
  * @param turnTimerMs - Optional turn timer in milliseconds (null for no timer)
+ * @param customBoardRadius - Optional custom board radius (overrides default for player count)
  * @returns Complete GameState ready for the playing phase
  * @throws Error if unable to create valid board
  */
 export function createInitialState(
   playerNames: string[],
-  turnTimerMs: number | null = null
+  turnTimerMs: number | null = null,
+  customBoardRadius?: number
 ): GameState {
   const playerCount = playerNames.length;
 
@@ -697,6 +699,11 @@ export function createInitialState(
 
   // Get game configuration for this player count
   const config = getConfigForPlayerCount(playerCount, turnTimerMs);
+
+  // Override board radius if custom value provided
+  if (customBoardRadius !== undefined) {
+    config.boardRadius = customBoardRadius;
+  }
 
   // Create players with IDs and colors
   const players: Player[] = playerNames.map((name, index) => ({
