@@ -21,6 +21,33 @@
 
     <!-- Standard Meta Tags -->
     <meta name="description" content="A browser-based turn-based strategy game featuring push-combat mechanics on a hexagonal grid. Players compete as Viking Jarls to claim the central Throne." />
+    <meta name="theme-color" content="#ffd700" />
+    <meta property="og:url" content="/" />
+
+    <!-- Canonical & Links -->
+    <link rel="canonical" href="/" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoGame",
+      "name": "Jarls - Viking Hex Strategy Game",
+      "description": "A browser-based turn-based strategy game featuring push-combat mechanics on a hexagonal grid. Players compete as Viking Jarls to claim the central Throne.",
+      "genre": ["Strategy", "Turn-based"],
+      "gamePlatform": "Web Browser",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
 
     <style>
       :root {
@@ -42,6 +69,15 @@
         height: 100%;
         background: #0d1117;
         overflow: hidden;
+      }
+
+      /* Allow scroll on landscape mobile */
+      @media (max-width: 768px) and (orientation: landscape) {
+        html, body, #root {
+          overflow: auto;
+          height: auto;
+          min-height: 100%;
+        }
       }
 
       img { max-width: 100%; height: auto; }
