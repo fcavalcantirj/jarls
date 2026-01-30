@@ -11,6 +11,10 @@ import { getSocket } from '../../socket/client';
 
 const ERROR_TOAST_DURATION_MS = 3000;
 
+// Layout constants
+const MOBILE_BREAKPOINT = 768;
+const LANDSCAPE_BOARD_ASPECT = 0.9; // Board height as ratio of width in landscape
+
 export function Board() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<BoardRenderer | null>(null);
@@ -139,12 +143,12 @@ export function Board() {
       // Skip if dimensions are zero (layout not yet computed)
       if (width === 0 || height === 0) return;
 
-      // Landscape mobile fix: use width-based height for larger board
-      const isMobile = window.innerWidth <= 768;
+      // Landscape mobile: use width-based height for larger board
+      const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
       const isLandscape = window.innerWidth > window.innerHeight;
       if (isMobile && isLandscape) {
-        // Make board square-ish based on width, allowing scroll
-        height = Math.max(height, width * 0.85);
+        // Board sized by width, allowing vertical scroll
+        height = width * LANDSCAPE_BOARD_ASPECT;
         setCanvasHeight(height);
       } else {
         setCanvasHeight(null);

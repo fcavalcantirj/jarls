@@ -1,6 +1,17 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect, type ReactNode } from 'react';
 
+const MOBILE_BREAKPOINT = 768;
+const LANDSCAPE_BOARD_HEIGHT_VW = 90;
+
+function isMobileDevice() {
+  return window.innerWidth <= MOBILE_BREAKPOINT;
+}
+
+function isLandscapeOrientation() {
+  return window.innerWidth > window.innerHeight;
+}
+
 interface LayoutProps {
   children: ReactNode;
 }
@@ -8,17 +19,14 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const isGamePage = location.pathname.startsWith('/game/');
-  const [isLandscapeMobile, setIsLandscapeMobile] = useState(() => {
-    const isMobile = window.innerWidth <= 768;
-    return isMobile && window.innerWidth > window.innerHeight;
-  });
+  const [isLandscapeMobile, setIsLandscapeMobile] = useState(
+    () => isMobileDevice() && isLandscapeOrientation()
+  );
 
   // Detect landscape mobile for scroll handling
   useEffect(() => {
     const checkOrientation = () => {
-      const isMobile = window.innerWidth <= 768;
-      const isPortrait = window.innerHeight > window.innerWidth;
-      setIsLandscapeMobile(isMobile && !isPortrait);
+      setIsLandscapeMobile(isMobileDevice() && isLandscapeOrientation());
     };
 
     checkOrientation();
@@ -46,7 +54,7 @@ export default function Layout({ children }: LayoutProps) {
     ...(isLandscapeMobile &&
       isGamePage && {
         flex: 'none',
-        minHeight: '80vw', // Board needs square-ish space
+        minHeight: `${LANDSCAPE_BOARD_HEIGHT_VW}vw`,
       }),
   };
 

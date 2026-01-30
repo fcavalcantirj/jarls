@@ -10,6 +10,17 @@ import HelpModal from '../components/Modals/HelpModal';
 import AISettingsModal from '../components/Modals/AISettingsModal';
 import type { AIConfig } from '@jarls/shared';
 
+const MOBILE_BREAKPOINT = 768;
+const LANDSCAPE_BOARD_HEIGHT_VW = 90; // Board height as % of viewport width in landscape
+
+function isMobileDevice() {
+  return window.innerWidth <= MOBILE_BREAKPOINT;
+}
+
+function isLandscapeOrientation() {
+  return window.innerWidth > window.innerHeight;
+}
+
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
   const socket = useSocket(gameId ?? null);
@@ -23,22 +34,20 @@ export default function Game() {
   const [error, setError] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [aiSettingsOpen, setAISettingsOpen] = useState(false);
-  const [isPortraitMobile, setIsPortraitMobile] = useState(() => {
-    const isMobile = window.innerWidth <= 768;
-    return isMobile && window.innerHeight > window.innerWidth;
-  });
-  const [isLandscapeMobile, setIsLandscapeMobile] = useState(() => {
-    const isMobile = window.innerWidth <= 768;
-    return isMobile && window.innerWidth > window.innerHeight;
-  });
+  const [isPortraitMobile, setIsPortraitMobile] = useState(
+    () => isMobileDevice() && !isLandscapeOrientation()
+  );
+  const [isLandscapeMobile, setIsLandscapeMobile] = useState(
+    () => isMobileDevice() && isLandscapeOrientation()
+  );
 
   // Detect portrait/landscape orientation on mobile
   useEffect(() => {
     const checkOrientation = () => {
-      const isMobile = window.innerWidth <= 768;
-      const isPortrait = window.innerHeight > window.innerWidth;
-      setIsPortraitMobile(isMobile && isPortrait);
-      setIsLandscapeMobile(isMobile && !isPortrait);
+      const mobile = isMobileDevice();
+      const landscape = isLandscapeOrientation();
+      setIsPortraitMobile(mobile && !landscape);
+      setIsLandscapeMobile(mobile && landscape);
     };
 
     checkOrientation();
@@ -184,8 +193,8 @@ export default function Game() {
   const dynamicBoardContainerStyle: React.CSSProperties = {
     ...boardContainerStyle,
     ...(isLandscapeMobile && {
-      minHeight: '80vw', // Board needs square-ish space, use width as reference
-      flex: 'none', // Don't let flex shrink the board
+      minHeight: `${LANDSCAPE_BOARD_HEIGHT_VW}vw`,
+      flex: 'none',
     }),
   };
 
