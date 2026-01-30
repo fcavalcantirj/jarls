@@ -23,8 +23,14 @@ export default function Game() {
   const [error, setError] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [aiSettingsOpen, setAISettingsOpen] = useState(false);
-  const [isPortraitMobile, setIsPortraitMobile] = useState(false);
-  const [isLandscapeMobile, setIsLandscapeMobile] = useState(false);
+  const [isPortraitMobile, setIsPortraitMobile] = useState(() => {
+    const isMobile = window.innerWidth <= 768;
+    return isMobile && window.innerHeight > window.innerWidth;
+  });
+  const [isLandscapeMobile, setIsLandscapeMobile] = useState(() => {
+    const isMobile = window.innerWidth <= 768;
+    return isMobile && window.innerWidth > window.innerHeight;
+  });
 
   // Detect portrait/landscape orientation on mobile
   useEffect(() => {

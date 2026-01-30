@@ -8,7 +8,10 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const isGamePage = location.pathname.startsWith('/game/');
-  const [isLandscapeMobile, setIsLandscapeMobile] = useState(false);
+  const [isLandscapeMobile, setIsLandscapeMobile] = useState(() => {
+    const isMobile = window.innerWidth <= 768;
+    return isMobile && window.innerWidth > window.innerHeight;
+  });
 
   // Detect landscape mobile for scroll handling
   useEffect(() => {
