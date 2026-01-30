@@ -24,13 +24,15 @@ export default function Game() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [aiSettingsOpen, setAISettingsOpen] = useState(false);
   const [isPortraitMobile, setIsPortraitMobile] = useState(false);
+  const [isLandscapeMobile, setIsLandscapeMobile] = useState(false);
 
-  // Detect portrait orientation on mobile
+  // Detect portrait/landscape orientation on mobile
   useEffect(() => {
     const checkOrientation = () => {
       const isMobile = window.innerWidth <= 768;
       const isPortrait = window.innerHeight > window.innerWidth;
       setIsPortraitMobile(isMobile && isPortrait);
+      setIsLandscapeMobile(isMobile && !isPortrait);
     };
 
     checkOrientation();
@@ -164,8 +166,25 @@ export default function Game() {
 
   const showAISettings = aiConfig !== null;
 
+  // Dynamic styles for landscape mobile
+  const dynamicPageStyle: React.CSSProperties = {
+    ...pageStyle,
+    ...(isLandscapeMobile && {
+      overflow: 'auto',
+      minHeight: '100%',
+    }),
+  };
+
+  const dynamicBoardContainerStyle: React.CSSProperties = {
+    ...boardContainerStyle,
+    ...(isLandscapeMobile && {
+      minHeight: '80vw', // Board needs square-ish space, use width as reference
+      flex: 'none', // Don't let flex shrink the board
+    }),
+  };
+
   return (
-    <div style={pageStyle}>
+    <div style={dynamicPageStyle}>
       {/* Landscape warning overlay for portrait mobile */}
       {isPortraitMobile && (
         <div style={landscapeWarningStyle}>
@@ -197,7 +216,7 @@ export default function Game() {
       </div>
 
       {/* Board area */}
-      <div style={boardContainerStyle} data-testid="board-container">
+      <div style={dynamicBoardContainerStyle} data-testid="board-container">
         <Board />
       </div>
 
