@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../../store/gameStore';
 import { useSocket } from '../../hooks/useSocket';
+import { GameEvents } from '../../lib/analytics';
 
 interface WaitingRoomProps {
   gameId: string;
@@ -48,6 +49,8 @@ export default function WaitingRoom({ gameId }: WaitingRoomProps) {
         if (response.gameState) {
           setGameState(response.gameState);
         }
+        // Track successful join
+        GameEvents.multiplayerJoined(gameId);
       } else {
         setError(response.error ?? 'Failed to join game room');
       }
@@ -70,6 +73,9 @@ export default function WaitingRoom({ gameId }: WaitingRoomProps) {
       if (!response.success) {
         setError(response.error ?? 'Failed to start game');
         setStarting(false);
+      } else {
+        // Track game start - multiplayer mode
+        GameEvents.gameStart('multiplayer');
       }
       // On success, the server will emit gameState with a new phase,
       // and the useEffect above will navigate to the game page.

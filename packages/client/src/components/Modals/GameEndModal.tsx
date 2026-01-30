@@ -1,10 +1,29 @@
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../../store/gameStore';
+import { GameEvents } from '../../lib/analytics';
 
 export default function GameEndModal() {
   const gameState = useGameStore((s) => s.gameState);
   const playerId = useGameStore((s) => s.playerId);
   const navigate = useNavigate();
+  const trackedRef = useRef(false);
+
+  // Track game completion (only once per game end)
+  useEffect(() => {
+    if (!gameState || gameState.phase !== 'ended' || !gameState.winnerId || trackedRef.current) {
+      return;
+    }
+    trackedRef.current = true;
+
+    const isPlayerWinner = gameState.winnerId === playerId;
+    // Determine winner type: 'player' if current user won, 'opponent' otherwise
+    // Note: Could enhance to detect 'ai' if AI player data is available
+    const winnerType = isPlayerWinner ? 'player' : 'opponent';
+
+    // Duration not tracked (would need game start timestamp in store)
+    GameEvents.gameComplete(winnerType, 0);
+  }, [gameState, playerId]);
 
   if (!gameState || gameState.phase !== 'ended' || !gameState.winnerId) return null;
 

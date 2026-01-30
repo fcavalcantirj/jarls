@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../../store/gameStore';
 import type { GroqModel, GroqDifficulty, AIConfig } from '@jarls/shared';
 import { GROQ_MODEL_NAMES, DEFAULT_GROQ_MODEL, DIFFICULTY_PROMPTS } from '@jarls/shared';
+import { GameEvents } from '../../lib/analytics';
 
 type OpponentType = 'human' | 'ai';
 type AIType = 'local' | 'groq';
@@ -56,6 +57,9 @@ export default function CreateGameForm() {
           throw new Error(body.message ?? 'Failed to create game');
         }
         const { gameId } = (await createRes.json()) as { gameId: string };
+
+        // Track game creation
+        GameEvents.multiplayerCreated(gameId);
 
         // 2. Join game
         const joinRes = await fetch(`/api/games/${gameId}/join`, {
