@@ -233,6 +233,17 @@ export class GameManager {
           createdAt: snap.createdAt ?? new Date(),
         };
 
+        // Recreate AI player instances for players marked as AI
+        for (const player of context.players) {
+          if (player.isAI) {
+            const apiKey = process.env.GROQ_API_KEY;
+            // Default to Groq AI if API key available, otherwise use random
+            const ai = apiKey ? new GroqAI(apiKey) : new RandomAI(500, 1500);
+            managedGame.aiPlayers.push({ playerId: player.id, ai });
+            console.log(`Recovered AI player ${player.name} (${player.id}) for game ${gameId}`);
+          }
+        }
+
         // Subscribe to state changes for ongoing persistence
         const subscription = actor.subscribe((snapshot) => {
           const currentState = getStateName(snapshot.value);
