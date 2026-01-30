@@ -33,6 +33,27 @@ The following infrastructure tasks in `specs/prd-v1.json` are **BLOCKING** and m
 
 ## Golden Rules
 
+### TDD First — Write Tests Before Code
+
+**ALWAYS follow Test-Driven Development when fixing bugs or adding features.**
+
+1. **RED**: Write a failing test that demonstrates the bug or describes the expected behavior
+2. **GREEN**: Write the minimum code needed to make the test pass
+3. **REFACTOR**: Clean up the code while keeping tests green
+
+**Why this matters:**
+
+- Tests prove the fix actually works before deployment
+- Tests document the expected behavior
+- Tests prevent regressions
+- Without a failing test, you can't prove you fixed anything
+
+**Never skip this process:**
+
+- Do NOT write code first, then tests
+- Do NOT "test manually in production"
+- Do NOT assume code works without a failing test proving the problem
+
 ### Server Is the Authority — Client Must Be Dumb
 
 **100% of game logic lives on the API. The client is a dumb terminal that only renders and relays user input.**
@@ -51,6 +72,7 @@ The following infrastructure tasks in `specs/prd-v1.json` are **BLOCKING** and m
 **In `useCallback` handlers that need the LATEST state for blocking decisions, read directly from `useGameStore.getState()`, NOT from captured React state.**
 
 React's `useCallback` captures variable values at render time. When a user clicks rapidly:
+
 1. First click triggers callback → state updated via Zustand
 2. React hasn't re-rendered yet
 3. Second click triggers callback → **still has OLD captured values!**

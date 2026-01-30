@@ -101,11 +101,37 @@ function getStateName(value: string | Record<string, unknown>): string {
  * and executing game actions. Integrates with PostgreSQL persistence
  * to save snapshots and events on each state transition.
  */
+/** Callback type for AI move notifications */
+export type AIMovedCallback = (gameId: string, result: MoveResult) => void;
+
 export class GameManager {
   private games: Map<string, ManagedGame> = new Map();
   private pendingAIMoves: Set<string> = new Set();
   /** Per-game mutex locks to serialize move processing and prevent race conditions */
   private moveLocks: Map<string, Promise<void>> = new Map();
+  /** Callbacks to notify when AI makes a move (for socket broadcasting) */
+  private aiMoveCallbacks: AIMovedCallback[] = [];
+
+  /**
+   * Register a callback to be called when an AI player makes a move.
+   * Used by socket handlers to broadcast turnPlayed events.
+   */
+  onAIMove(callback: AIMovedCallback): void {
+    this.aiMoveCallbacks.push(callback);
+  }
+
+  /**
+   * Notify all registered callbacks that an AI made a move.
+   */
+  private notifyAIMove(gameId: string, result: MoveResult): void {
+    for (const callback of this.aiMoveCallbacks) {
+      try {
+        callback(gameId, result);
+      } catch (err) {
+        console.error('Error in AI move callback:', err);
+      }
+    }
+  }
 
   /**
    * Create a new game with the given configuration.
@@ -958,6 +984,10 @@ export class GameManager {
         ) {
           const result = await this.makeMove(gameId, currentPlayerId, command, context.turnNumber);
           console.log(`[AI MOVE RESULT] success=${result.success} error=${result.error ?? 'none'}`);
+          // Notify callbacks so socket handlers can broadcast to clients
+          if (result.success) {
+            this.notifyAIMove(gameId, result);
+          }
         } else {
           console.warn(
             `[AI MOVE SKIPPED] State changed: expected turn ${context.turnNumber}, got ${currentContext.turnNumber}`
@@ -977,7 +1007,15 @@ export class GameManager {
               currentContext.currentPlayerId === currentPlayerId &&
               currentContext.turnNumber === context.turnNumber
             ) {
-              await this.makeMove(gameId, currentPlayerId, fallbackCommand, context.turnNumber);
+              const result = await this.makeMove(
+                gameId,
+                currentPlayerId,
+                fallbackCommand,
+                context.turnNumber
+              );
+              if (result.success) {
+                this.notifyAIMove(gameId, result);
+              }
             }
           })
           .catch((fallbackErr) => {

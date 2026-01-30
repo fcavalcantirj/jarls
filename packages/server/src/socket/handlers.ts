@@ -38,6 +38,30 @@ type TypedSocket = Socket<
  * This is the main entry point for wiring up the real-time layer.
  */
 export function registerSocketHandlers(io: TypedServer, gameManager: GameManager): void {
+  // Register callback to broadcast AI moves to clients
+  gameManager.onAIMove((gameId, result) => {
+    console.log(
+      `[AI turnPlayed] Broadcasting AI move for game ${gameId}, turn=${result.newState.turnNumber}`
+    );
+    io.to(gameId).emit('turnPlayed', {
+      newState: result.newState,
+      events: result.events,
+    });
+
+    // Check if game ended due to AI move
+    const gameEndedEvent = result.events.find((e) => e.type === 'GAME_ENDED');
+    if (gameEndedEvent && gameEndedEvent.type === 'GAME_ENDED') {
+      io.to(gameId).emit('gameEnded', {
+        winnerId: gameEndedEvent.winnerId,
+        winCondition: gameEndedEvent.winCondition,
+        finalState: result.newState,
+      });
+    }
+
+    // Check if starvation triggered
+    checkAndBroadcastStarvation(io, gameManager, gameId);
+  });
+
   io.on('connection', (socket: TypedSocket) => {
     console.log(`Socket connected: ${socket.id} (recovered: ${socket.recovered})`);
 

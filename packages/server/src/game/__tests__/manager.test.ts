@@ -772,6 +772,58 @@ describe('GameManager', () => {
       expect(aiPlayer.isAI).toBe(true);
     });
 
+    it('AI move triggers onAIMove callback', async () => {
+      manager = new GameManager();
+      const gameId = await manager.create({ config: createTestConfig() });
+      const humanId = manager.join(gameId, 'Human');
+      manager.addAIPlayer(gameId, 'random');
+
+      // Set up callback to capture AI moves
+      const aiMoves: any[] = [];
+      manager.onAIMove((gameId, result) => {
+        aiMoves.push({ gameId, result });
+      });
+
+      // Start the game
+      manager.start(gameId, humanId);
+
+      // Get initial state
+      const snapshot = manager.getState(gameId);
+      const context = snapshot!.context as any;
+      const firstPlayer = context.currentPlayerId;
+
+      // If human goes first, make a move to trigger AI
+      if (firstPlayer === humanId) {
+        const { getValidMoves } = await import('@jarls/shared');
+        const humanPieces = context.pieces.filter((p: any) => p.playerId === humanId);
+        let humanPiece = null;
+        let moves: any[] = [];
+        for (const piece of humanPieces) {
+          const pieceMoves = getValidMoves(context, piece.id);
+          if (pieceMoves.length > 0) {
+            humanPiece = piece;
+            moves = pieceMoves;
+            break;
+          }
+        }
+        await manager.makeMove(gameId, humanId, {
+          pieceId: humanPiece!.id,
+          destination: moves[0].destination,
+        });
+      }
+
+      // Wait for AI move
+      const startTime = Date.now();
+      while (Date.now() - startTime < 3000 && aiMoves.length === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      // CRITICAL: AI move should trigger callback with result
+      expect(aiMoves.length).toBeGreaterThan(0);
+      expect(aiMoves[0].gameId).toBe(gameId);
+      expect(aiMoves[0].result.success).toBe(true);
+    });
+
     it('AI makes a move when it becomes their turn', async () => {
       manager = new GameManager();
       const gameId = await manager.create({ config: createTestConfig() });
