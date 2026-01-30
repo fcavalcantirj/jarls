@@ -23,12 +23,9 @@ export default function Game() {
   const [error, setError] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [aiSettingsOpen, setAISettingsOpen] = useState(false);
-  const [isPortraitMobile, setIsPortraitMobile] = useState(() => {
-    const isMobile = window.innerWidth <= 768;
-    return isMobile && window.innerHeight > window.innerWidth;
-  });
+  const [isPortraitMobile, setIsPortraitMobile] = useState(false);
 
-  // Detect portrait orientation on mobile (for rotate modal)
+  // Detect portrait orientation on mobile
   useEffect(() => {
     const checkOrientation = () => {
       const isMobile = window.innerWidth <= 768;
@@ -221,6 +218,7 @@ const pageStyle: React.CSSProperties = {
   flexDirection: 'column',
   flex: 1,
   backgroundColor: '#0d1117',
+  overflow: 'hidden',
 };
 
 const headerStyle: React.CSSProperties = {

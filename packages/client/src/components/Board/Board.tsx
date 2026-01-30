@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState, type MouseEvent, type TouchEvent } from 'react';
+import { useRef, useEffect, useCallback, type MouseEvent, type TouchEvent } from 'react';
 import { isOnBoardAxial, getValidMoves } from '@jarls/shared';
 import type { AxialCoord } from '@jarls/shared';
 import { useGameStore, selectIsMyTurn } from '../../store/gameStore';
@@ -11,16 +11,11 @@ import { getSocket } from '../../socket/client';
 
 const ERROR_TOAST_DURATION_MS = 3000;
 
-// Layout constants
-const MOBILE_BREAKPOINT = 768;
-const LANDSCAPE_BOARD_ASPECT = 0.9; // Board height as ratio of width in landscape
-
 export function Board() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<BoardRenderer | null>(null);
   const animationSystemRef = useRef(new AnimationSystem());
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [canvasHeight, setCanvasHeight] = useState<number | null>(null);
 
   const gameState = useGameStore((s) => s.gameState);
   const selectedPieceId = useGameStore((s) => s.selectedPieceId);
@@ -138,21 +133,10 @@ export function Board() {
 
     const handleResize = () => {
       const width = parent.clientWidth;
-      let height = parent.clientHeight;
+      const height = parent.clientHeight;
 
       // Skip if dimensions are zero (layout not yet computed)
       if (width === 0 || height === 0) return;
-
-      // Landscape mobile: use width-based height for larger board
-      const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
-      const isLandscape = window.innerWidth > window.innerHeight;
-      if (isMobile && isLandscape) {
-        // Board sized by width, allowing vertical scroll
-        height = width * LANDSCAPE_BOARD_ASPECT;
-        setCanvasHeight(height);
-      } else {
-        setCanvasHeight(null);
-      }
 
       canvas.width = width;
       canvas.height = height;
@@ -364,31 +348,21 @@ export function Board() {
     if (hoveredCombat) useGameStore.getState().clearHoveredCombat();
   }, [hoveredCombat]);
 
-  // Dynamic height for landscape mobile (allows larger board with scroll)
-  const wrapperStyle: React.CSSProperties = {
-    position: 'relative',
-    width: '100%',
-    height: canvasHeight ? `${canvasHeight}px` : '100%',
-    minHeight: canvasHeight ? `${canvasHeight}px` : undefined,
-  };
-
-  const canvasStyle: React.CSSProperties = {
-    display: 'block',
-    width: '100%',
-    height: canvasHeight ? `${canvasHeight}px` : '100%',
-    cursor: isAnimating || movePending ? 'wait' : 'pointer',
-    touchAction: 'none',
-  };
-
   return (
-    <div style={wrapperStyle}>
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <canvas
         ref={canvasRef}
         onClick={handleClick}
         onTouchEnd={handleTouchEnd}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        style={canvasStyle}
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          cursor: isAnimating || movePending ? 'wait' : 'pointer',
+          touchAction: 'none',
+        }}
       />
       {errorMessage && (
         <div

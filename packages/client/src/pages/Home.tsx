@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { VERSION } from '@jarls/shared';
 
 interface GameStats {
   totalGames: number;
@@ -32,7 +33,7 @@ export default function Home() {
           <span style={titleGradientStyle}>JARLS</span>
         </h1>
         <p style={subtitleStyle}>A Viking Strategy Board Game</p>
-        <p style={versionStyle}>v{__APP_VERSION__}</p>
+        <p style={versionStyle}>v{VERSION}</p>
       </div>
 
       {/* Quick Actions */}

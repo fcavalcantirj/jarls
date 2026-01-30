@@ -1,6 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import '../../styles/layout.css';
 
 interface LayoutProps {
   children: ReactNode;
@@ -11,7 +10,7 @@ export default function Layout({ children }: LayoutProps) {
   const isGamePage = location.pathname.startsWith('/game/');
 
   return (
-    <div className="layout">
+    <div style={layoutStyle}>
       <header style={headerStyle}>
         <Link to="/" style={logoStyle}>
           Jarls
@@ -36,12 +35,7 @@ export default function Layout({ children }: LayoutProps) {
         </nav>
       </header>
 
-      <main
-        className={isGamePage ? 'layout-main' : undefined}
-        style={isGamePage ? undefined : mainStyle}
-      >
-        {children}
-      </main>
+      <main style={mainStyle}>{children}</main>
 
       <footer style={footerStyle}>
         {isGamePage ? (
@@ -53,6 +47,14 @@ export default function Layout({ children }: LayoutProps) {
     </div>
   );
 }
+
+const layoutStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  height: '100vh',
+  overflow: 'hidden',
+  backgroundColor: '#0d1117',
+};
 
 const headerStyle: React.CSSProperties = {
   display: 'flex',
