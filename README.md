@@ -1,6 +1,68 @@
+<div align="center">
+
+![Jarls - Viking Hex Strategy](jarls-banner.png)
+
 # Jarls
 
+**A Viking hex strategy game built almost entirely by AI**
+
+[![Built with Claude](https://img.shields.io/badge/Built%20with-Claude%20Code-blueviolet?style=for-the-badge)](https://claude.ai)
+[![Tests](https://img.shields.io/badge/Tests-865%2B%20passing-brightgreen?style=for-the-badge)]()
+[![TDD](https://img.shields.io/badge/TDD-First-orange?style=for-the-badge)]()
+
+_"I'm helping!"_ - Claude, probably
+
+</div>
+
+---
+
+## The Ralph Wiggum Development Loop
+
+This project was built using what I affectionately call the **Ralph Wiggum Loop** - a form of unassisted AI development where Claude Code runs autonomously in a continuous loop:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│   Human: "Add feature X"                                │
+│      │                                                  │
+│      ▼                                                  │
+│   ┌─────────────────────────────────────────────┐       │
+│   │  Claude reads codebase                      │       │
+│   │  Claude writes tests (TDD)                  │       │
+│   │  Claude implements feature                  │       │
+│   │  Claude runs tests                          │       │
+│   │  Claude fixes issues                        │       │
+│   │  Claude commits & pushes                    │       │
+│   └─────────────────────────────────────────────┘       │
+│      │                                                  │
+│      ▼                                                  │
+│   Human: "Nice. Now add feature Y"                      │
+│      │                                                  │
+│      └──────────── (repeat) ────────────────────────────┘
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+The human's role? Describe features, review results, drink coffee. The AI handles the rest - reading existing code, understanding patterns, writing tests first, implementing features, debugging, and even writing commit messages.
+
+**865+ tests. Zero copy-paste from Stack Overflow. Pure vibes.**
+
+---
+
+## What is Jarls?
+
 A browser-based turn-based strategy game featuring push-combat mechanics on a hexagonal grid. Players compete as Viking Jarls to claim the central Throne or eliminate all opponents by pushing them off the board edge.
+
+### Game Features
+
+- **Hexagonal grid combat** with push mechanics
+- **Multiple AI opponents** (Local heuristic + Groq LLM-powered)
+- **Real-time multiplayer** via Socket.IO
+- **Three difficulty levels** - Beginner, Intermediate, Hard
+- **Starvation mechanics** to prevent stalemates
+- **Move history tracking** for AI context awareness
+
+---
 
 ## Quick Start
 
@@ -20,11 +82,15 @@ pnpm run dev
 
 The client runs at `http://localhost:5173` and the server at `http://localhost:3000`.
 
+---
+
 ## Prerequisites
 
 - Node.js >= 20.0.0
 - pnpm 9.x
 - Docker and Docker Compose (for PostgreSQL and Redis)
+
+---
 
 ## Project Structure
 
@@ -40,93 +106,35 @@ jarls/
 └── .github/workflows/       # CI pipeline
 ```
 
-## Development Setup
+---
 
-### 1. Clone and install
+## The AI Development Philosophy
 
-```bash
-git clone <repo-url>
-cd jarls
-pnpm install
-```
+### TDD First - Always
 
-### 2. Start infrastructure
+Every feature follows Red-Green-Refactor:
 
-```bash
-pnpm run docker:up
-```
+1. **RED**: Write failing tests that describe expected behavior
+2. **GREEN**: Write minimum code to make tests pass
+3. **REFACTOR**: Clean up while keeping tests green
 
-This starts PostgreSQL 16 on port 5432 and Redis 7 on port 6379.
+The AI doesn't skip tests. Ever. Because without a failing test, you can't prove you fixed anything.
 
-### 3. Run migrations
+### Server is Authority - Client is Dumb
 
-```bash
-pnpm run db:migrate
-```
+The client is a "dumb terminal" that only:
 
-### 4. Start dev servers
+- Renders what the server says
+- Sends user input to the server
+- Animates state transitions
 
-```bash
-pnpm run dev
-```
+ALL game logic lives server-side. No exceptions.
 
-This runs the Vite client dev server (port 5173) and the Express server (port 3000) concurrently. The Vite dev server proxies `/api` and `/socket.io` requests to the Express server.
+### Small Files - Big Impact
 
-### 5. Run individually
+No file exceeds ~800 lines. When a file grows too large, it gets split into modules. This keeps AI context manageable and humans sane.
 
-```bash
-pnpm run dev:client   # Client only (port 5173)
-pnpm run dev:server   # Server only (port 3000)
-```
-
-## Environment Variables
-
-| Variable       | Default                                         | Description                                       |
-| -------------- | ----------------------------------------------- | ------------------------------------------------- |
-| `DATABASE_URL` | `postgresql://jarls:jarls@localhost:5432/jarls` | PostgreSQL connection string                      |
-| `REDIS_URL`    | `redis://localhost:6379`                        | Redis connection string                           |
-| `PORT`         | `3000`                                          | Server port                                       |
-| `NODE_ENV`     | `development`                                   | Environment (`development`, `production`, `test`) |
-
-Copy `.env.example` to `.env` to override defaults:
-
-```bash
-cp .env.example .env
-```
-
-## Available Scripts
-
-| Script                         | Description                          |
-| ------------------------------ | ------------------------------------ |
-| `pnpm run dev`                 | Start client and server in dev mode  |
-| `pnpm run dev:client`          | Start Vite client dev server         |
-| `pnpm run dev:server`          | Start Express server with hot-reload |
-| `pnpm run build`               | Build all packages                   |
-| `pnpm run test`                | Run Jest unit tests                  |
-| `pnpm run test:e2e`            | Run Playwright E2E tests             |
-| `pnpm run typecheck`           | TypeScript type checking             |
-| `pnpm run lint`                | Run ESLint                           |
-| `pnpm run format`              | Format code with Prettier            |
-| `pnpm run format:check`        | Check formatting                     |
-| `pnpm run docker:up`           | Start Docker services                |
-| `pnpm run docker:down`         | Stop Docker services                 |
-| `pnpm run db:migrate`          | Run database migrations              |
-| `pnpm run db:rollback`         | Rollback last migration              |
-| `pnpm run db:create-migration` | Create a new migration file          |
-
-## Production Deployment
-
-### Using Docker Compose
-
-```bash
-docker compose -f docker-compose.prod.yml up -d
-```
-
-This builds the app from the Dockerfile and starts it alongside PostgreSQL and Redis. The server serves the built client as static files.
-
-### Environment
-
-Set `POSTGRES_PASSWORD` in your environment or `.env` file for production. All services include health checks and `restart: unless-stopped` policies.
+---
 
 ## Technology Stack
 
@@ -138,9 +146,11 @@ Set `POSTGRES_PASSWORD` in your environment or `.env` file for production. All s
 | Shared   | TypeScript game logic (hex math, combat, movement)    |
 | Testing  | Jest, Playwright, Supertest                           |
 | DevOps   | Docker, GitHub Actions, pnpm workspaces               |
-| Quality  | ESLint, Prettier, Husky, TypeScript strict mode       |
+| AI       | Groq LLM (Llama 3.1/3.3), Local Heuristic AI          |
 
-## Architecture Overview
+---
+
+## Architecture
 
 ```
 Browser (React + Canvas)
@@ -156,33 +166,7 @@ Browser (React + Canvas)
 
 The server is authoritative: clients send commands, the server validates and applies them using shared game logic. Game state is managed by XState v5 state machines with persistence to PostgreSQL for crash recovery.
 
-### Package Dependencies
-
-```
-@jarls/shared (no runtime deps)
-    ↑               ↑
-    │               │
-@jarls/server   @jarls/client
-```
-
-- **@jarls/shared** — Pure TypeScript game logic with zero runtime dependencies. Contains hex coordinate math, board generation, combat calculations, move validation, starvation mechanics, and all type definitions. Both server and client import from this package.
-- **@jarls/server** — Express 5 REST API + Socket.IO WebSocket server. Uses XState v5 for game state machines, PostgreSQL for persistence (snapshots + events), Redis for sessions and Socket.IO adapter. Depends on `@jarls/shared` for all game rule enforcement.
-- **@jarls/client** — React 18 SPA with Canvas-based hex board rendering. Uses Zustand for client state, Socket.IO for real-time communication, and imports types + utility functions from `@jarls/shared`. All game logic runs server-side; the client only sends commands and renders state.
-
-### Shared Package Modules
-
-```
-shared/src/
-├── types.ts           # All type/interface definitions
-├── hex.ts             # Hex coordinate math (distance, neighbors, lines)
-├── board.ts           # Board generation, starting positions, shield placement
-├── combat.ts          # Combat orchestration (re-exports combat-core.ts)
-├── combat-core.ts     # Attack/defense calculation, push resolution
-├── move.ts            # Move execution, valid moves (re-exports move-validation.ts)
-├── move-validation.ts # Path validation, draft formation detection
-├── starvation.ts      # Starvation trigger, candidate selection, resolution
-└── index.ts           # Barrel re-export of all modules
-```
+---
 
 ## Game Rules Summary
 
@@ -193,8 +177,69 @@ shared/src/
 - **Push Resolution**: If attack > defense, the defender is pushed. Chains of pieces push together. Pieces pushed off the board edge are eliminated.
 - **Starvation**: After 10 rounds without an elimination, each player must sacrifice their furthest Warrior from the Throne.
 
-## Monorepo Guidelines
+---
 
-- No source code file should exceed ~800 lines (split into modules if needed).
-- Test files mirror source structure.
-- All packages share a common TypeScript base config with strict mode.
+## Available Scripts
+
+| Script                 | Description                         |
+| ---------------------- | ----------------------------------- |
+| `pnpm run dev`         | Start client and server in dev mode |
+| `pnpm run build`       | Build all packages                  |
+| `pnpm run test`        | Run Jest unit tests                 |
+| `pnpm run test:e2e`    | Run Playwright E2E tests            |
+| `pnpm run typecheck`   | TypeScript type checking            |
+| `pnpm run lint`        | Run ESLint                          |
+| `pnpm run docker:up`   | Start Docker services               |
+| `pnpm run docker:down` | Stop Docker services                |
+| `pnpm run db:migrate`  | Run database migrations             |
+
+---
+
+## Environment Variables
+
+| Variable       | Default                                         | Description                  |
+| -------------- | ----------------------------------------------- | ---------------------------- |
+| `DATABASE_URL` | `postgresql://jarls:jarls@localhost:5432/jarls` | PostgreSQL connection string |
+| `REDIS_URL`    | `redis://localhost:6379`                        | Redis connection string      |
+| `PORT`         | `3000`                                          | Server port                  |
+| `GROQ_API_KEY` | -                                               | API key for Groq LLM AI      |
+
+---
+
+## Production Deployment
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+This builds the app from the Dockerfile and starts it alongside PostgreSQL and Redis.
+
+---
+
+## Contributing
+
+This project welcomes contributions! Whether you're a human or an AI, feel free to:
+
+1. Fork the repo
+2. Create a feature branch
+3. Write tests first (TDD!)
+4. Implement your feature
+5. Submit a PR
+
+---
+
+## License
+
+MIT
+
+---
+
+<div align="center">
+
+**Built with the Ralph Wiggum Loop**
+
+_Human provides direction. AI does the work. Tests prove it works._
+
+Made with mass amounts of mass and mass amounts of mass and Claude Code
+
+</div>
