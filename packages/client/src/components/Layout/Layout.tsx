@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import type { ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -8,9 +8,47 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const isGamePage = location.pathname.startsWith('/game/');
+  const [isLandscapeMobile, setIsLandscapeMobile] = useState(false);
+
+  // Detect landscape mobile for scroll handling
+  useEffect(() => {
+    const checkOrientation = () => {
+      const isMobile = window.innerWidth <= 768;
+      const isPortrait = window.innerHeight > window.innerWidth;
+      setIsLandscapeMobile(isMobile && !isPortrait);
+    };
+
+    checkOrientation();
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', checkOrientation);
+    return () => {
+      window.removeEventListener('resize', checkOrientation);
+      window.removeEventListener('orientationchange', checkOrientation);
+    };
+  }, []);
+
+  // Allow scroll in landscape mobile on game pages
+  const dynamicLayoutStyle: React.CSSProperties = {
+    ...layoutStyle,
+    ...(isLandscapeMobile &&
+      isGamePage && {
+        overflow: 'auto',
+        height: 'auto',
+        minHeight: '100vh',
+      }),
+  };
+
+  const dynamicMainStyle: React.CSSProperties = {
+    ...mainStyle,
+    ...(isLandscapeMobile &&
+      isGamePage && {
+        flex: 'none',
+        minHeight: '80vw', // Board needs square-ish space
+      }),
+  };
 
   return (
-    <div style={layoutStyle}>
+    <div style={dynamicLayoutStyle}>
       <header style={headerStyle}>
         <Link to="/" style={logoStyle}>
           Jarls
@@ -35,7 +73,7 @@ export default function Layout({ children }: LayoutProps) {
         </nav>
       </header>
 
-      <main style={mainStyle}>{children}</main>
+      <main style={dynamicMainStyle}>{children}</main>
 
       <footer style={footerStyle}>
         {isGamePage ? (
