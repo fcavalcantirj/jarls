@@ -900,7 +900,21 @@ export class GameManager {
     if (!currentPlayerId) return;
 
     const aiPlayer = managedGame.aiPlayers.find((ap) => ap.playerId === currentPlayerId);
-    if (!aiPlayer) return;
+    if (!aiPlayer) {
+      // Log when we expect AI to play but can't find it
+      const currentPlayerData = context.players.find((p) => p.id === currentPlayerId);
+      if (currentPlayerData?.isAI) {
+        console.error(
+          `[AI BUG] Player ${currentPlayerId} (${currentPlayerData.name}) is marked isAI but not in aiPlayers array!`,
+          `aiPlayers: ${managedGame.aiPlayers.map((ap) => ap.playerId).join(', ') || 'empty'}`
+        );
+      }
+      return;
+    }
+
+    console.log(
+      `[AI TURN] AI player ${aiPlayer.playerId} generating move for turn ${context.turnNumber}`
+    );
 
     // Avoid triggering multiple AI moves concurrently
     const aiKey = `${gameId}:${currentPlayerId}:${context.turnNumber}`;
@@ -920,6 +934,9 @@ export class GameManager {
 
     movePromise
       .then(async (command) => {
+        console.log(
+          `[AI MOVE] Generated: pieceId=${command.pieceId} dest=(${command.destination.q},${command.destination.r})`
+        );
         // Verify the game is still in the right state before making the move
         const currentSnapshot = managedGame.actor.getSnapshot();
         const currentContext = currentSnapshot.context as GameMachineContext;
@@ -927,7 +944,12 @@ export class GameManager {
           currentContext.currentPlayerId === currentPlayerId &&
           currentContext.turnNumber === context.turnNumber
         ) {
-          await this.makeMove(gameId, currentPlayerId, command, context.turnNumber);
+          const result = await this.makeMove(gameId, currentPlayerId, command, context.turnNumber);
+          console.log(`[AI MOVE RESULT] success=${result.success} error=${result.error ?? 'none'}`);
+        } else {
+          console.warn(
+            `[AI MOVE SKIPPED] State changed: expected turn ${context.turnNumber}, got ${currentContext.turnNumber}`
+          );
         }
       })
       .catch((err) => {
