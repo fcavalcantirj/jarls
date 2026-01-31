@@ -73,9 +73,16 @@ export default function Home() {
 
       {/* Game Description */}
       <div style={descriptionStyle}>
-        <p>
-          Command your Jarl and warriors on a hexagonal battlefield. Push enemies off the edge, into
-          deadly holes, or capture the throne to claim victory.
+        <p style={descriptionTextStyle}>
+          ⚔️ Command your <span style={termJarlStyle}>Jarl</span> and{' '}
+          <span style={termWarriorStyle}>warriors</span> on a hexagonal battlefield
+        </p>
+        <p style={descriptionTextStyle}>
+          💀 Push enemies off the edge or into deadly <span style={termHoleStyle}>holes</span>
+        </p>
+        <p style={descriptionTextStyle}>
+          👑 Capture the <span style={termThroneStyle}>throne</span> to claim{' '}
+          <span style={termVictoryStyle}>victory!</span>
         </p>
       </div>
 
@@ -264,12 +271,44 @@ const statLabelStyle: React.CSSProperties = {
 };
 
 const descriptionStyle: React.CSSProperties = {
-  maxWidth: '400px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+  maxWidth: '450px',
   textAlign: 'center',
-  color: '#8b949e',
-  fontSize: 'clamp(0.75rem, 2.5vw, 0.9rem)',
-  lineHeight: '1.5',
   padding: '0 var(--padding-page)',
+};
+
+const descriptionTextStyle: React.CSSProperties = {
+  margin: 0,
+  color: '#c9d1d9',
+  fontSize: 'clamp(0.9rem, 3vw, 1.1rem)',
+  lineHeight: '1.6',
+};
+
+const termJarlStyle: React.CSSProperties = {
+  color: '#ffd700',
+  fontWeight: 'bold',
+};
+
+const termWarriorStyle: React.CSSProperties = {
+  color: '#58a6ff',
+  fontWeight: 'bold',
+};
+
+const termHoleStyle: React.CSSProperties = {
+  color: '#f85149',
+  fontWeight: 'bold',
+};
+
+const termThroneStyle: React.CSSProperties = {
+  color: '#ffc107',
+  fontWeight: 'bold',
+};
+
+const termVictoryStyle: React.CSSProperties = {
+  color: '#3fb950',
+  fontWeight: 'bold',
 };
 
 const groqBadgeStyle: React.CSSProperties = {
