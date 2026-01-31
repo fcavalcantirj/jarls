@@ -18,10 +18,10 @@ const DEFAULT_HEX_STROKE = '#4a4a5e';
 const THRONE_FILL = '#b8860b';
 /** Stroke color for the Throne hex */
 const THRONE_STROKE = '#daa520';
-/** Fill color for shield hexes */
-const SHIELD_FILL = '#6b6b7b';
-/** Stroke color for shield hexes */
-const SHIELD_STROKE = '#8a8a9a';
+/** Fill color for hole hexes */
+const HOLE_FILL = '#1a1a1a';
+/** Stroke color for hole hexes */
+const HOLE_STROKE = '#3a3a3a';
 /** Player colors indexed by player order */
 const PLAYER_COLORS: Record<string, string> = {};
 /** Default player color palette */
@@ -203,32 +203,37 @@ export class BoardRenderer {
   }
 
   /**
-   * Draw a shield piece on the board.
-   * Renders the hex with a gray fill and a shield icon (simple diamond shape).
+   * Draw a hole on the board.
+   * Renders the hex as a dark void that pieces fall into.
    */
-  drawShield(hex: AxialCoord): void {
+  drawHole(hex: AxialCoord): void {
     const dims = this.dimensions;
     if (!dims) return;
 
-    this.drawHex(hex, SHIELD_FILL, SHIELD_STROKE);
+    this.drawHex(hex, HOLE_FILL, HOLE_STROKE);
 
     const { x, y } = hexToPixel(hex, dims.hexSize, dims.centerX, dims.centerY);
-    const iconSize = dims.hexSize * 0.35;
+    const radius = dims.hexSize * 0.4;
     const ctx = this.ctx;
 
-    // Shield icon: a simple diamond/kite shape
+    // Inner dark circle to represent the pit
     ctx.beginPath();
-    ctx.moveTo(x, y - iconSize);
-    ctx.lineTo(x + iconSize * 0.7, y);
-    ctx.lineTo(x, y + iconSize * 0.8);
-    ctx.lineTo(x - iconSize * 0.7, y);
-    ctx.closePath();
-
-    ctx.fillStyle = '#c0c0c0';
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, '#000000');
+    gradient.addColorStop(0.7, '#0a0a0a');
+    gradient.addColorStop(1, '#1a1a1a');
+    ctx.fillStyle = gradient;
     ctx.fill();
-    ctx.strokeStyle = '#e0e0e0';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+  }
+
+  /**
+   * Draw all holes on the board.
+   */
+  drawHoles(holes: AxialCoord[]): void {
+    for (const hole of holes) {
+      this.drawHole(hole);
+    }
   }
 
   /**
@@ -305,22 +310,17 @@ export class BoardRenderer {
 
   /**
    * Draw all pieces on the board.
-   * Shields are drawn first (as hex overlays), then warriors, then jarls on top.
+   * Warriors are drawn first, then jarls on top.
    */
   drawPieces(pieces: Piece[]): void {
-    const shields: Piece[] = [];
     const warriors: Piece[] = [];
     const jarls: Piece[] = [];
 
     for (const piece of pieces) {
-      if (piece.type === 'shield') shields.push(piece);
-      else if (piece.type === 'warrior') warriors.push(piece);
+      if (piece.type === 'warrior') warriors.push(piece);
       else if (piece.type === 'jarl') jarls.push(piece);
     }
 
-    for (const piece of shields) {
-      this.drawShield(piece.position);
-    }
     for (const piece of warriors) {
       this.drawWarrior(piece);
     }
@@ -415,7 +415,6 @@ export class BoardRenderer {
     const ctx = this.ctx;
     for (const piece of pieces) {
       if (piece.playerId !== currentPlayerId) continue;
-      if (piece.type === 'shield') continue;
 
       const { x, y } = hexToPixel(piece.position, dims.hexSize, dims.centerX, dims.centerY);
       const radius = piece.type === 'jarl' ? dims.hexSize * 0.52 : dims.hexSize * 0.45;
@@ -444,6 +443,9 @@ export class BoardRenderer {
 
     // Draw hex grid
     this.drawGrid(state.config.boardRadius);
+
+    // Draw holes on top of grid
+    this.drawHoles(state.holes);
 
     // Draw current player glow (behind pieces)
     if (highlights?.currentPlayerId) {
@@ -496,6 +498,9 @@ export class BoardRenderer {
     // Draw hex grid
     this.drawGrid(state.config.boardRadius);
 
+    // Draw holes on top of grid
+    this.drawHoles(state.holes);
+
     // Draw non-animated pieces at their normal positions
     const staticPieces = state.pieces.filter((p) => !animatingPieceIds.has(p.id));
     this.drawPieces(staticPieces);
@@ -509,10 +514,7 @@ export class BoardRenderer {
       ctx.save();
       ctx.globalAlpha = ap.opacity;
 
-      if (piece.type === 'shield') {
-        // Shields don't typically animate, but handle gracefully
-        this.drawShield(piece.position);
-      } else if (piece.type === 'jarl') {
+      if (piece.type === 'jarl') {
         this.drawJarlAt(ap.x, ap.y, piece, dims);
       } else {
         this.drawWarriorAt(ap.x, ap.y, piece, dims);

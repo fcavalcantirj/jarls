@@ -35,13 +35,16 @@ export type HexDirection = 0 | 1 | 2 | 3 | 4 | 5;
 // ============================================================================
 
 /** Types of pieces in the game */
-export type PieceType = 'jarl' | 'warrior' | 'shield';
+export type PieceType = 'jarl' | 'warrior';
 
-/** A game piece (Jarl, Warrior, or Shield) */
+/** Terrain types that determine hole count */
+export type TerrainType = 'calm' | 'treacherous' | 'chaotic';
+
+/** A game piece (Jarl or Warrior) */
 export interface Piece {
   id: string;
   type: PieceType;
-  playerId: string | null; // null for shields
+  playerId: string | null;
   position: AxialCoord;
 }
 
@@ -57,13 +60,6 @@ export interface Player {
   isEliminated: boolean;
   /** Whether this player is controlled by AI */
   isAI?: boolean;
-  /**
-   * Tracks how many rounds since this player lost their last Warrior.
-   * null/undefined = player still has Warriors (or has never had them removed).
-   * When a player loses their last Warrior, this is set to 0 and increments each round.
-   * After 5 rounds, the Jarl is eliminated via starvation.
-   */
-  roundsSinceLastWarrior?: number | null;
 }
 
 // ============================================================================
@@ -74,15 +70,14 @@ export interface Player {
 export interface GameConfig {
   playerCount: number;
   boardRadius: number;
-  shieldCount: number;
   warriorCount: number;
   turnTimerMs: number | null;
+  terrain: TerrainType;
 }
 
 /** Internal type for player scaling lookup */
 export interface PlayerScaling {
   boardRadius: number;
-  shieldCount: number;
   warriorCount: number;
 }
 
@@ -91,7 +86,7 @@ export interface PlayerScaling {
 // ============================================================================
 
 /** Game phase */
-export type GamePhase = 'lobby' | 'setup' | 'playing' | 'starvation' | 'ended';
+export type GamePhase = 'lobby' | 'setup' | 'playing' | 'ended';
 
 /** The core game state - shared between server and client */
 export interface GameState {
@@ -100,6 +95,8 @@ export interface GameState {
   config: GameConfig;
   players: Player[];
   pieces: Piece[];
+  /** Hole positions - hexes that eliminate pieces when entered */
+  holes: AxialCoord[];
   currentPlayerId: string | null;
   turnNumber: number;
   roundNumber: number;
@@ -190,9 +187,6 @@ export type GameEvent =
   | EliminatedEvent
   | TurnEndedEvent
   | GameEndedEvent
-  | StarvationTriggeredEvent
-  | StarvationResolvedEvent
-  | JarlStarvedEvent
   | PlayerJoinedEvent
   | PlayerLeftEvent
   | TurnSkippedEvent;
@@ -222,7 +216,7 @@ export interface EliminatedEvent {
   pieceId: string;
   playerId: string | null;
   position: AxialCoord;
-  cause: 'edge' | 'starvation' | 'jarlStarvation';
+  cause: 'edge' | 'hole';
 }
 
 /** Event: A turn ended */
@@ -238,27 +232,6 @@ export interface GameEndedEvent {
   type: 'GAME_ENDED';
   winnerId: string;
   winCondition: 'throne' | 'lastStanding';
-}
-
-/** Event: Starvation was triggered */
-export interface StarvationTriggeredEvent {
-  type: 'STARVATION_TRIGGERED';
-  round: number;
-  candidates: Map<string, string[]>; // playerId -> pieceIds that can be sacrificed
-}
-
-/** Event: Starvation was resolved */
-export interface StarvationResolvedEvent {
-  type: 'STARVATION_RESOLVED';
-  sacrifices: Map<string, string>; // playerId -> sacrificed pieceId
-}
-
-/** Event: A Jarl was eliminated due to starvation (no Warriors for 5+ rounds) */
-export interface JarlStarvedEvent {
-  type: 'JARL_STARVED';
-  pieceId: string;
-  playerId: string;
-  position: AxialCoord;
 }
 
 /** Event: A player joined the game */
@@ -294,13 +267,13 @@ export type MoveValidationError =
   | 'GAME_NOT_PLAYING'
   | 'DESTINATION_OFF_BOARD'
   | 'DESTINATION_OCCUPIED_FRIENDLY'
+  | 'DESTINATION_IS_HOLE'
   | 'WARRIOR_CANNOT_ENTER_THRONE'
   | 'INVALID_DISTANCE_WARRIOR'
   | 'INVALID_DISTANCE_JARL'
   | 'JARL_NEEDS_DRAFT_FOR_TWO_HEX'
   | 'PATH_BLOCKED'
-  | 'MOVE_NOT_STRAIGHT_LINE'
-  | 'SHIELD_CANNOT_MOVE';
+  | 'MOVE_NOT_STRAIGHT_LINE';
 
 /** Result of validating a move */
 export interface MoveValidation {
@@ -344,7 +317,7 @@ export interface SimplePushResult {
 }
 
 /** Chain terminator types - what stops a push chain */
-export type ChainTerminator = 'edge' | 'shield' | 'throne' | 'empty';
+export type ChainTerminator = 'edge' | 'hole' | 'throne' | 'empty';
 
 /** Result of detecting a push chain */
 export interface ChainResult {
@@ -352,7 +325,7 @@ export interface ChainResult {
   pieces: Piece[];
   /** What terminates the chain */
   terminator: ChainTerminator;
-  /** The position where the chain ends (empty hex, edge, shield, or throne) */
+  /** The position where the chain ends (empty hex, edge, hole, or throne) */
   terminatorPosition: AxialCoord;
 }
 
@@ -366,7 +339,7 @@ export interface EdgePushResult {
   eliminatedPieceIds: string[];
 }
 
-/** Result of resolving a compression push (pieces compress against shield or throne) */
+/** Result of resolving a compression push (pieces compress against throne) */
 export interface CompressionResult {
   /** The new game state after the compression */
   newState: GameState;
@@ -425,47 +398,6 @@ export interface WinConditionsResult {
   winnerId: string | null;
   /** The win condition that was met (if victory) */
   condition: WinCondition | null;
-}
-
-// ============================================================================
-// Reachable Hex Types
-// ============================================================================
-
-// ============================================================================
-// Starvation Candidate Types
-// ============================================================================
-
-/** Starvation candidates for a single player */
-export interface PlayerStarvationCandidates {
-  /** The player whose warriors are candidates */
-  playerId: string;
-  /** Warriors that are candidates for starvation (at max distance from Throne) */
-  candidates: Piece[];
-  /** The maximum distance from the Throne among this player's warriors */
-  maxDistance: number;
-}
-
-/** Starvation candidates for all players */
-export type StarvationCandidates = PlayerStarvationCandidates[];
-
-/** A player's choice of which warrior to sacrifice during starvation */
-export interface StarvationChoice {
-  /** The player making the choice */
-  playerId: string;
-  /** The piece ID of the warrior to sacrifice */
-  pieceId: string;
-}
-
-/** Result of resolving starvation choices */
-export interface StarvationResult {
-  /** The new game state after starvation resolution */
-  newState: GameState;
-  /** Events generated by the starvation resolution */
-  events: GameEvent[];
-  /** Whether the game ended as a result of starvation */
-  gameEnded: boolean;
-  /** The winner's player ID if the game ended */
-  winnerId: string | null;
 }
 
 // ============================================================================

@@ -9,15 +9,16 @@ describe('resolvePush', () => {
       config: {
         playerCount: 2,
         boardRadius: 3,
-        shieldCount: 0,
         warriorCount: 0,
         turnTimerMs: null,
+        terrain: 'calm',
       },
       players: [
         { id: 'p1', name: 'Player 1', color: '#FF0000', isEliminated: false },
         { id: 'p2', name: 'Player 2', color: '#0000FF', isEliminated: false },
       ],
       pieces,
+      holes: [],
       currentPlayerId: 'p1',
       turnNumber: 0,
       roundNumber: 0,
@@ -25,6 +26,7 @@ describe('resolvePush', () => {
       roundsSinceElimination: 0,
       winnerId: null,
       winCondition: null,
+      moveHistory: [],
     };
   }
 
@@ -100,8 +102,8 @@ describe('resolvePush', () => {
       expect(defenderInNewState).toBeUndefined();
     });
 
-    it('should route to resolveCompression when chain terminates at shield', () => {
-      // Attacker at q=-1, defender at q=0, shield at q=1
+    it('should route to edge-like elimination when chain terminates at hole', () => {
+      // Attacker at q=-1, defender at q=0, hole at q=1
       const attacker: Piece = {
         id: 'attacker',
         type: 'warrior',
@@ -114,13 +116,9 @@ describe('resolvePush', () => {
         playerId: 'p2',
         position: { q: 0, r: 0 },
       };
-      const shield: Piece = {
-        id: 'shield',
-        type: 'shield',
-        playerId: null,
-        position: { q: 1, r: 0 },
-      };
-      const state = createTestState([attacker, defender, shield]);
+      const state = createTestState([attacker, defender]);
+      // Add hole at q=1
+      state.holes = [{ q: 1, r: 0 }];
 
       const result = resolvePush(
         state,
@@ -128,16 +126,16 @@ describe('resolvePush', () => {
         { q: -2, r: 0 }, // Attacker from position
         { q: 0, r: 0 }, // Defender position
         0, // Push East
-        false // No momentum
+        true // Has momentum for successful push
       );
 
-      // Verify compression behavior: no eliminations
-      expect(result.eliminatedPieceIds).toHaveLength(0);
-      expect(result.newState.pieces).toHaveLength(3);
+      // Defender should be eliminated (pushed into hole)
+      expect(result.eliminatedPieceIds).toContain('defender');
+      expect(result.eliminatedPieceIds).toHaveLength(1);
 
-      // When defender can't move (blocked by shield), attacker stays at attackerFrom
+      // Attacker should move to defender's position
       const attackerInNewState = result.newState.pieces.find((p) => p.id === 'attacker');
-      expect(attackerInNewState?.position).toEqual({ q: -2, r: 0 }); // Stays at attackerFrom
+      expect(attackerInNewState?.position).toEqual({ q: 0, r: 0 });
     });
 
     it('should route to resolveCompression when chain terminates at throne', () => {

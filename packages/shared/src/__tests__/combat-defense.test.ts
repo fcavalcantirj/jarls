@@ -9,7 +9,7 @@ describe('calculateDefense', () => {
       config: {
         playerCount: 2,
         boardRadius: 3,
-        shieldCount: 0,
+        terrain: 'calm',
         warriorCount: 5,
         turnTimerMs: null,
       },
@@ -18,6 +18,7 @@ describe('calculateDefense', () => {
         { id: 'p2', name: 'Player 2', color: 'blue', isEliminated: false },
       ],
       pieces,
+      holes: [],
       currentPlayerId: 'p1',
       turnNumber: 0,
       roundNumber: 0,
@@ -25,6 +26,7 @@ describe('calculateDefense', () => {
       roundsSinceElimination: 0,
       winnerId: null,
       winCondition: null,
+      moveHistory: [],
     };
   }
 

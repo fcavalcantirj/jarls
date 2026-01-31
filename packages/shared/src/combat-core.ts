@@ -61,8 +61,6 @@ export function getPieceStrength(piece: Piece): number {
       return 2;
     case 'warrior':
       return 1;
-    case 'shield':
-      return 0;
   }
 }
 

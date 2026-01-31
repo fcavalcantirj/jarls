@@ -1,5 +1,4 @@
 import {
-  axialToCube,
   hexDistance,
   hexDistanceAxial,
   isOnBoard,
@@ -15,7 +14,6 @@ import {
   hexToAngle,
   calculateStartingPositions,
   rotateHex,
-  generateSymmetricalShields,
   createInitialState,
   CubeCoord,
   GameConfig,
@@ -24,13 +22,13 @@ import {
 describe('board generation', () => {
   describe('getConfigForPlayerCount', () => {
     describe('2 players', () => {
-      it('should return radius 3, 5 shields, 5 warriors', () => {
+      it('should return radius 3, 5 warriors, calm terrain', () => {
         const config = getConfigForPlayerCount(2);
 
         expect(config.playerCount).toBe(2);
         expect(config.boardRadius).toBe(3);
-        expect(config.shieldCount).toBe(5);
         expect(config.warriorCount).toBe(5);
+        expect(config.terrain).toBe('calm');
       });
 
       it('should return 37 total hexes (3r² + 3r + 1)', () => {
@@ -42,13 +40,13 @@ describe('board generation', () => {
     });
 
     describe('3 players', () => {
-      it('should return radius 5, 4 shields, 5 warriors', () => {
+      it('should return radius 5, 5 warriors, calm terrain', () => {
         const config = getConfigForPlayerCount(3);
 
         expect(config.playerCount).toBe(3);
         expect(config.boardRadius).toBe(5);
-        expect(config.shieldCount).toBe(4);
         expect(config.warriorCount).toBe(5);
+        expect(config.terrain).toBe('calm');
       });
 
       it('should return 91 total hexes (3r² + 3r + 1)', () => {
@@ -60,13 +58,13 @@ describe('board generation', () => {
     });
 
     describe('4 players', () => {
-      it('should return radius 6, 4 shields, 4 warriors', () => {
+      it('should return radius 6, 4 warriors, calm terrain', () => {
         const config = getConfigForPlayerCount(4);
 
         expect(config.playerCount).toBe(4);
         expect(config.boardRadius).toBe(6);
-        expect(config.shieldCount).toBe(4);
         expect(config.warriorCount).toBe(4);
+        expect(config.terrain).toBe('calm');
       });
 
       it('should return 127 total hexes (3r² + 3r + 1)', () => {
@@ -78,13 +76,13 @@ describe('board generation', () => {
     });
 
     describe('5 players', () => {
-      it('should return radius 7, 3 shields, 4 warriors', () => {
+      it('should return radius 7, 4 warriors, calm terrain', () => {
         const config = getConfigForPlayerCount(5);
 
         expect(config.playerCount).toBe(5);
         expect(config.boardRadius).toBe(7);
-        expect(config.shieldCount).toBe(3);
         expect(config.warriorCount).toBe(4);
+        expect(config.terrain).toBe('calm');
       });
 
       it('should return 169 total hexes (3r² + 3r + 1)', () => {
@@ -96,13 +94,13 @@ describe('board generation', () => {
     });
 
     describe('6 players', () => {
-      it('should return radius 8, 3 shields, 4 warriors', () => {
+      it('should return radius 8, 4 warriors, calm terrain', () => {
         const config = getConfigForPlayerCount(6);
 
         expect(config.playerCount).toBe(6);
         expect(config.boardRadius).toBe(8);
-        expect(config.shieldCount).toBe(3);
         expect(config.warriorCount).toBe(4);
+        expect(config.terrain).toBe('calm');
       });
 
       it('should return 217 total hexes (3r² + 3r + 1)', () => {
@@ -137,8 +135,8 @@ describe('board generation', () => {
 
         expect(typeof config.playerCount).toBe('number');
         expect(typeof config.boardRadius).toBe('number');
-        expect(typeof config.shieldCount).toBe('number');
         expect(typeof config.warriorCount).toBe('number');
+        expect(typeof config.terrain).toBe('string');
         expect(config.turnTimerMs === null || typeof config.turnTimerMs === 'number').toBe(true);
       });
 
@@ -147,8 +145,8 @@ describe('board generation', () => {
 
         expect(config).toHaveProperty('playerCount');
         expect(config).toHaveProperty('boardRadius');
-        expect(config).toHaveProperty('shieldCount');
         expect(config).toHaveProperty('warriorCount');
+        expect(config).toHaveProperty('terrain');
         expect(config).toHaveProperty('turnTimerMs');
       });
     });
@@ -156,14 +154,14 @@ describe('board generation', () => {
     describe('scaling table verification', () => {
       it('should have decreasing density as player count increases', () => {
         // Density = totalPieces / totalHexes
-        // totalPieces = playerCount * (1 jarl + warriorCount) + shieldCount
+        // totalPieces = playerCount * (1 jarl + warriorCount)
         const densities: number[] = [];
 
         for (let players = 2; players <= 6; players++) {
           const config = getConfigForPlayerCount(players);
           const r = config.boardRadius;
           const totalHexes = 3 * r * r + 3 * r + 1;
-          const totalPieces = config.playerCount * (1 + config.warriorCount) + config.shieldCount;
+          const totalPieces = config.playerCount * (1 + config.warriorCount);
           const density = totalPieces / totalHexes;
           densities.push(density);
         }
@@ -179,7 +177,7 @@ describe('board generation', () => {
         const config = getConfigForPlayerCount(2);
         const r = config.boardRadius;
         const totalHexes = 3 * r * r + 3 * r + 1;
-        // Ruleset counts only player pieces (jarls + warriors), not shields
+        // Ruleset counts only player pieces (jarls + warriors)
         const playerPieces = config.playerCount * (1 + config.warriorCount);
         const density = playerPieces / totalHexes;
 
@@ -620,173 +618,6 @@ describe('board generation', () => {
     });
   });
 
-  describe('generateSymmetricalShields', () => {
-    describe('basic functionality', () => {
-      it('should return the correct number of shields for 2-player game', () => {
-        const config = getConfigForPlayerCount(2);
-        const shields = generateSymmetricalShields(2, config.boardRadius, config.shieldCount);
-        expect(shields).toHaveLength(config.shieldCount);
-      });
-
-      it('should return the correct number of shields for all player counts', () => {
-        for (let playerCount = 2; playerCount <= 6; playerCount++) {
-          const config = getConfigForPlayerCount(playerCount);
-          const shields = generateSymmetricalShields(
-            playerCount,
-            config.boardRadius,
-            config.shieldCount
-          );
-          expect(shields).toHaveLength(config.shieldCount);
-        }
-      });
-
-      it('should return empty array when shieldCount is 0', () => {
-        const shields = generateSymmetricalShields(2, 3, 0);
-        expect(shields).toHaveLength(0);
-      });
-    });
-
-    describe('position constraints', () => {
-      it('should not place shields on the Throne (center)', () => {
-        const shields = generateSymmetricalShields(2, 3, 5);
-        shields.forEach((shield) => {
-          expect(shield.q !== 0 || shield.r !== 0).toBe(true);
-        });
-      });
-
-      it('should not place shields on edge hexes', () => {
-        for (let playerCount = 2; playerCount <= 6; playerCount++) {
-          const config = getConfigForPlayerCount(playerCount);
-          const shields = generateSymmetricalShields(
-            playerCount,
-            config.boardRadius,
-            config.shieldCount
-          );
-
-          shields.forEach((shield) => {
-            expect(isOnEdgeAxial(shield, config.boardRadius)).toBe(false);
-          });
-        }
-      });
-
-      it('should place all shields within the board', () => {
-        const shields = generateSymmetricalShields(2, 3, 5);
-        shields.forEach((shield) => {
-          expect(isOnBoardAxial(shield, 3)).toBe(true);
-        });
-      });
-
-      it('should place all shields in interior (not center, not edge)', () => {
-        const shields = generateSymmetricalShields(2, 3, 5);
-        shields.forEach((shield) => {
-          const dist = hexDistanceAxial(shield, { q: 0, r: 0 });
-          expect(dist).toBeGreaterThan(0); // Not center
-          expect(dist).toBeLessThan(3); // Not edge (radius = 3)
-        });
-      });
-
-      it('should return all unique positions', () => {
-        const shields = generateSymmetricalShields(2, 3, 5);
-        const keys = shields.map(hexToKey);
-        expect(new Set(keys).size).toBe(shields.length);
-      });
-    });
-
-    describe('rotational symmetry', () => {
-      it('should have rotational symmetry for 2 players', () => {
-        const shields = generateSymmetricalShields(2, 3, 4); // Use even number for better symmetry
-        const shieldSet = new Set(shields.map(hexToKey));
-
-        // For each shield, its 180-degree rotation should also be in the set
-        let symmetricPairs = 0;
-        for (const shield of shields) {
-          const cube = axialToCube(shield);
-          const rotated = rotateHex(cube, 3); // 3 steps = 180 degrees
-          if (shieldSet.has(hexToKey(rotated))) {
-            symmetricPairs++;
-          }
-        }
-
-        // At least half the shields should have a symmetric partner
-        // (some hexes on the axis of symmetry map to themselves)
-        expect(symmetricPairs).toBeGreaterThanOrEqual(Math.floor(shields.length / 2));
-      });
-
-      it('should prefer symmetric groups when possible', () => {
-        const shields = generateSymmetricalShields(3, 5, 3);
-        const shieldSet = new Set(shields.map(hexToKey));
-
-        // For 3 shields in a 3-player game, they should ideally be 120 degrees apart
-        // Check that rotations of first shield hit other shields
-        const firstCube = axialToCube(shields[0]);
-        let foundRotations = 1; // Count the original
-        for (let i = 1; i < 3; i++) {
-          const rotated = rotateHex(firstCube, i * 2); // 0, 2, 4 steps for 3-fold symmetry
-          if (shieldSet.has(hexToKey(rotated))) {
-            foundRotations++;
-          }
-        }
-
-        // Should find at least 2 shields from the rotation group
-        expect(foundRotations).toBeGreaterThanOrEqual(2);
-      });
-    });
-
-    describe('equidistance from starting positions', () => {
-      it('should place shields equidistant from starting positions for 2 players', () => {
-        const config = getConfigForPlayerCount(2);
-        const startPositions = calculateStartingPositions(2, config.boardRadius);
-        const shields = generateSymmetricalShields(2, config.boardRadius, config.shieldCount);
-
-        // For symmetric shields, the sum of distances to all starting positions
-        // should be the same for each shield (due to rotational symmetry)
-        // or at least very similar
-        const distanceSums = shields.map((shield) => {
-          return startPositions.reduce((sum, start) => {
-            return sum + hexDistanceAxial(shield, start);
-          }, 0);
-        });
-
-        // Check that distance sums are relatively balanced
-        const maxDiff = Math.max(...distanceSums) - Math.min(...distanceSums);
-        expect(maxDiff).toBeLessThanOrEqual(2); // Allow small variation due to hex grid
-      });
-    });
-
-    describe('error handling', () => {
-      it.each([1, 7])('should throw error for %i players (invalid count)', (count) => {
-        expect(() => generateSymmetricalShields(count, 3, 5)).toThrow('Invalid player count');
-      });
-
-      it('should throw error when not enough space for shields', () => {
-        expect(() => generateSymmetricalShields(2, 1, 1)).toThrow('Unable to place');
-      });
-    });
-
-    describe('game scenarios', () => {
-      it.each([
-        [2, 3, 5],
-        [3, 5, 4],
-        [4, 6, 4],
-        [5, 7, 3],
-        [6, 8, 3],
-      ])(
-        'should work with %i-player configuration (radius %i, %i shields)',
-        (playerCount, radius, shieldCount) => {
-          const shields = generateSymmetricalShields(playerCount, radius, shieldCount);
-          expect(shields).toHaveLength(shieldCount);
-
-          shields.forEach((shield) => {
-            expect(isOnBoardAxial(shield, radius)).toBe(true);
-            expect(isOnEdgeAxial(shield, radius)).toBe(false);
-            const dist = hexDistanceAxial(shield, { q: 0, r: 0 });
-            expect(dist).toBeGreaterThan(0);
-          });
-        }
-      );
-    });
-  });
-
   describe('createInitialState', () => {
     describe('default board radius', () => {
       it('should use default radius 3 for 2 players', () => {
@@ -888,6 +719,37 @@ describe('board generation', () => {
           });
         }
       );
+    });
+
+    describe('holes generation', () => {
+      it('should generate holes for calm terrain (3 holes)', () => {
+        const state = createInitialState(['Player 1', 'Player 2']);
+        expect(state.holes).toBeDefined();
+        expect(Array.isArray(state.holes)).toBe(true);
+        expect(state.holes.length).toBe(3);
+      });
+
+      it('should place all holes within board bounds', () => {
+        const state = createInitialState(['Player 1', 'Player 2']);
+        state.holes.forEach((hole) => {
+          expect(isOnBoardAxial(hole, state.config.boardRadius)).toBe(true);
+        });
+      });
+
+      it('should not place holes on the throne', () => {
+        const state = createInitialState(['Player 1', 'Player 2']);
+        const throneKey = hexToKey({ q: 0, r: 0 });
+        state.holes.forEach((hole) => {
+          expect(hexToKey(hole)).not.toBe(throneKey);
+        });
+      });
+
+      it('should not place holes on edge hexes', () => {
+        const state = createInitialState(['Player 1', 'Player 2']);
+        state.holes.forEach((hole) => {
+          expect(isOnEdgeAxial(hole, state.config.boardRadius)).toBe(false);
+        });
+      });
     });
   });
 });

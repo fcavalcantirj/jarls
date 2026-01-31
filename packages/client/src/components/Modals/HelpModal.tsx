@@ -141,12 +141,6 @@ function SpecialContent() {
         there and wins immediately.
       </Section>
 
-      <Section title="Starvation">
-        After 10 rounds without any elimination, each player must sacrifice their Warrior furthest
-        from the Throne. This repeats every 5 rounds. If a player has no Warriors for 5 rounds,
-        their Jarl is eliminated.
-      </Section>
-
       <Section title="Elimination">
         A player is eliminated when their Jarl is pushed off the board edge. All their remaining
         Warriors are removed. The last Jarl standing wins.

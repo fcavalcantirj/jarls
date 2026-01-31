@@ -24,7 +24,7 @@ function createTestState(
     config: {
       playerCount: options.players?.length ?? 2,
       boardRadius: 3,
-      shieldCount: 0,
+      terrain: 'calm',
       warriorCount: 5,
       turnTimerMs: null,
     },

@@ -30,6 +30,9 @@ export default function Layout({ children }: LayoutProps) {
               <Link to="/lobby/games" style={navLinkStyle}>
                 Browse
               </Link>
+              <Link to="/rules" style={navLinkStyle}>
+                Rules
+              </Link>
             </>
           )}
         </nav>

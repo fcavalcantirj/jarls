@@ -3,7 +3,6 @@ import type {
   GameEvent,
   MoveCommand,
   ValidMove,
-  StarvationCandidates,
   AIConfig,
   GroqModel,
   GroqDifficulty,
@@ -27,11 +26,6 @@ export interface StartGamePayload {
   gameId: string;
 }
 
-export interface StarvationChoicePayload {
-  gameId: string;
-  pieceId: string;
-}
-
 export interface UpdateAIConfigPayload {
   gameId: string;
   config: {
@@ -47,11 +41,6 @@ export interface ClientToServerEvents {
   playTurn: (payload: PlayTurnPayload, callback: (response: PlayTurnResponse) => void) => void;
 
   startGame: (payload: StartGamePayload, callback: (response: StartGameResponse) => void) => void;
-
-  starvationChoice: (
-    payload: StarvationChoicePayload,
-    callback: (response: StarvationChoiceResponse) => void
-  ) => void;
 
   updateAIConfig: (
     payload: UpdateAIConfigPayload,
@@ -73,8 +62,6 @@ export interface ServerToClientEvents {
   playerLeft: (data: PlayerLeftData) => void;
 
   playerReconnected: (data: PlayerReconnectedData) => void;
-
-  starvationRequired: (data: StarvationRequiredData) => void;
 
   aiConfigUpdated: (data: AIConfigUpdatedData) => void;
 
@@ -112,11 +99,6 @@ export interface PlayerReconnectedData {
   gameState: GameState;
 }
 
-export interface StarvationRequiredData {
-  candidates: StarvationCandidates;
-  timeoutMs: number;
-}
-
 export interface AIConfigUpdatedData {
   config: AIConfig;
 }
@@ -141,11 +123,6 @@ export interface PlayTurnResponse {
 }
 
 export interface StartGameResponse {
-  success: boolean;
-  error?: string;
-}
-
-export interface StarvationChoiceResponse {
   success: boolean;
   error?: string;
 }

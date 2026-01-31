@@ -26,15 +26,16 @@ describe('Move Validation', () => {
         config: {
           playerCount: 2,
           boardRadius: 3,
-          shieldCount: 5,
           warriorCount: 5,
           turnTimerMs: null,
+          terrain: 'calm',
         },
         players: [
           { id: 'p1', name: 'Player 1', color: '#ff0000', isEliminated: false },
           { id: 'p2', name: 'Player 2', color: '#0000ff', isEliminated: false },
         ],
         pieces,
+        holes: [],
         currentPlayerId,
         turnNumber: 1,
         roundNumber: 1,
@@ -42,6 +43,7 @@ describe('Move Validation', () => {
         roundsSinceElimination: 0,
         winnerId: null,
         winCondition: null,
+        moveHistory: [],
       };
     }
 
@@ -199,14 +201,13 @@ describe('Move Validation', () => {
         expect(result.error).toBe('PATH_BLOCKED');
       });
 
-      it('should return PATH_BLOCKED when shield blocks path', () => {
+      it('should return PATH_BLOCKED when hole blocks path', () => {
         const state = createValidateMoveTestState(
-          [
-            { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
-            { id: 's1', type: 'shield', playerId: null, position: { q: 2, r: 0 } },
-          ],
+          [{ id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } }],
           'p1'
         );
+        // Add hole in the path
+        state.holes = [{ q: 2, r: 0 }];
         const command: MoveCommand = { pieceId: 'w1', destination: { q: 3, r: 0 } };
         const result = validateMove(state, 'p1', command);
         expect(result.isValid).toBe(false);
@@ -352,19 +353,6 @@ describe('Move Validation', () => {
       });
     });
 
-    describe('validates shields cannot move', () => {
-      it('should return SHIELD_CANNOT_MOVE when trying to move a shield', () => {
-        const state = createValidateMoveTestState(
-          [{ id: 's1', type: 'shield', playerId: 'p1', position: { q: 1, r: 0 } }],
-          'p1'
-        );
-        const command: MoveCommand = { pieceId: 's1', destination: { q: 2, r: 0 } };
-        const result = validateMove(state, 'p1', command);
-        expect(result.isValid).toBe(false);
-        expect(result.error).toBe('SHIELD_CANNOT_MOVE');
-      });
-    });
-
     describe('hasMomentum flag', () => {
       it('should set hasMomentum to true for 2-hex Warrior move', () => {
         const state = createValidateMoveTestState(
@@ -506,15 +494,16 @@ describe('Move Validation', () => {
         config: {
           playerCount: 2,
           boardRadius: 3,
-          shieldCount: 5,
           warriorCount: 5,
           turnTimerMs: null,
+          terrain: 'calm',
         },
         players: [
           { id: 'p1', name: 'Player 1', color: '#ff0000', isEliminated: false },
           { id: 'p2', name: 'Player 2', color: '#0000ff', isEliminated: false },
         ],
         pieces,
+        holes: [],
         currentPlayerId,
         turnNumber: 1,
         roundNumber: 1,
@@ -522,6 +511,7 @@ describe('Move Validation', () => {
         roundsSinceElimination: 0,
         winnerId: null,
         winCondition: null,
+        moveHistory: [],
       };
     }
 
@@ -643,15 +633,16 @@ describe('Move Validation', () => {
         config: {
           playerCount: 2,
           boardRadius: 3,
-          shieldCount: 0,
           warriorCount: 0,
           turnTimerMs: null,
+          terrain: 'calm',
         },
         players: [
           { id: 'p1', name: 'Player 1', color: '#ff0000', isEliminated: false },
           { id: 'p2', name: 'Player 2', color: '#0000ff', isEliminated: false },
         ],
         pieces,
+        holes: [],
         currentPlayerId,
         turnNumber: 1,
         roundNumber: 1,
@@ -659,6 +650,7 @@ describe('Move Validation', () => {
         roundsSinceElimination: 0,
         winnerId: null,
         winCondition: null,
+        moveHistory: [],
       };
     }
 

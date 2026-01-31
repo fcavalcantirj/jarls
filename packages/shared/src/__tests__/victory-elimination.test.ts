@@ -8,7 +8,7 @@ describe('eliminatePlayer', () => {
       config: {
         playerCount: 2,
         boardRadius: 3,
-        shieldCount: 0,
+        terrain: 'calm',
         warriorCount: 0,
         turnTimerMs: null,
       },
@@ -137,7 +137,7 @@ describe('eliminatePlayer', () => {
         expect(event.pieceId).toBe('p1-w1');
         expect(event.playerId).toBe('p1');
         expect(event.position).toEqual({ q: 1, r: 0 });
-        expect(event.cause).toBe('starvation');
+        expect(event.cause).toBe('edge');
       }
     });
 

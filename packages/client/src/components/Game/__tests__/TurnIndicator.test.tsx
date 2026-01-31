@@ -8,9 +8,9 @@ function createMockGameState(overrides?: Partial<GameState>): GameState {
     config: {
       playerCount: 2,
       boardRadius: 3,
-      shieldCount: 5,
       warriorCount: 5,
       turnTimerMs: null,
+      terrain: 'calm',
     },
     players: [
       {
@@ -18,7 +18,6 @@ function createMockGameState(overrides?: Partial<GameState>): GameState {
         name: 'Human Player',
         color: '#e63946',
         isEliminated: false,
-        roundsSinceLastWarrior: null,
         isAI: false,
       },
       {
@@ -26,11 +25,11 @@ function createMockGameState(overrides?: Partial<GameState>): GameState {
         name: 'Ingrid the Silent',
         color: '#457b9d',
         isEliminated: false,
-        roundsSinceLastWarrior: null,
         isAI: true,
       },
     ],
     pieces: [],
+    holes: [],
     currentPlayerId: 'human',
     turnNumber: 1,
     roundNumber: 1,

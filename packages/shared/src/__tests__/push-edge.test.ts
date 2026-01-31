@@ -9,15 +9,16 @@ describe('resolveEdgePush', () => {
       config: {
         playerCount: 2,
         boardRadius: 3,
-        shieldCount: 0,
         warriorCount: 0,
         turnTimerMs: null,
+        terrain: 'calm',
       },
       players: [
         { id: 'p1', name: 'Player 1', color: '#FF0000', isEliminated: false },
         { id: 'p2', name: 'Player 2', color: '#0000FF', isEliminated: false },
       ],
       pieces,
+      holes: [],
       currentPlayerId: 'p1',
       turnNumber: 0,
       roundNumber: 0,
@@ -25,6 +26,7 @@ describe('resolveEdgePush', () => {
       roundsSinceElimination: 0,
       winnerId: null,
       winCondition: null,
+      moveHistory: [],
     };
   }
 
@@ -679,7 +681,9 @@ describe('resolveEdgePush', () => {
 
       expect(() =>
         resolveEdgePush(state, 'attacker', { q: 0, r: 0 }, { q: 2, r: 0 }, 0, false, chain)
-      ).toThrow('resolveEdgePush called with non-edge terminator: empty');
+      ).toThrow(
+        "resolveEdgePush called with invalid terminator: empty. Expected 'edge' or 'hole'."
+      );
     });
   });
 

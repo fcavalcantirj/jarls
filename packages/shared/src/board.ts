@@ -1,5 +1,5 @@
 // Board generation functions for Jarls game
-// Handles hex board generation, starting positions, shield placement, and initial game setup
+// Handles hex board generation, starting positions, hole placement, and initial game setup
 
 import type {
   AxialCoord,
@@ -10,6 +10,7 @@ import type {
   GameConfig,
   PlayerScaling,
   GameState,
+  TerrainType,
 } from './types.js';
 
 import {
@@ -25,19 +26,26 @@ import {
 
 // Board scaling configuration based on player count
 // From the ruleset scaling table:
-// | Players | Board Radius | Shields | Warriors/Player |
-// | 2       | 3            | 5       | 5               |
-// | 3       | 5            | 4       | 5               |
-// | 4       | 6            | 4       | 4               |
-// | 5       | 7            | 3       | 4               |
-// | 6       | 8            | 3       | 4               |
+// | Players | Board Radius | Warriors/Player |
+// | 2       | 3            | 5               |
+// | 3       | 5            | 5               |
+// | 4       | 6            | 4               |
+// | 5       | 7            | 4               |
+// | 6       | 8            | 4               |
 
 const PLAYER_SCALING: Record<number, PlayerScaling> = {
-  2: { boardRadius: 3, shieldCount: 5, warriorCount: 5 },
-  3: { boardRadius: 5, shieldCount: 4, warriorCount: 5 },
-  4: { boardRadius: 6, shieldCount: 4, warriorCount: 4 },
-  5: { boardRadius: 7, shieldCount: 3, warriorCount: 4 },
-  6: { boardRadius: 8, shieldCount: 3, warriorCount: 4 },
+  2: { boardRadius: 3, warriorCount: 5 },
+  3: { boardRadius: 5, warriorCount: 5 },
+  4: { boardRadius: 6, warriorCount: 4 },
+  5: { boardRadius: 7, warriorCount: 4 },
+  6: { boardRadius: 8, warriorCount: 4 },
+};
+
+// Hole counts per terrain type
+const TERRAIN_HOLE_COUNTS: Record<TerrainType, number> = {
+  calm: 3,
+  treacherous: 6,
+  chaotic: 9,
 };
 
 // Default player colors for up to 6 players
@@ -54,17 +62,19 @@ const PLAYER_COLORS = [
  * Get the game configuration for a given player count.
  * Returns scaling values from the ruleset:
  * - Board radius (hex grid size)
- * - Number of shields (neutral obstacles)
  * - Number of warriors per player
+ * - Terrain type (determines hole count)
  *
  * @param playerCount - Number of players (2-6)
  * @param turnTimerMs - Optional turn timer in milliseconds (null for no timer)
+ * @param terrain - Terrain type (calm=3 holes, treacherous=6 holes, chaotic=9 holes)
  * @returns GameConfig object with all configuration values
  * @throws Error if playerCount is outside valid range (2-6)
  */
 export function getConfigForPlayerCount(
   playerCount: number,
-  turnTimerMs: number | null = null
+  turnTimerMs: number | null = null,
+  terrain: TerrainType = 'calm'
 ): GameConfig {
   const scaling = PLAYER_SCALING[playerCount];
 
@@ -75,9 +85,9 @@ export function getConfigForPlayerCount(
   return {
     playerCount,
     boardRadius: scaling.boardRadius,
-    shieldCount: scaling.shieldCount,
     warriorCount: scaling.warriorCount,
     turnTimerMs,
+    terrain,
   };
 }
 
@@ -270,239 +280,88 @@ export function rotateHex(hex: CubeCoord, steps: number): CubeCoord {
 }
 
 /**
- * Generate symmetrical shield positions for the game board.
- * Shields are placed with rotational symmetry based on player count,
- * ensuring fair gameplay where shields are equidistant from all starting positions.
+ * Generate random hole positions for the game board.
+ * Holes are deadly pits that eliminate pieces when they fall in.
  *
  * Rules:
- * - Shields have N-fold rotational symmetry (where N = playerCount)
- * - No shield on the Throne (center hex at 0,0)
- * - No shield on edge hexes (where pieces start)
- * - Shields are placed in the interior of the board
- * - Shields must not block all paths from starting positions to the Throne
+ * - Hole count is determined by terrain type (calm=3, treacherous=6, chaotic=9)
+ * - No holes on the Throne (center hex at 0,0)
+ * - No holes on edge hexes
+ * - No holes adjacent to edges (2 hex buffer from edge)
+ * - No holes on starting positions or warrior paths
+ * - Holes are placed randomly (not symmetrically)
  *
- * @param playerCount - Number of players (2-6), determines rotational symmetry
  * @param radius - Board radius
- * @param shieldCount - Total number of shields to place
- * @param startingPositions - Optional array of starting positions to avoid blocking paths
- * @returns Array of shield positions in axial coordinates
- * @throws Error if unable to place the requested number of shields
+ * @param terrain - Terrain type that determines hole count
+ * @param startingPositions - Array of starting positions to avoid
+ * @returns Array of hole positions in axial coordinates
  */
-export function generateSymmetricalShields(
-  playerCount: number,
+export function generateRandomHoles(
   radius: number,
-  shieldCount: number,
-  startingPositions?: AxialCoord[]
+  terrain: TerrainType,
+  startingPositions: AxialCoord[]
 ): AxialCoord[] {
-  if (playerCount < 2 || playerCount > 6) {
-    throw new Error(`Invalid player count: ${playerCount}. Must be between 2 and 6.`);
-  }
+  const holeCount = TERRAIN_HOLE_COUNTS[terrain];
 
-  if (shieldCount <= 0) {
+  if (holeCount <= 0) {
     return [];
   }
 
-  // Get all interior hexes (not center, not edge)
+  // Get all hexes and filter to valid hole positions
   const allHexes = generateAllBoardHexes(radius);
   const center: CubeCoord = { q: 0, r: 0, s: 0 };
 
-  // Filter to interior hexes only (distance > 0 and distance < radius)
-  const interiorHexes = allHexes.filter((hex) => {
-    const dist = hexDistance(hex, center);
-    return dist > 0 && dist < radius;
-  });
+  // Build set of positions to avoid
+  const avoidKeys = new Set<string>();
 
-  // Build set of hexes that are on direct paths from starting positions to throne
-  // These should be avoided to ensure valid placements
-  const pathHexKeys = new Set<string>();
-  if (startingPositions) {
-    const throne: AxialCoord = { q: 0, r: 0 };
-    for (const startPos of startingPositions) {
-      const pathHexes = hexLineAxial(startPos, throne);
-      // Add all hexes on the path except start and end
-      for (let i = 1; i < pathHexes.length - 1; i++) {
-        pathHexKeys.add(hexToKey(pathHexes[i]));
-      }
-    }
+  // Add throne
+  avoidKeys.add(hexToKey({ q: 0, r: 0 }));
+
+  // Add starting positions
+  for (const pos of startingPositions) {
+    avoidKeys.add(hexToKey(pos));
   }
 
-  // Group hexes by their "canonical" form under rotation
-  // This helps us find hexes that can form symmetric groups
-  const hexGroups = new Map<string, CubeCoord[]>();
-
-  for (const hex of interiorHexes) {
-    // Find all rotations of this hex
-    const rotations: CubeCoord[] = [];
-    for (let i = 0; i < playerCount; i++) {
-      rotations.push(rotateHex(hex, i));
-    }
-
-    // Use the lexicographically smallest as the canonical key
-    const sortedRotations = rotations
-      .map((h) => ({ hex: h, key: `${h.q},${h.r},${h.s}` }))
-      .sort((a, b) => a.key.localeCompare(b.key));
-
-    const canonicalKey = sortedRotations[0].key;
-
-    if (!hexGroups.has(canonicalKey)) {
-      // Store unique rotations only (some hexes map to themselves under rotation)
-      const uniqueRotations: CubeCoord[] = [];
-      const seenKeys = new Set<string>();
-      for (const rot of rotations) {
-        const key = hexToKey(rot);
-        if (!seenKeys.has(key)) {
-          seenKeys.add(key);
-          uniqueRotations.push(rot);
-        }
-      }
-      hexGroups.set(canonicalKey, uniqueRotations);
-    }
-  }
-
-  // Sort groups by size and distance from center for consistent placement
-  // Prefer groups that give us exactly the symmetry we need
-  // Also deprioritize groups that would block paths to throne
-  const sortedGroups = Array.from(hexGroups.values()).sort((a, b) => {
-    // First, check if group blocks paths (deprioritize blocking groups)
-    const aBlocksPath = a.some((hex) => pathHexKeys.has(hexToKey(hex)));
-    const bBlocksPath = b.some((hex) => pathHexKeys.has(hexToKey(hex)));
-    if (aBlocksPath !== bBlocksPath) return aBlocksPath ? 1 : -1;
-
-    // Then, prefer groups with size equal to playerCount (perfect symmetry)
-    const aIsPerfect = a.length === playerCount ? 0 : 1;
-    const bIsPerfect = b.length === playerCount ? 0 : 1;
-    if (aIsPerfect !== bIsPerfect) return aIsPerfect - bIsPerfect;
-
-    // Then sort by group size (descending for efficiency)
-    if (a.length !== b.length) return b.length - a.length;
-
-    // Then by distance from center (prefer closer to center)
-    const aDist = hexDistance(a[0], center);
-    const bDist = hexDistance(b[0], center);
-    return aDist - bDist;
-  });
-
-  // Select groups to reach the target shield count
-  const selectedShields: AxialCoord[] = [];
-  const usedKeys = new Set<string>();
-
-  for (const group of sortedGroups) {
-    if (selectedShields.length >= shieldCount) break;
-
-    // Check if adding this group would exceed the count
-    const remaining = shieldCount - selectedShields.length;
-
-    // Only add the group if all hexes are unused
-    const allUnused = group.every((hex) => !usedKeys.has(hexToKey(hex)));
-    if (!allUnused) continue;
-
-    // If the group fits exactly or we have room, add it
-    if (group.length <= remaining) {
-      for (const hex of group) {
-        selectedShields.push(cubeToAxial(hex));
-        usedKeys.add(hexToKey(hex));
-      }
-    }
-  }
-
-  // If we couldn't place enough shields, try to fill remaining spots
-  // with individual hexes (this maintains partial symmetry)
-  if (selectedShields.length < shieldCount) {
-    // Get remaining interior hexes not yet used
-    const remainingHexes = interiorHexes.filter((hex) => !usedKeys.has(hexToKey(hex)));
-
-    // Sort by: first non-path-blocking, then by distance from center
-    remainingHexes.sort((a, b) => {
-      const aBlocksPath = pathHexKeys.has(hexToKey(a));
-      const bBlocksPath = pathHexKeys.has(hexToKey(b));
-      if (aBlocksPath !== bBlocksPath) return aBlocksPath ? 1 : -1;
-      return hexDistance(a, center) - hexDistance(b, center);
-    });
-
-    for (const hex of remainingHexes) {
-      if (selectedShields.length >= shieldCount) break;
-      selectedShields.push(cubeToAxial(hex));
-      usedKeys.add(hexToKey(hex));
-    }
-  }
-
-  if (selectedShields.length < shieldCount) {
-    throw new Error(
-      `Unable to place ${shieldCount} shields. Only ${selectedShields.length} positions available.`
-    );
-  }
-
-  return selectedShields;
-}
-
-/**
- * Check if there exists an unobstructed straight-line path from a starting position
- * to the Throne (center hex) that doesn't pass through any shield.
- *
- * A "straight-line path" means the hexes that form a line drawn from the starting
- * position through the center. Uses the hexLine function to get the exact hexes.
- * The path is "unobstructed" if no shields are on any hex along the path.
- *
- * @param startPosition - The starting position (typically a Jarl's starting hex)
- * @param shieldPositions - Set of shield position keys for quick lookup
- * @param radius - Board radius (unused but kept for API consistency)
- * @returns true if the straight-line path to the Throne has no shields
- */
-export function hasPathToThrone(
-  startPosition: AxialCoord,
-  shieldPositions: Set<string>,
-  _radius: number
-): boolean {
+  // Add hexes on paths from starting positions to throne
   const throne: AxialCoord = { q: 0, r: 0 };
-
-  // Get all hexes on the straight line from start to throne
-  const pathHexes = hexLineAxial(startPosition, throne);
-
-  // Check if any hex on the path (excluding start and end) has a shield
-  for (let i = 1; i < pathHexes.length - 1; i++) {
-    const hex = pathHexes[i];
-    if (shieldPositions.has(hexToKey(hex))) {
-      return false; // Shield blocks this path
+  for (const startPos of startingPositions) {
+    const pathHexes = hexLineAxial(startPos, throne);
+    for (const hex of pathHexes) {
+      avoidKeys.add(hexToKey(hex));
     }
   }
 
-  return true; // Path is clear
-}
-
-/**
- * Validate that a shield placement allows at least one unobstructed straight-line
- * path to the Throne for each player's starting position.
- *
- * This ensures fair gameplay where no player is completely blocked from reaching
- * the Throne by shields.
- *
- * @param shieldPositions - Array of shield positions in axial coordinates
- * @param startingPositions - Array of player starting positions (Jarl positions)
- * @param radius - Board radius
- * @returns Object with isValid boolean and optional error message
- */
-export function validateShieldPlacement(
-  shieldPositions: AxialCoord[],
-  startingPositions: AxialCoord[],
-  radius: number
-): { isValid: boolean; blockedPlayers: number[] } {
-  // Create a Set of shield position keys for O(1) lookup
-  const shieldSet = new Set(shieldPositions.map(hexToKey));
-
-  const blockedPlayers: number[] = [];
-
-  // Check each starting position has at least one path to the Throne
-  for (let i = 0; i < startingPositions.length; i++) {
-    const startPos = startingPositions[i];
-    if (!hasPathToThrone(startPos, shieldSet, radius)) {
-      blockedPlayers.push(i);
+  // Filter to valid hole positions:
+  // - Distance from center >= 1 (not throne)
+  // - Distance from center <= radius - 2 (2 hex buffer from edge)
+  const validHexes = allHexes.filter((hex) => {
+    const dist = hexDistance(hex, center);
+    // Must be interior with 2-hex buffer from edge
+    if (dist < 1 || dist > radius - 2) {
+      return false;
     }
+    // Must not be on avoided positions
+    const axialHex = cubeToAxial(hex);
+    if (avoidKeys.has(hexToKey(axialHex))) {
+      return false;
+    }
+    return true;
+  });
+
+  // Shuffle the valid hexes
+  const shuffled = [...validHexes];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
 
-  return {
-    isValid: blockedPlayers.length === 0,
-    blockedPlayers,
-  };
+  // Take the first holeCount hexes
+  const holes: AxialCoord[] = [];
+  for (let i = 0; i < Math.min(holeCount, shuffled.length); i++) {
+    holes.push(cubeToAxial(shuffled[i]));
+  }
+
+  return holes;
 }
 
 /**
@@ -546,19 +405,19 @@ export function getDirectionTowardThrone(startPosition: AxialCoord): HexDirectio
  * - Warriors placed between Jarl and Throne (not behind the Jarl)
  * - Warriors form a line formation toward the center
  * - Warriors cannot occupy the Throne hex
- * - Warriors cannot occupy hexes with shields
+ * - Warriors cannot occupy hexes with holes
  * - If a hex is blocked, skip to the next available hex toward the center
  *
  * @param jarlPosition - The Jarl's starting position
  * @param warriorCount - Number of Warriors to place
- * @param shieldPositions - Set of shield position keys to avoid
+ * @param holePositions - Set of hole position keys to avoid
  * @param radius - Board radius (for bounds checking)
  * @returns Array of Warrior positions in axial coordinates
  */
 export function placeWarriors(
   jarlPosition: AxialCoord,
   warriorCount: number,
-  shieldPositions: Set<string>,
+  holePositions: Set<string>,
   radius: number
 ): AxialCoord[] {
   if (warriorCount <= 0) {
@@ -583,8 +442,8 @@ export function placeWarriors(
 
     const key = hexToKey(hex);
 
-    // Skip Jarl position, Throne, shields, and already used positions
-    if (key === jarlKey || key === throneKey || shieldPositions.has(key) || usedKeys.has(key)) {
+    // Skip Jarl position, Throne, holes, and already used positions
+    if (key === jarlKey || key === throneKey || holePositions.has(key) || usedKeys.has(key)) {
       continue;
     }
 
@@ -597,7 +456,7 @@ export function placeWarriors(
     usedKeys.add(key);
   }
 
-  // If we couldn't place all warriors on the direct path (due to shields),
+  // If we couldn't place all warriors on the direct path (due to holes),
   // try to place remaining warriors on adjacent hexes near the path
   if (warriors.length < warriorCount) {
     // Get the direction toward throne to prioritize "forward" hexes
@@ -626,7 +485,7 @@ export function placeWarriors(
 
       if (
         !usedKeys.has(key) &&
-        !shieldPositions.has(key) &&
+        !holePositions.has(key) &&
         key !== throneKey &&
         isOnBoardAxial(neighborAxial, radius)
       ) {
@@ -647,7 +506,7 @@ export function placeWarriors(
 
         if (
           !usedKeys.has(key) &&
-          !shieldPositions.has(key) &&
+          !holePositions.has(key) &&
           key !== throneKey &&
           isOnBoardAxial(neighborAxial, radius)
         ) {
@@ -676,20 +535,21 @@ export function generateId(): string {
  * This includes:
  * - Creating the game with a unique ID
  * - Setting up players with IDs and colors
- * - Placing shields symmetrically on the board
+ * - Generating random holes based on terrain type
  * - Placing each player's Jarl at their starting position
  * - Placing each player's Warriors in front of their Jarl
  *
  * @param playerNames - Array of player names (2-6 players)
  * @param turnTimerMs - Optional turn timer in milliseconds (null for no timer)
  * @param customBoardRadius - Optional custom board radius (overrides default for player count)
+ * @param terrain - Terrain type determining hole count (default: 'calm')
  * @returns Complete GameState ready for the playing phase
- * @throws Error if unable to create valid board
  */
 export function createInitialState(
   playerNames: string[],
   turnTimerMs: number | null = null,
-  customBoardRadius?: number
+  customBoardRadius?: number,
+  terrain: TerrainType = 'calm'
 ): GameState {
   const playerCount = playerNames.length;
 
@@ -698,7 +558,7 @@ export function createInitialState(
   }
 
   // Get game configuration for this player count
-  const config = getConfigForPlayerCount(playerCount, turnTimerMs);
+  const config = getConfigForPlayerCount(playerCount, turnTimerMs, terrain);
 
   // Override board radius if custom value provided
   if (customBoardRadius !== undefined) {
@@ -711,48 +571,19 @@ export function createInitialState(
     name,
     color: PLAYER_COLORS[index],
     isEliminated: false,
-    roundsSinceLastWarrior: null,
   }));
 
   // Calculate starting positions for Jarls
   const startingPositions = calculateStartingPositions(playerCount, config.boardRadius);
 
-  // Generate shields with starting positions to avoid blocking direct paths
-  const shieldPositions = generateSymmetricalShields(
-    playerCount,
-    config.boardRadius,
-    config.shieldCount,
-    startingPositions
-  );
+  // Generate random holes based on terrain (avoiding starting positions and paths)
+  const holes = generateRandomHoles(config.boardRadius, terrain, startingPositions);
 
-  // Validate the placement (should always pass when starting positions are provided)
-  const validation = validateShieldPlacement(
-    shieldPositions,
-    startingPositions,
-    config.boardRadius
-  );
-  if (!validation.isValid) {
-    throw new Error(
-      `Unable to generate valid shield placement. ` +
-        `Some players would have no clear path to the Throne.`
-    );
-  }
-
-  // Create shield position set for quick lookup
-  const shieldSet = new Set(shieldPositions.map(hexToKey));
+  // Create hole position set for quick lookup
+  const holeSet = new Set(holes.map(hexToKey));
 
   // Create all pieces
   const pieces: Piece[] = [];
-
-  // Add shields (no player owner)
-  for (const shieldPos of shieldPositions) {
-    pieces.push({
-      id: generateId(),
-      type: 'shield',
-      playerId: null,
-      position: shieldPos,
-    });
-  }
 
   // Add Jarls and Warriors for each player
   for (let i = 0; i < playerCount; i++) {
@@ -771,7 +602,7 @@ export function createInitialState(
     const warriorPositions = placeWarriors(
       jarlPosition,
       config.warriorCount,
-      shieldSet,
+      holeSet,
       config.boardRadius
     );
 
@@ -792,6 +623,7 @@ export function createInitialState(
     config,
     players,
     pieces,
+    holes,
     currentPlayerId: players[0].id, // First player starts
     turnNumber: 0,
     roundNumber: 0,

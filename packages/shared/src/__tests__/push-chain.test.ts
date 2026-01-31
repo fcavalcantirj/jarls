@@ -9,15 +9,16 @@ describe('detectChain', () => {
       config: {
         playerCount: 2,
         boardRadius: 3,
-        shieldCount: 0,
         warriorCount: 0,
         turnTimerMs: null,
+        terrain: 'calm',
       },
       players: [
         { id: 'p1', name: 'Player 1', color: '#ff0000', isEliminated: false },
         { id: 'p2', name: 'Player 2', color: '#0000ff', isEliminated: false },
       ],
       pieces,
+      holes: [],
       currentPlayerId: 'p1',
       turnNumber: 1,
       roundNumber: 1,
@@ -25,6 +26,7 @@ describe('detectChain', () => {
       roundsSinceElimination: 0,
       winnerId: null,
       winCondition: null,
+      moveHistory: [],
     };
   }
 
@@ -147,26 +149,22 @@ describe('detectChain', () => {
       expect(result.pieces).toHaveLength(1);
     });
 
-    it('should identify shield terminator', () => {
+    it('should identify hole terminator', () => {
       const defender: Piece = {
         id: 'defender',
         type: 'warrior',
         playerId: 'p2',
         position: { q: 0, r: 0 },
       };
-      const shield: Piece = {
-        id: 'shield',
-        type: 'shield',
-        playerId: null,
-        position: { q: 1, r: 0 },
-      };
-      const state = createTestState([defender, shield]);
+      const state = createTestState([defender]);
+      // Add hole at push destination
+      state.holes = [{ q: 1, r: 0 }];
 
       const result = detectChain(state, { q: 0, r: 0 }, 0); // Push East
 
-      expect(result.terminator).toBe('shield');
+      expect(result.terminator).toBe('hole');
       expect(result.terminatorPosition).toEqual({ q: 1, r: 0 });
-      expect(result.pieces).toHaveLength(1); // Only defender, shield not in chain
+      expect(result.pieces).toHaveLength(1); // Defender will fall into hole
     });
 
     it('should identify throne terminator when pushing Warrior toward empty throne', () => {
@@ -337,18 +335,19 @@ describe('detectChain', () => {
       expect(result.terminator).toBe('edge');
     });
 
-    it('should handle chain ending at shield after several pieces', () => {
+    it('should handle chain ending at hole after several pieces', () => {
       const pieces: Piece[] = [
         { id: 'w1', type: 'warrior', playerId: 'p2', position: { q: 0, r: 0 } },
         { id: 'w2', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
-        { id: 'shield', type: 'shield', playerId: null, position: { q: 2, r: 0 } },
       ];
       const state = createTestState(pieces);
+      // Add hole at chain end
+      state.holes = [{ q: 2, r: 0 }];
 
       const result = detectChain(state, { q: 0, r: 0 }, 0); // Push East
 
       expect(result.pieces).toHaveLength(2);
-      expect(result.terminator).toBe('shield');
+      expect(result.terminator).toBe('hole');
       expect(result.terminatorPosition).toEqual({ q: 2, r: 0 });
     });
 
@@ -362,26 +361,22 @@ describe('detectChain', () => {
       expect(result.terminatorPosition).toEqual({ q: 0, r: 0 });
     });
 
-    it('should handle shield immediately behind defender', () => {
+    it('should handle hole immediately behind defender', () => {
       const defender: Piece = {
         id: 'defender',
         type: 'warrior',
         playerId: 'p2',
         position: { q: 0, r: 0 },
       };
-      const shield: Piece = {
-        id: 'shield',
-        type: 'shield',
-        playerId: null,
-        position: { q: 1, r: 0 },
-      };
-      const state = createTestState([defender, shield]);
+      const state = createTestState([defender]);
+      // Hole at push destination
+      state.holes = [{ q: 1, r: 0 }];
 
       const result = detectChain(state, { q: 0, r: 0 }, 0); // Push East
 
       expect(result.pieces).toHaveLength(1);
       expect(result.pieces[0].id).toBe('defender');
-      expect(result.terminator).toBe('shield');
+      expect(result.terminator).toBe('hole');
     });
   });
 
@@ -484,20 +479,21 @@ describe('detectChain', () => {
       expect(result.pieces[2].playerId).toBe('p1');
     });
 
-    it('should compress allies against shield just like enemies', () => {
-      // Shield at (3,0), ally at (2,0), enemy at (1,0) — shield compression
+    it('should push allies into hole just like enemies', () => {
+      // Hole at (3,0), ally at (2,0), enemy at (1,0) — ally gets pushed into hole
       const pieces: Piece[] = [
         { id: 'enemy', type: 'warrior', playerId: 'p2', position: { q: 1, r: 0 } },
         { id: 'ally', type: 'warrior', playerId: 'p1', position: { q: 2, r: 0 } },
-        { id: 'shield', type: 'shield', playerId: null, position: { q: 3, r: 0 } },
       ];
       const state = createTestState(pieces);
+      state.holes = [{ q: 3, r: 0 }];
 
       const result = detectChain(state, { q: 1, r: 0 }, 0); // Push East
 
-      expect(result.pieces).toHaveLength(2); // Shield not in chain
-      expect(result.terminator).toBe('shield');
-      // Both enemy and ally are in the compression chain
+      expect(result.pieces).toHaveLength(2);
+      expect(result.terminator).toBe('hole');
+      expect(result.terminatorPosition).toEqual({ q: 3, r: 0 });
+      // Both enemy and ally are in the chain - ally will fall into hole
       expect(result.pieces[0].id).toBe('enemy');
       expect(result.pieces[1].id).toBe('ally');
     });

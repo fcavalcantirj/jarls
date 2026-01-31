@@ -12,12 +12,11 @@ JARLS - Viking Board Game Rules
 
 VICTORY CONDITIONS:
 1. Throne Victory: Move your Jarl to the throne (center hex at 0,0) - INSTANT WIN
-2. Elimination Victory: Eliminate the enemy Jarl by pushing it off the board edge
+2. Elimination Victory: Eliminate the enemy Jarl by pushing it off the board edge or into a hole
 
 PIECES:
 - Jarl (King): Your most important piece. Strength 2. Can move 1-2 hexes.
 - Warrior: Strength 1. Can move 1 hex only.
-- Shield: Neutral blockers. Cannot be pushed. Block movement and pushes.
 
 MOVEMENT:
 - Warriors move exactly 1 hex in any direction
@@ -25,6 +24,7 @@ MOVEMENT:
 - Jarls can move 2 hexes if they have "Draft Formation" (2+ friendly pieces directly behind in movement direction)
 - Moving 2 hexes grants "Momentum" (+1 attack strength)
 - If a Jarl's 2-hex move crosses the throne, the Jarl STOPS ON the throne and wins
+- CANNOT move onto or through holes
 
 COMBAT (Pushing):
 - Moving into an occupied hex initiates combat
@@ -40,16 +40,23 @@ SUPPORT MECHANICS:
 
 PUSH CHAINS:
 - If pushed piece hits another piece, it pushes that piece too (chain reaction)
-- Chains end at: board edge (elimination), shield (compression), or empty hex
+- Chains end at: board edge (elimination), hole (elimination), or empty hex
+
+HOLES (deadly pits):
+- Holes are hazards on the board that pieces cannot move onto or through
+- Pieces pushed into holes are ELIMINATED instantly
+- Use holes strategically: push enemies toward them, avoid positioning your pieces near them
 
 ELIMINATION:
 - Pieces pushed off the board edge are eliminated
+- Pieces pushed into holes are eliminated
 - If your Jarl is eliminated, you lose
 
 BOARD:
 - Hexagonal grid with throne at center (0,0)
 - Board radius defines how far from center pieces can be
 - Hexes at maximum radius are "edge" hexes - pieces can be pushed off from there
+- Holes are randomly placed based on terrain (calm: 3, treacherous: 6, chaotic: 9)
 `;
 
 /**
@@ -91,9 +98,10 @@ PLAY STYLE (Intermediate):
 
 TACTICAL PRIORITIES:
 1. Don't leave your Jarl exposed to elimination
-2. Look for opportunities to push enemies toward edges
+2. Look for opportunities to push enemies toward edges or holes
 3. Move your Jarl toward throne when safe
 4. Support your pieces with formations when attacking
+5. Avoid positioning near holes where you could be pushed in
 
 RESPONSE FORMAT:
 You MUST respond with ONLY valid JSON in this exact format:
@@ -124,9 +132,10 @@ STRATEGIC PRIORITIES (in order):
 1. **WIN NOW**: If Jarl can reach (0,0), take the throne immediately
 2. **ADVANCE JARL**: Move Jarl closer to (0,0) whenever possible
 3. **ENABLE DRAFT**: Position warriors behind Jarl to enable 2-hex moves toward throne
-4. **ELIMINATE THREATS**: Remove pieces blocking your path to throne
-5. **PROTECT JARL**: Keep Jarl safe from edge elimination
+4. **ELIMINATE THREATS**: Remove pieces blocking your path to throne (push toward edges or holes)
+5. **PROTECT JARL**: Keep Jarl safe from edge elimination and holes
 6. **DENY ENEMY**: Block enemy's throne approach
+7. **USE HOLES**: Push enemies toward holes for elimination; never position your pieces where they can be pushed into holes
 
 MOVE EVALUATION (strict priority order):
 1. WINNING: Jarl to (0,0) - ALWAYS choose this if available

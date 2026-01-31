@@ -8,9 +8,9 @@ function createMockGameState(overrides?: Partial<GameState>): GameState {
     config: {
       playerCount: 2,
       boardRadius: 3,
-      shieldCount: 5,
       warriorCount: 5,
       turnTimerMs: null,
+      terrain: 'calm',
     },
     players: [
       {
@@ -18,17 +18,16 @@ function createMockGameState(overrides?: Partial<GameState>): GameState {
         name: 'Host Player',
         color: '#e63946',
         isEliminated: false,
-        roundsSinceLastWarrior: null,
       },
       {
         id: 'player-2',
         name: 'AI Opponent',
         color: '#457b9d',
         isEliminated: false,
-        roundsSinceLastWarrior: null,
       },
     ],
     pieces: [],
+    holes: [],
     currentPlayerId: 'player-1',
     turnNumber: 0,
     roundNumber: 0,

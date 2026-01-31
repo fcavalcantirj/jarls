@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import Home from './pages/Home';
 import Game from './pages/Game';
 import Lobby from './pages/Lobby';
+import Rules from './pages/Rules';
 import { initGA } from './lib/analytics';
 
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/rules" element={<Rules />} />
           <Route path="/lobby/create" element={<Lobby />} />
           <Route path="/lobby/games" element={<Lobby />} />
           <Route path="/lobby/:gameId" element={<Lobby />} />

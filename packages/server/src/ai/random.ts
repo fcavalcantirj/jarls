@@ -1,9 +1,9 @@
-import type { GameState, MoveCommand, StarvationCandidates, StarvationChoice } from '@jarls/shared';
+import type { GameState, MoveCommand } from '@jarls/shared';
 import { getValidMoves } from '@jarls/shared';
 import type { AIPlayer } from './types.js';
 
 /**
- * AI player that selects moves and starvation choices completely at random.
+ * AI player that selects moves completely at random.
  */
 export class RandomAI implements AIPlayer {
   readonly difficulty = 'random' as const;
@@ -36,23 +36,6 @@ export class RandomAI implements AIPlayer {
 
     const chosen = allMoves[Math.floor(Math.random() * allMoves.length)];
     return { pieceId: chosen.pieceId, destination: chosen.destination };
-  }
-
-  async makeStarvationChoice(
-    candidates: StarvationCandidates,
-    playerId: string
-  ): Promise<StarvationChoice> {
-    await this.thinkingDelay();
-
-    const playerCandidates = candidates.find((c) => c.playerId === playerId);
-    if (!playerCandidates || playerCandidates.candidates.length === 0) {
-      throw new Error(`RandomAI: no starvation candidates for player ${playerId}`);
-    }
-
-    const chosen =
-      playerCandidates.candidates[Math.floor(Math.random() * playerCandidates.candidates.length)];
-
-    return { playerId, pieceId: chosen.id };
   }
 
   private thinkingDelay(): Promise<void> {

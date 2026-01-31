@@ -15,7 +15,7 @@ describe('Move Execution - getValidMoves', () => {
     config: {
       playerCount: 2,
       boardRadius: 3,
-      shieldCount: 5,
+      terrain: 'calm',
       warriorCount: 5,
       turnTimerMs: null,
       ...config,

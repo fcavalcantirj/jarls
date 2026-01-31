@@ -1,4 +1,4 @@
-import type { GameState, MoveCommand, StarvationCandidates, StarvationChoice } from '@jarls/shared';
+import type { GameState, MoveCommand } from '@jarls/shared';
 
 /** AI difficulty levels for basic AI types */
 export type AIDifficulty = 'random' | 'heuristic' | 'groq';
@@ -47,12 +47,6 @@ export interface AIPlayer {
 
   /** Generate a move for the given player in the current game state */
   generateMove(state: GameState, playerId: string): Promise<MoveCommand>;
-
-  /** Choose which warrior to sacrifice during starvation */
-  makeStarvationChoice(
-    candidates: StarvationCandidates,
-    playerId: string
-  ): Promise<StarvationChoice>;
 }
 
 /** Extended AI player interface with config support */

@@ -1,5 +1,5 @@
 import { createInitialState, getValidMoves } from '@jarls/shared';
-import type { GameState, StarvationCandidates } from '@jarls/shared';
+import type { GameState } from '@jarls/shared';
 import { HeuristicAI } from '../heuristic-ai.js';
 
 // Use zero delay for tests
@@ -155,37 +155,6 @@ describe('HeuristicAI', () => {
       // The AI should prefer moves toward center over edge
       // With -30 penalty for Jarl on edge, center moves should dominate
       expect(centerMoves).toBeGreaterThan(edgeMoves);
-    });
-  });
-
-  describe('makeStarvationChoice', () => {
-    it('returns a valid starvation choice', async () => {
-      const ai = createTestAI();
-      const state = createTestState();
-      const playerId = state.players[0].id;
-
-      const warriors = state.pieces.filter((p) => p.playerId === playerId && p.type === 'warrior');
-      const candidates: StarvationCandidates = [
-        {
-          playerId,
-          candidates: warriors,
-          maxDistance: 3,
-        },
-      ];
-
-      const choice = await ai.makeStarvationChoice(candidates, playerId);
-
-      expect(choice.playerId).toBe(playerId);
-      expect(warriors.some((w) => w.id === choice.pieceId)).toBe(true);
-    });
-
-    it('throws when no candidates exist for the player', async () => {
-      const ai = createTestAI();
-      const candidates: StarvationCandidates = [];
-
-      await expect(ai.makeStarvationChoice(candidates, 'somePlayer')).rejects.toThrow(
-        'no starvation candidates'
-      );
     });
   });
 });

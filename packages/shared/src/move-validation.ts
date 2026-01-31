@@ -10,6 +10,7 @@ import {
   getNeighbor,
   getOppositeDirection,
   hexLineAxial,
+  hexToKey,
   isOnBoard,
   isOnBoardAxial,
 } from './hex.js';
@@ -17,20 +18,24 @@ import {
 import { getPieceAt, getPieceById } from './combat-core.js';
 
 /**
- * Check if a path between two hexes is clear of pieces.
- * A path is clear if no pieces exist on any hex between the start and end (exclusive).
+ * Check if a path between two hexes is clear of pieces and holes.
+ * A path is clear if no pieces or holes exist on any hex between the start and end (exclusive).
  * The start and end hexes themselves are not checked.
  *
- * This is used to validate moves - pieces cannot move through other pieces.
+ * This is used to validate moves - pieces cannot move through other pieces or holes.
  *
  * @param state - The current game state
- * @param start - Starting hex position (exclusive - not checked for pieces)
- * @param end - Ending hex position (exclusive - not checked for pieces)
- * @returns true if all hexes between start and end are empty, false if any are occupied
+ * @param start - Starting hex position (exclusive - not checked for pieces/holes)
+ * @param end - Ending hex position (exclusive - not checked for pieces/holes)
+ * @returns true if all hexes between start and end are empty (no pieces or holes), false otherwise
  */
 export function isPathClear(state: GameState, start: AxialCoord, end: AxialCoord): boolean {
   // Get all hexes along the line from start to end
   const pathHexes = hexLineAxial(start, end);
+
+  // Build a set of hole positions for quick lookup
+  const holes = state.holes || [];
+  const holeSet = new Set(holes.map(hexToKey));
 
   // Check each hex between start and end (exclusive of both endpoints)
   // pathHexes[0] is start, pathHexes[pathHexes.length - 1] is end
@@ -38,6 +43,9 @@ export function isPathClear(state: GameState, start: AxialCoord, end: AxialCoord
     const hex = pathHexes[i];
     if (getPieceAt(state, hex) !== undefined) {
       return false; // Piece blocks the path
+    }
+    if (holeSet.has(hexToKey(hex))) {
+      return false; // Hole blocks the path
     }
   }
 
@@ -98,7 +106,7 @@ export function hasDraftFormationInDirection(
       warriorCount++;
     } else {
       // Non-friendly piece or non-Warrior - stop searching
-      // Enemy pieces or shields block the draft line
+      // Enemy pieces block the draft line
       break;
     }
   }
@@ -117,7 +125,7 @@ export function hasDraftFormationInDirection(
  * - A draft formation requires 2 or more friendly Warriors directly behind the Jarl
  * - "Behind" means in the opposite direction of the intended movement
  * - Warriors don't need to be consecutive (gaps are allowed)
- * - Enemy pieces or shields block the draft line
+ * - Enemy pieces block the draft line
  *
  * @param state - The current game state
  * @param jarlPosition - The Jarl's current position
@@ -284,14 +292,16 @@ export function validateMove(
     return { isValid: false, error: 'NOT_YOUR_PIECE' };
   }
 
-  // 5. Check piece type - shields cannot move
-  if (piece.type === 'shield') {
-    return { isValid: false, error: 'SHIELD_CANNOT_MOVE' };
-  }
-
-  // 6. Check destination is on the board
+  // 5. Check destination is on the board
   if (!isOnBoardAxial(destination, state.config.boardRadius)) {
     return { isValid: false, error: 'DESTINATION_OFF_BOARD' };
+  }
+
+  // 6. Check destination is not a hole
+  const holes = state.holes || [];
+  const holeSet = new Set(holes.map(hexToKey));
+  if (holeSet.has(hexToKey(destination))) {
+    return { isValid: false, error: 'DESTINATION_IS_HOLE' };
   }
 
   // 7. Check destination is not occupied by a friendly piece

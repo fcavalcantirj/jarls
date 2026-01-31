@@ -14,7 +14,7 @@ describe('applyMove', () => {
     pieces: Piece[],
     options: {
       currentPlayerId?: string;
-      phase?: 'lobby' | 'setup' | 'playing' | 'starvation' | 'ended';
+      phase?: 'lobby' | 'setup' | 'playing' | 'ended';
     } = {}
   ): GameState {
     return {
@@ -23,7 +23,7 @@ describe('applyMove', () => {
       config: {
         playerCount: 2,
         boardRadius: 3,
-        shieldCount: 0,
+        terrain: 'calm',
         warriorCount: 5,
         turnTimerMs: null,
       },
@@ -32,6 +32,7 @@ describe('applyMove', () => {
         { id: 'p2', name: 'Player 2', color: '#0000ff', isEliminated: false },
       ],
       pieces,
+      holes: [],
       currentPlayerId: options.currentPlayerId ?? 'p1',
       turnNumber: 0,
       roundNumber: 0,
@@ -39,6 +40,7 @@ describe('applyMove', () => {
       roundsSinceElimination: 0,
       winnerId: null,
       winCondition: null,
+      moveHistory: [],
     };
   }
 
@@ -429,7 +431,7 @@ describe('applyMove', () => {
         config: {
           playerCount: 3,
           boardRadius: 5,
-          shieldCount: 0,
+          terrain: 'calm',
           warriorCount: 5,
           turnTimerMs: null,
         },

@@ -44,7 +44,7 @@ export function buildUserPrompt(state: GameState, playerId: string): string {
   const player = state.players.find((p) => p.id === playerId);
   const myPieces = state.pieces.filter((p) => p.playerId === playerId);
   const enemyPieces = state.pieces.filter((p) => p.playerId && p.playerId !== playerId);
-  const shields = state.pieces.filter((p) => p.type === 'shield');
+  const holes = state.holes;
 
   // Separate Jarl from warriors for clarity
   const myJarl = myPieces.find((p) => p.type === 'jarl');
@@ -93,7 +93,7 @@ Enemy Jarl:
 Enemy Warriors:
 ${enemyWarriors.map(formatPiece).join('\n')}
 
-${shields.length > 0 ? `=== SHIELDS (blockers) ===\n${shields.map(formatPiece).join('\n')}` : ''}
+${holes.length > 0 ? `=== HOLES (deadly pits) ===\n${holes.map((h) => `  - Hole at (${h.q},${h.r})`).join('\n')}` : ''}
 
 **GOAL: Move YOUR JARL to (0,0) to win instantly!**
 

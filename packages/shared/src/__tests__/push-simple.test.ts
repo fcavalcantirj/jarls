@@ -16,7 +16,7 @@ describe('resolveSimplePush', () => {
       config: {
         playerCount: 2,
         boardRadius: 3,
-        shieldCount: 0,
+        terrain: 'calm',
         warriorCount: 0,
         turnTimerMs: null,
       },

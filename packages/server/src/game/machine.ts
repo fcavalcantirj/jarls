@@ -1,34 +1,7 @@
 import { setup, assign } from 'xstate';
 import type { GameMachineContext, GameMachineEvent, GameMachineInput } from './types';
-import type { GameState, Piece, Player } from '@jarls/shared';
-import {
-  createInitialState,
-  applyMove,
-  checkStarvationTrigger,
-  calculateStarvationCandidates,
-  resolveStarvation,
-} from '@jarls/shared';
-
-/**
- * Extract a GameState from GameMachineContext for use with shared functions.
- */
-function contextToGameState(context: GameMachineContext): GameState {
-  return {
-    id: context.id,
-    phase: context.phase,
-    config: context.config,
-    players: context.players,
-    pieces: context.pieces,
-    currentPlayerId: context.currentPlayerId,
-    turnNumber: context.turnNumber,
-    roundNumber: context.roundNumber,
-    firstPlayerIndex: context.firstPlayerIndex,
-    roundsSinceElimination: context.roundsSinceElimination,
-    winnerId: context.winnerId,
-    winCondition: context.winCondition,
-    moveHistory: context.moveHistory ?? [],
-  };
-}
+import type { Piece, Player } from '@jarls/shared';
+import { createInitialState, applyMove } from '@jarls/shared';
 
 /**
  * Get the next active (non-eliminated) player ID after the current player.
@@ -108,10 +81,6 @@ export const gameMachine = setup({
       // XState v5 requires a number, so we use Infinity-like value when disabled.
       return context.turnTimerMs ?? 2_147_483_647;
     },
-    starvationTimer: ({ context }: { context: GameMachineContext }) => {
-      // Use turn timer if configured, otherwise default to 30 seconds
-      return context.turnTimerMs ?? 30_000;
-    },
     disconnectTimer: () => {
       // 2-minute timeout for disconnected players
       return 120_000;
@@ -131,15 +100,6 @@ export const gameMachine = setup({
       if (event.type !== 'PLAYER_DISCONNECTED') return false;
       return context.currentPlayerId === event.playerId;
     },
-    allStarvationChoicesMade: ({ context }: { context: GameMachineContext }) => {
-      // Check if all players who have candidates have submitted a choice
-      const playersWithCandidates = context.starvationCandidates.filter(
-        (c) => c.candidates.length > 0
-      );
-      return playersWithCandidates.every((pc) =>
-        context.starvationChoices.some((sc) => sc.playerId === pc.playerId)
-      );
-    },
   },
   actions: {
     markPlayerDisconnected: assign(({ context, event }) => {
@@ -156,61 +116,6 @@ export const gameMachine = setup({
     }),
     autoSkipTurn: assign(({ context }) => {
       return advanceTurnSkip(context);
-    }),
-    enterStarvation: assign(({ context }) => {
-      const gameState = contextToGameState(context);
-      const candidates = calculateStarvationCandidates(gameState);
-      return {
-        starvationCandidates: candidates,
-        starvationChoices: [],
-      };
-    }),
-    recordStarvationChoice: assign(({ context, event }) => {
-      if (event.type !== 'STARVATION_CHOICE') return {};
-      // Don't record duplicate choices from the same player
-      if (context.starvationChoices.some((sc) => sc.playerId === event.playerId)) {
-        return {};
-      }
-      return {
-        starvationChoices: [
-          ...context.starvationChoices,
-          { playerId: event.playerId, pieceId: event.pieceId },
-        ],
-      };
-    }),
-    resolveStarvationChoices: assign(({ context }) => {
-      const gameState = contextToGameState(context);
-      const result = resolveStarvation(gameState, context.starvationChoices);
-      return {
-        pieces: result.newState.pieces,
-        players: result.newState.players,
-        roundsSinceElimination: result.newState.roundsSinceElimination,
-        winnerId: result.newState.winnerId,
-        winCondition: result.newState.winCondition,
-        phase: result.newState.phase,
-        starvationChoices: [],
-        starvationCandidates: [],
-      };
-    }),
-    autoSelectStarvation: assign(({ context }) => {
-      // For each player with candidates who hasn't submitted a choice,
-      // auto-select a random candidate
-      const playersWithCandidates = context.starvationCandidates.filter(
-        (c) => c.candidates.length > 0
-      );
-      const missingChoices = playersWithCandidates.filter(
-        (pc) => !context.starvationChoices.some((sc) => sc.playerId === pc.playerId)
-      );
-      const autoChoices = missingChoices.map((pc) => {
-        const randomIndex = Math.floor(Math.random() * pc.candidates.length);
-        return {
-          playerId: pc.playerId,
-          pieceId: pc.candidates[randomIndex].id,
-        };
-      });
-      return {
-        starvationChoices: [...context.starvationChoices, ...autoChoices],
-      };
     }),
     initializeBoard: assign(({ context }) => {
       // Generate board using shared logic
@@ -237,6 +142,7 @@ export const gameMachine = setup({
       return {
         ...context,
         pieces,
+        holes: generated.holes,
         phase: 'playing' as const,
         currentPlayerId: context.players[0].id,
       };
@@ -252,6 +158,7 @@ export const gameMachine = setup({
     config: input.config,
     players: [],
     pieces: [],
+    holes: [],
     currentPlayerId: null,
     turnNumber: 0,
     roundNumber: 0,
@@ -262,8 +169,6 @@ export const gameMachine = setup({
     moveHistory: [],
     turnTimerMs: input.config.turnTimerMs ?? null,
     disconnectedPlayers: new Set<string>(),
-    starvationChoices: [],
-    starvationCandidates: [],
   }),
   states: {
     lobby: {
@@ -278,7 +183,6 @@ export const gameMachine = setup({
                 color: context.players.length === 0 ? '#e63946' : '#457b9d',
                 isEliminated: false,
                 isAI: event.isAI ?? false,
-                roundsSinceLastWarrior: null,
               };
               return [...context.players, newPlayer];
             },
@@ -363,50 +267,7 @@ export const gameMachine = setup({
               target: '#game.ended',
             },
             {
-              guard: ({ context }) => {
-                const gameState = contextToGameState(context);
-                const result = checkStarvationTrigger(gameState);
-                return result.triggered;
-              },
-              target: '#game.starvation',
-            },
-            {
               target: 'awaitingMove',
-            },
-          ],
-        },
-      },
-    },
-    starvation: {
-      entry: 'enterStarvation',
-      initial: 'awaitingChoices',
-      states: {
-        awaitingChoices: {
-          after: {
-            starvationTimer: {
-              actions: 'autoSelectStarvation',
-              target: 'resolving',
-            },
-          },
-          always: {
-            guard: 'allStarvationChoicesMade',
-            target: 'resolving',
-          },
-          on: {
-            STARVATION_CHOICE: {
-              actions: 'recordStarvationChoice',
-            },
-          },
-        },
-        resolving: {
-          entry: 'resolveStarvationChoices',
-          always: [
-            {
-              guard: ({ context }) => context.winnerId !== null,
-              target: '#game.ended',
-            },
-            {
-              target: '#game.playing.awaitingMove',
             },
           ],
         },

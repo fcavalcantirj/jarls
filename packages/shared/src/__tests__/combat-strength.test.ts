@@ -29,16 +29,6 @@ describe('Combat Strength', () => {
       };
       expect(getPieceStrength(piece)).toBe(1);
     });
-
-    it('should return 0 for Shield', () => {
-      const piece: Piece = {
-        id: 'shield1',
-        type: 'shield',
-        playerId: null,
-        position: { q: 0, r: 0 },
-      };
-      expect(getPieceStrength(piece)).toBe(0);
-    });
   });
 
   describe('findInlineSupport', () => {
@@ -50,15 +40,16 @@ describe('Combat Strength', () => {
         config: {
           playerCount: 2,
           boardRadius: 3,
-          shieldCount: 0,
           warriorCount: 5,
           turnTimerMs: null,
+          terrain: 'calm',
         },
         players: [
           { id: 'p1', name: 'Player 1', color: 'red', isEliminated: false },
           { id: 'p2', name: 'Player 2', color: 'blue', isEliminated: false },
         ],
         pieces,
+        holes: [],
         currentPlayerId: 'p1',
         turnNumber: 0,
         roundNumber: 0,
@@ -66,6 +57,7 @@ describe('Combat Strength', () => {
         roundsSinceElimination: 0,
         winnerId: null,
         winCondition: null,
+        moveHistory: [],
       };
     }
 
@@ -211,16 +203,19 @@ describe('Combat Strength', () => {
       });
     });
 
-    describe('stops at shield', () => {
-      it('should stop collecting support at shield', () => {
+    describe('stops at hole', () => {
+      it('should stop collecting support at hole (no piece on hole)', () => {
         // Attacker at (0,0), attacking East (direction 0)
-        // Warrior at (-1,0), shield at (-2,0), Warrior at (-3,0)
+        // Warrior at (-1,0), hole at (-2,0), Warrior at (-3,0)
+        // Holes cannot have pieces, so support stops at the empty hole position
         const state = createTestState([
           { id: 'attacker', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
           { id: 'supporter', type: 'warrior', playerId: 'p1', position: { q: -1, r: 0 } },
-          { id: 'shield', type: 'shield', playerId: null, position: { q: -2, r: 0 } },
+          // Gap at (-2, 0) is a hole - no piece can be there
           { id: 'blocked', type: 'warrior', playerId: 'p1', position: { q: -3, r: 0 } },
         ]);
+        // Add hole at (-2,0) - pieces can't be placed there
+        state.holes = [{ q: -2, r: 0 }];
 
         const result = findInlineSupport(state, { q: 0, r: 0 }, 'p1', 0);
 
@@ -229,13 +224,13 @@ describe('Combat Strength', () => {
         expect(result.totalStrength).toBe(1);
       });
 
-      it('should return empty when shield is directly behind', () => {
+      it('should return empty when hole is directly behind', () => {
         // Attacker at (0,0), attacking East (direction 0)
-        // Shield at (-1,0)
+        // Hole at (-1,0) - no piece can be there
         const state = createTestState([
           { id: 'attacker', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
-          { id: 'shield', type: 'shield', playerId: null, position: { q: -1, r: 0 } },
         ]);
+        state.holes = [{ q: -1, r: 0 }];
 
         const result = findInlineSupport(state, { q: 0, r: 0 }, 'p1', 0);
 
@@ -403,15 +398,16 @@ describe('Combat Strength', () => {
         config: {
           playerCount: 2,
           boardRadius: 3,
-          shieldCount: 0,
           warriorCount: 5,
           turnTimerMs: null,
+          terrain: 'calm',
         },
         players: [
           { id: 'p1', name: 'Player 1', color: 'red', isEliminated: false },
           { id: 'p2', name: 'Player 2', color: 'blue', isEliminated: false },
         ],
         pieces,
+        holes: [],
         currentPlayerId: 'p1',
         turnNumber: 0,
         roundNumber: 0,
@@ -419,6 +415,7 @@ describe('Combat Strength', () => {
         roundsSinceElimination: 0,
         winnerId: null,
         winCondition: null,
+        moveHistory: [],
       };
     }
 
@@ -564,16 +561,17 @@ describe('Combat Strength', () => {
       });
     });
 
-    describe('stops at shield', () => {
-      it('should stop collecting bracing at shield', () => {
+    describe('stops at hole', () => {
+      it('should stop collecting bracing at hole (no piece on hole)', () => {
         // Defender at (0,0), being pushed East (direction 0)
-        // Warrior at (1,0), shield at (2,0), Warrior at (3,0)
+        // Warrior at (1,0), hole at (2,0), Warrior at (3,0)
         const state = createTestState([
           { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
           { id: 'bracer', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
-          { id: 'shield', type: 'shield', playerId: null, position: { q: 2, r: 0 } },
+          // Gap at (2,0) is a hole - no piece can be there
           { id: 'blocked', type: 'warrior', playerId: 'p1', position: { q: 3, r: 0 } },
         ]);
+        state.holes = [{ q: 2, r: 0 }];
 
         const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
 
@@ -582,13 +580,13 @@ describe('Combat Strength', () => {
         expect(result.totalStrength).toBe(1);
       });
 
-      it('should return empty when shield is directly behind', () => {
+      it('should return empty when hole is directly behind', () => {
         // Defender at (0,0), being pushed East (direction 0)
-        // Shield at (1,0)
+        // Hole at (1,0) - no piece can be there
         const state = createTestState([
           { id: 'defender', type: 'warrior', playerId: 'p1', position: { q: 0, r: 0 } },
-          { id: 'shield', type: 'shield', playerId: null, position: { q: 1, r: 0 } },
         ]);
+        state.holes = [{ q: 1, r: 0 }];
 
         const result = findBracing(state, { q: 0, r: 0 }, 'p1', 0);
 

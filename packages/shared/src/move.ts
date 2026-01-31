@@ -20,7 +20,7 @@ import type {
   MoveHistoryEntry,
 } from './types.js';
 
-import { getNeighborAxial, getOppositeDirection, isOnBoardAxial } from './hex.js';
+import { getNeighborAxial, getOppositeDirection, isOnBoardAxial, hexToKey } from './hex.js';
 
 import { getPieceAt, getPieceById, calculateCombat, resolvePush } from './combat.js';
 
@@ -140,7 +140,7 @@ export function eliminatePlayer(state: GameState, playerId: string): EliminatePl
     pieceId: warrior.id,
     playerId: warrior.playerId,
     position: warrior.position,
-    cause: 'starvation' as const, // Using 'starvation' as the cause since this is player elimination
+    cause: 'edge' as const, // Warriors removed when their Jarl is pushed off the edge
   }));
 
   // Create new players array with this player marked as eliminated
@@ -267,11 +267,6 @@ export function getReachableHexes(state: GameState, pieceId: string): ReachableH
     return [];
   }
 
-  // Shields cannot move
-  if (piece.type === 'shield') {
-    return [];
-  }
-
   // At this point, piece is a Warrior or Jarl, which always have a playerId
   const playerId = piece.playerId;
   if (!playerId) {
@@ -280,6 +275,10 @@ export function getReachableHexes(state: GameState, pieceId: string): ReachableH
 
   const results: ReachableHex[] = [];
   const radius = state.config.boardRadius;
+
+  // Build a set of hole positions for quick lookup
+  const holes = state.holes || [];
+  const holeSet = new Set(holes.map(hexToKey));
 
   // Determine maximum move distance based on piece type
   // Warriors can always move 1-2 hexes
@@ -312,23 +311,29 @@ export function getReachableHexes(state: GameState, pieceId: string): ReachableH
         break; // Can't go further in this direction
       }
 
+      // Check if destination is a hole (can't move to or through holes)
+      if (holeSet.has(hexToKey(nextPos))) {
+        break; // Holes block movement
+      }
+
       // Check if path is blocked (only need to check for distance > 1)
       // For distance 1, we check if there's a piece at destination
-      // For distance 2, we check if there's a piece at the intermediate hex
+      // For distance 2, we check if there's a piece or hole at the intermediate hex
       if (dist > 1) {
         // Check if the path is clear (intermediate hex has a piece)
         const intermediatePiece = getPieceAt(state, currentPos);
         if (intermediatePiece && intermediatePiece.id !== piece.id) {
           break; // Path is blocked by intermediate piece
         }
+        // Holes in path are already checked above when we moved to currentPos
       }
 
       // Check what's at the destination
       const pieceAtDest = getPieceAt(state, nextPos);
 
-      // Cannot land on friendly pieces or shields
-      if (pieceAtDest && (pieceAtDest.playerId === playerId || pieceAtDest.type === 'shield')) {
-        break; // Can't move to or through friendly pieces or shields
+      // Cannot land on friendly pieces
+      if (pieceAtDest && pieceAtDest.playerId === playerId) {
+        break; // Can't move to or through friendly pieces
       }
 
       // Warriors cannot enter the Throne
@@ -339,7 +344,6 @@ export function getReachableHexes(state: GameState, pieceId: string): ReachableH
       }
 
       // Determine if this is a move or attack
-      // Attack only when there's an enemy piece (not shield, which we already filtered)
       const moveType: 'move' | 'attack' =
         pieceAtDest && pieceAtDest.playerId !== null && pieceAtDest.playerId !== playerId
           ? 'attack'

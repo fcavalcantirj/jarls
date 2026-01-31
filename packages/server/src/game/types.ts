@@ -1,10 +1,4 @@
-import type {
-  GameConfig,
-  GameState,
-  MoveCommand,
-  StarvationChoice,
-  StarvationCandidates,
-} from '@jarls/shared';
+import type { GameConfig, GameState, MoveCommand } from '@jarls/shared';
 
 /**
  * Input required to create a game machine actor.
@@ -26,10 +20,6 @@ export interface GameMachineContext extends GameState {
   turnTimerMs: number | null;
   /** Set of player IDs that are currently disconnected */
   disconnectedPlayers: Set<string>;
-  /** Starvation choices collected from players during a starvation phase */
-  starvationChoices: StarvationChoice[];
-  /** Starvation candidates calculated when entering starvation state */
-  starvationCandidates: StarvationCandidates;
 }
 
 // ============================================================================
@@ -63,14 +53,7 @@ export interface MakeMoveMachineEvent {
   command: MoveCommand;
 }
 
-/** Event: A player submitted their starvation choice */
-export interface StarvationChoiceMachineEvent {
-  type: 'STARVATION_CHOICE';
-  playerId: string;
-  pieceId: string;
-}
-
-/** Event: A timer expired (turn timer or starvation timer) */
+/** Event: A timer expired (turn timer) */
 export interface TimeoutMachineEvent {
   type: 'TIMEOUT';
 }
@@ -93,7 +76,6 @@ export type GameMachineEvent =
   | PlayerLeftMachineEvent
   | StartGameMachineEvent
   | MakeMoveMachineEvent
-  | StarvationChoiceMachineEvent
   | TimeoutMachineEvent
   | PlayerDisconnectedMachineEvent
   | PlayerReconnectedMachineEvent;

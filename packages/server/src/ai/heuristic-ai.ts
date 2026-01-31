@@ -1,4 +1,4 @@
-import type { GameState, MoveCommand, StarvationCandidates, StarvationChoice } from '@jarls/shared';
+import type { GameState, MoveCommand } from '@jarls/shared';
 import { getValidMoves } from '@jarls/shared';
 import type { AIPlayer } from './types.js';
 import { scoreMove } from './heuristic.js';
@@ -72,25 +72,6 @@ export class HeuristicAI implements AIPlayer {
 
     // Fallback to best move (shouldn't reach here)
     return { pieceId: candidates[0].pieceId, destination: candidates[0].destination };
-  }
-
-  async makeStarvationChoice(
-    candidates: StarvationCandidates,
-    playerId: string
-  ): Promise<StarvationChoice> {
-    await this.thinkingDelay();
-
-    const playerCandidates = candidates.find((c) => c.playerId === playerId);
-    if (!playerCandidates || playerCandidates.candidates.length === 0) {
-      throw new Error(`HeuristicAI: no starvation candidates for player ${playerId}`);
-    }
-
-    // Pick the candidate furthest from the throne (least useful warrior)
-    // candidates are already at max distance, so just pick randomly among them
-    const chosen =
-      playerCandidates.candidates[Math.floor(Math.random() * playerCandidates.candidates.length)];
-
-    return { playerId, pieceId: chosen.id };
   }
 
   private thinkingDelay(): Promise<void> {

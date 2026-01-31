@@ -5,7 +5,7 @@ import type { GroqModel, GroqDifficulty, AIConfig } from '@jarls/shared';
 import { GROQ_MODEL_NAMES, DEFAULT_GROQ_MODEL, DIFFICULTY_PROMPTS } from '@jarls/shared';
 import { GameEvents } from '../../lib/analytics';
 
-type OpponentType = 'human' | 'ai';
+type Preset = 'easy' | 'medium' | 'hard' | 'custom';
 type AIType = 'local' | 'groq';
 type TurnTimer = 'none' | '30' | '60' | '120';
 type BoardSize = 'default' | '4' | '5' | '6';
@@ -16,6 +16,30 @@ const GROQ_MODELS: GroqModel[] = [
   'gemma2-9b-it',
 ];
 
+// Preset configurations
+const PRESETS: Record<
+  Exclude<Preset, 'custom'>,
+  { aiType: AIType; model?: GroqModel; difficulty: GroqDifficulty; description: string }
+> = {
+  easy: {
+    aiType: 'local',
+    difficulty: 'beginner',
+    description: 'Quick & Simple - Local AI opponent',
+  },
+  medium: {
+    aiType: 'groq',
+    model: 'llama-3.1-8b-instant',
+    difficulty: 'intermediate',
+    description: 'Balanced Challenge - Groq-powered AI',
+  },
+  hard: {
+    aiType: 'groq',
+    model: 'llama-3.3-70b-versatile',
+    difficulty: 'hard',
+    description: 'Expert Mode - Smartest AI, aggressive tactics',
+  },
+};
+
 export default function CreateGameForm() {
   const navigate = useNavigate();
   const setSession = useGameStore((s) => s.setSession);
@@ -24,19 +48,29 @@ export default function CreateGameForm() {
   const setAIConfig = useGameStore((s) => s.setAIConfig);
 
   const [playerName, setPlayerName] = useState('');
-  const [opponentType, setOpponentType] = useState<OpponentType>('human');
+  const [selectedPreset, setSelectedPreset] = useState<Preset | null>(null);
+  const [showCustomForm, setShowCustomForm] = useState(false);
+
+  // Custom form state
   const [aiType, setAIType] = useState<AIType>('local');
   const [groqModel, setGroqModel] = useState<GroqModel>(DEFAULT_GROQ_MODEL);
   const [groqDifficulty, setGroqDifficulty] = useState<GroqDifficulty>('intermediate');
   const [turnTimer, setTurnTimer] = useState<TurnTimer>('none');
   const [boardSize, setBoardSize] = useState<BoardSize>('default');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [customPrompt, setCustomPrompt] = useState('');
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const createGame = useCallback(
+    async (config: {
+      aiType: AIType;
+      model?: GroqModel;
+      difficulty: GroqDifficulty;
+      customPrompt?: string;
+      turnTimerMs: number | null;
+      boardRadius?: number;
+    }) => {
       const name = playerName.trim();
       if (!name || submitting) return;
 
@@ -45,12 +79,14 @@ export default function CreateGameForm() {
 
       try {
         // 1. Create game
-        const turnTimerMs = turnTimer === 'none' ? null : Number(turnTimer) * 1000;
-        const boardRadius = boardSize === 'default' ? undefined : Number(boardSize);
         const createRes = await fetch('/api/games', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ playerCount: 2, turnTimerMs, boardRadius }),
+          body: JSON.stringify({
+            playerCount: 2,
+            turnTimerMs: config.turnTimerMs,
+            boardRadius: config.boardRadius,
+          }),
         });
         if (!createRes.ok) {
           const body = await createRes.json().catch(() => ({}));
@@ -81,76 +117,173 @@ export default function CreateGameForm() {
         setSession(sessionToken);
         setPlayer(playerId);
 
-        // 4. If AI opponent, add AI player via API with full config
-        if (opponentType === 'ai') {
-          const aiConfig: AIConfig = {
-            type: aiType,
-            difficulty: groqDifficulty,
-            ...(aiType === 'groq' && { model: groqModel }),
-            ...(customPrompt.trim() && { customPrompt: customPrompt.trim() }),
-          };
+        // 4. Add AI player via API with full config
+        const aiConfig: AIConfig = {
+          type: config.aiType,
+          difficulty: config.difficulty,
+          ...(config.aiType === 'groq' && config.model && { model: config.model }),
+          ...(config.customPrompt?.trim() && { customPrompt: config.customPrompt.trim() }),
+        };
 
-          const aiRes = await fetch(`/api/games/${gameId}/ai`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${sessionToken}`,
-            },
-            body: JSON.stringify(aiConfig),
-          });
-          if (!aiRes.ok) {
-            const body = await aiRes.json().catch(() => ({}));
-            throw new Error(body.message ?? 'Failed to add AI player');
-          }
-
-          const aiResponse = (await aiRes.json()) as { aiPlayerId: string; aiConfig?: AIConfig };
-          if (aiResponse.aiConfig) {
-            setAIConfig(aiResponse.aiConfig);
-          }
+        const aiRes = await fetch(`/api/games/${gameId}/ai`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${sessionToken}`,
+          },
+          body: JSON.stringify(aiConfig),
+        });
+        if (!aiRes.ok) {
+          const body = await aiRes.json().catch(() => ({}));
+          throw new Error(body.message ?? 'Failed to add AI player');
         }
 
-        // 5. Navigate to waiting room
-        navigate(`/lobby/${gameId}`);
+        const aiResponse = (await aiRes.json()) as { aiPlayerId: string; aiConfig?: AIConfig };
+        if (aiResponse.aiConfig) {
+          setAIConfig(aiResponse.aiConfig);
+        }
+
+        // 5. Auto-start the game (AI opponent - no waiting room needed)
+        const startRes = await fetch(`/api/games/${gameId}/start`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${sessionToken}`,
+          },
+          body: JSON.stringify({ playerId }),
+        });
+        if (!startRes.ok) {
+          const body = await startRes.json().catch(() => ({}));
+          throw new Error(body.message ?? 'Failed to start game');
+        }
+
+        // 6. Navigate directly to game (skip waiting room)
+        navigate(`/game/${gameId}`);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Something went wrong');
         setSubmitting(false);
       }
     },
-    [
-      playerName,
-      opponentType,
-      aiType,
-      groqModel,
-      groqDifficulty,
-      customPrompt,
-      turnTimer,
-      boardSize,
-      submitting,
-      navigate,
-      setSession,
-      setPlayer,
-      setAIConfig,
-      clearGame,
-    ]
+    [playerName, submitting, navigate, setSession, setPlayer, setAIConfig, clearGame]
   );
 
-  const isValid = playerName.trim().length > 0;
+  const handlePresetClick = useCallback(
+    async (preset: Preset) => {
+      if (preset === 'custom') {
+        setSelectedPreset('custom');
+        setShowCustomForm(true);
+        return;
+      }
+
+      const name = playerName.trim();
+      if (!name) {
+        setError('Please enter your name first');
+        return;
+      }
+
+      setSelectedPreset(preset);
+      const presetConfig = PRESETS[preset];
+      await createGame({
+        aiType: presetConfig.aiType,
+        model: presetConfig.model,
+        difficulty: presetConfig.difficulty,
+        turnTimerMs: null,
+      });
+    },
+    [playerName, createGame]
+  );
+
+  // Create multiplayer game (human vs human)
+  const createMultiplayerGame = useCallback(async () => {
+    const name = playerName.trim();
+    if (!name || submitting) return;
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      // 1. Create game
+      const createRes = await fetch('/api/games', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerCount: 2 }),
+      });
+      if (!createRes.ok) {
+        const body = await createRes.json().catch(() => ({}));
+        throw new Error(body.message ?? 'Failed to create game');
+      }
+      const { gameId } = (await createRes.json()) as { gameId: string };
+
+      // Track game creation
+      GameEvents.multiplayerCreated(gameId);
+
+      // 2. Join game
+      const joinRes = await fetch(`/api/games/${gameId}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerName: name }),
+      });
+      if (!joinRes.ok) {
+        const body = await joinRes.json().catch(() => ({}));
+        throw new Error(body.message ?? 'Failed to join game');
+      }
+      const { sessionToken, playerId } = (await joinRes.json()) as {
+        sessionToken: string;
+        playerId: string;
+      };
+
+      // 3. Clear previous game state and store new session
+      clearGame();
+      setSession(sessionToken);
+      setPlayer(playerId);
+
+      // 4. Navigate to waiting room (human opponent will join via Browse)
+      navigate(`/lobby/${gameId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setSubmitting(false);
+    }
+  }, [playerName, submitting, navigate, setSession, setPlayer, clearGame]);
+
+  const handleMultiplayerClick = useCallback(async () => {
+    const name = playerName.trim();
+    if (!name) {
+      setError('Please enter your name first');
+      return;
+    }
+    setSelectedPreset(null);
+    await createMultiplayerGame();
+  }, [playerName, createMultiplayerGame]);
+
+  const handleCustomSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      const turnTimerMs = turnTimer === 'none' ? null : Number(turnTimer) * 1000;
+      const boardRadius = boardSize === 'default' ? undefined : Number(boardSize);
+
+      await createGame({
+        aiType,
+        model: aiType === 'groq' ? groqModel : undefined,
+        difficulty: groqDifficulty,
+        customPrompt: customPrompt || undefined,
+        turnTimerMs,
+        boardRadius,
+      });
+    },
+    [aiType, groqModel, groqDifficulty, customPrompt, turnTimer, boardSize, createGame]
+  );
+
+  const isNameValid = playerName.trim().length > 0;
 
   // Get the default prompt for the current difficulty to show in the textarea
   const defaultPrompt = useMemo(() => DIFFICULTY_PROMPTS[groqDifficulty], [groqDifficulty]);
-
-  // Whether to show the Groq badge (when Groq AI is selected)
-  const showGroqBadge = opponentType === 'ai' && aiType === 'groq';
-
-  // Use wide layout when Groq is selected (for two-column on desktop)
-  const useWideLayout = showGroqBadge;
 
   return (
     <div style={containerStyle}>
       <h2 style={titleStyle}>Create Game</h2>
 
-      <form onSubmit={handleSubmit} style={useWideLayout ? formStyleWide : formStyle}>
-        {/* Common fields - always shown at top */}
+      {/* Name Input - Always shown */}
+      <div style={nameContainerStyle}>
         <label style={labelStyle}>
           Your Name
           <input
@@ -163,29 +296,73 @@ export default function CreateGameForm() {
             autoFocus
           />
         </label>
+      </div>
 
-        <label style={labelStyle}>
-          Opponent
-          <div style={radioGroupStyle}>
+      {/* Error */}
+      {error && <p style={errorStyle}>{error}</p>}
+
+      {/* Preset Buttons - Always shown unless Custom form is expanded */}
+      {!showCustomForm && (
+        <>
+          <p style={chooseDifficultyStyle}>Choose Difficulty</p>
+          <div style={presetsContainerStyle}>
             <button
               type="button"
-              style={radioButtonStyle(opponentType === 'human')}
-              onClick={() => setOpponentType('human')}
+              style={presetButtonStyle('easy', selectedPreset, submitting)}
+              onClick={() => handlePresetClick('easy')}
+              disabled={submitting}
             >
-              Human
+              <span style={presetLabelStyle}>Easy</span>
+              <span style={presetDescStyle}>{PRESETS.easy.description}</span>
             </button>
             <button
               type="button"
-              style={radioButtonStyle(opponentType === 'ai')}
-              onClick={() => setOpponentType('ai')}
+              style={presetButtonStyle('medium', selectedPreset, submitting)}
+              onClick={() => handlePresetClick('medium')}
+              disabled={submitting}
             >
-              AI
+              <span style={presetLabelStyle}>Medium</span>
+              <span style={presetDescStyle}>{PRESETS.medium.description}</span>
+            </button>
+            <button
+              type="button"
+              style={presetButtonStyle('hard', selectedPreset, submitting)}
+              onClick={() => handlePresetClick('hard')}
+              disabled={submitting}
+            >
+              <span style={presetLabelStyle}>Hard</span>
+              <span style={presetDescStyle}>{PRESETS.hard.description}</span>
+            </button>
+            <button
+              type="button"
+              style={multiplayerButtonStyle(submitting)}
+              onClick={handleMultiplayerClick}
+              disabled={submitting}
+            >
+              <span style={presetLabelStyle}>Multiplayer</span>
+              <span style={presetDescStyle}>Play against a human</span>
+            </button>
+            <button
+              type="button"
+              style={customButtonStyle(submitting)}
+              onClick={() => handlePresetClick('custom')}
+              disabled={submitting}
+            >
+              <span style={presetLabelStyle}>Custom</span>
+              <span style={presetDescStyle}>Customize AI, board size, timer...</span>
             </button>
           </div>
-        </label>
+          {submitting && <p style={loadingStyle}>Creating game...</p>}
+        </>
+      )}
 
-        {/* AI Type - shown when AI is selected */}
-        {opponentType === 'ai' && (
+      {/* Custom Form - Shown when Custom is selected */}
+      {showCustomForm && (
+        <form onSubmit={handleCustomSubmit} style={customFormStyle}>
+          <button type="button" onClick={() => setShowCustomForm(false)} style={backButtonStyle}>
+            ← Back to Presets
+          </button>
+
           <label style={labelStyle}>
             AI Type
             <div style={radioGroupStyle}>
@@ -205,158 +382,124 @@ export default function CreateGameForm() {
               </button>
             </div>
           </label>
-        )}
 
-        {/* Two-column layout for Groq-specific settings on desktop */}
-        {useWideLayout ? (
-          <div style={twoColumnGridStyle}>
-            {/* Left column - Groq settings + game settings */}
-            <div style={columnStyle}>
-              <label style={labelStyle}>
-                Model
-                <select
-                  value={groqModel}
-                  onChange={(e) => setGroqModel(e.target.value as GroqModel)}
-                  style={selectStyle}
-                >
-                  {GROQ_MODELS.map((model) => (
-                    <option key={model} value={model}>
-                      {GROQ_MODEL_NAMES[model]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label style={labelStyle}>
-                Difficulty
-                <select
-                  value={groqDifficulty}
-                  onChange={(e) => setGroqDifficulty(e.target.value as GroqDifficulty)}
-                  style={selectStyle}
-                >
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="hard">Hard</option>
-                </select>
-              </label>
-
-              <label style={labelStyle}>
-                Turn Timer
-                <select
-                  value={turnTimer}
-                  onChange={(e) => setTurnTimer(e.target.value as TurnTimer)}
-                  style={selectStyle}
-                >
-                  <option value="none">No Timer</option>
-                  <option value="30">30 seconds</option>
-                  <option value="60">60 seconds</option>
-                  <option value="120">120 seconds</option>
-                </select>
-              </label>
-
-              <label style={labelStyle}>
-                Board Size
-                <select
-                  value={boardSize}
-                  onChange={(e) => setBoardSize(e.target.value as BoardSize)}
-                  style={selectStyle}
-                >
-                  <option value="default">Default (37 hexes)</option>
-                  <option value="4">Medium (61 hexes)</option>
-                  <option value="5">Large (91 hexes)</option>
-                  <option value="6">Extra Large (127 hexes)</option>
-                </select>
-              </label>
-            </div>
-
-            {/* Right column - prompt editor */}
-            <div style={columnStyle}>
-              <label style={{ ...labelStyle, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                >
-                  <span>System Prompt</span>
-                  {customPrompt && (
-                    <button
-                      type="button"
-                      onClick={() => setCustomPrompt('')}
-                      style={resetPromptButtonStyle}
-                    >
-                      Reset
-                    </button>
-                  )}
-                </div>
-                <textarea
-                  value={customPrompt || defaultPrompt}
-                  onChange={(e) => setCustomPrompt(e.target.value)}
-                  style={{ ...textareaStyle, flex: 1, minHeight: '280px' }}
-                  maxLength={5000}
-                />
-                <span style={charCountStyle}>{(customPrompt || defaultPrompt).length}/5000</span>
-              </label>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Single column - non-Groq game settings */}
+          {aiType === 'groq' && (
             <label style={labelStyle}>
-              Turn Timer
+              Model
               <select
-                value={turnTimer}
-                onChange={(e) => setTurnTimer(e.target.value as TurnTimer)}
+                value={groqModel}
+                onChange={(e) => setGroqModel(e.target.value as GroqModel)}
                 style={selectStyle}
               >
-                <option value="none">No Timer</option>
-                <option value="30">30 seconds</option>
-                <option value="60">60 seconds</option>
-                <option value="120">120 seconds</option>
+                {GROQ_MODELS.map((model) => (
+                  <option key={model} value={model}>
+                    {GROQ_MODEL_NAMES[model]}
+                  </option>
+                ))}
               </select>
             </label>
+          )}
 
+          <label style={labelStyle}>
+            Difficulty
+            <select
+              value={groqDifficulty}
+              onChange={(e) => setGroqDifficulty(e.target.value as GroqDifficulty)}
+              style={selectStyle}
+            >
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="hard">Hard</option>
+            </select>
+          </label>
+
+          <label style={labelStyle}>
+            Turn Timer
+            <select
+              value={turnTimer}
+              onChange={(e) => setTurnTimer(e.target.value as TurnTimer)}
+              style={selectStyle}
+            >
+              <option value="none">No Timer</option>
+              <option value="30">30 seconds</option>
+              <option value="60">60 seconds</option>
+              <option value="120">120 seconds</option>
+            </select>
+          </label>
+
+          <label style={labelStyle}>
+            Board Size
+            <select
+              value={boardSize}
+              onChange={(e) => setBoardSize(e.target.value as BoardSize)}
+              style={selectStyle}
+            >
+              <option value="default">Default (37 hexes)</option>
+              <option value="4">Medium (61 hexes)</option>
+              <option value="5">Large (91 hexes)</option>
+              <option value="6">Extra Large (127 hexes)</option>
+            </select>
+          </label>
+
+          {aiType === 'groq' && (
             <label style={labelStyle}>
-              Board Size
-              <select
-                value={boardSize}
-                onChange={(e) => setBoardSize(e.target.value as BoardSize)}
-                style={selectStyle}
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               >
-                <option value="default">Default (37 hexes)</option>
-                <option value="4">Medium (61 hexes)</option>
-                <option value="5">Large (91 hexes)</option>
-                <option value="6">Extra Large (127 hexes)</option>
-              </select>
+                <span>System Prompt</span>
+                {customPrompt && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomPrompt('')}
+                    style={resetPromptButtonStyle}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+              <textarea
+                value={customPrompt || defaultPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                style={textareaStyle}
+                maxLength={5000}
+              />
+              <span style={charCountStyle}>{(customPrompt || defaultPrompt).length}/5000</span>
             </label>
-          </>
-        )}
+          )}
 
-        {/* Error */}
-        {error && <p style={errorStyle}>{error}</p>}
-
-        {/* Submit */}
-        <button
-          type="submit"
-          style={submitStyle(isValid && !submitting)}
-          disabled={!isValid || submitting}
-        >
-          {submitting ? 'Creating...' : 'Create Game'}
-        </button>
-
-        {/* Powered by Groq badge - shown at bottom when Groq is selected */}
-        {showGroqBadge && (
-          <a
-            href="https://groq.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ alignSelf: 'center', marginTop: '8px' }}
+          <button
+            type="submit"
+            style={submitStyle(isNameValid && !submitting)}
+            disabled={!isNameValid || submitting}
           >
-            <img
-              src="https://console.groq.com/powered-by-groq-dark.svg"
-              alt="Powered by Groq for fast inference."
-              style={{ height: '24px', maxWidth: '100%' }}
-            />
-          </a>
-        )}
-      </form>
+            {submitting ? 'Creating...' : 'Create Game'}
+          </button>
+
+          {aiType === 'groq' && (
+            <a
+              href="https://groq.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ alignSelf: 'center', marginTop: '8px' }}
+            >
+              <img
+                src="https://console.groq.com/powered-by-groq-dark.svg"
+                alt="Powered by Groq for fast inference."
+                style={{ height: '24px', maxWidth: '100%' }}
+              />
+            </a>
+          )}
+        </form>
+      )}
+
+      {/* Browse games note */}
+      <p style={humanNoteStyle}>
+        Or{' '}
+        <a href="/lobby/games" style={linkStyle}>
+          browse existing games
+        </a>{' '}
+        to join
+      </p>
     </div>
   );
 }
@@ -371,40 +514,18 @@ const containerStyle: React.CSSProperties = {
   fontFamily: 'monospace',
   color: '#e0e0e0',
   overflow: 'auto',
+  gap: '16px',
 };
 
 const titleStyle: React.CSSProperties = {
-  margin: '0 0 24px 0',
+  margin: '0',
   fontSize: '24px',
   color: '#ffd700',
 };
 
-const formStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '16px',
+const nameContainerStyle: React.CSSProperties = {
   width: '100%',
-  maxWidth: '360px',
-};
-
-const formStyleWide: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '16px',
-  width: '100%',
-  maxWidth: '800px',
-};
-
-const twoColumnGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'minmax(280px, 1fr) minmax(300px, 1.5fr)',
-  gap: '24px',
-};
-
-const columnStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '16px',
+  maxWidth: '400px',
 };
 
 const labelStyle: React.CSSProperties = {
@@ -416,54 +537,131 @@ const labelStyle: React.CSSProperties = {
 };
 
 const inputStyle: React.CSSProperties = {
-  padding: '10px 12px',
+  padding: '12px 14px',
   borderRadius: '6px',
   border: '2px solid #555',
   backgroundColor: '#1a1a2e',
   color: '#fff',
   fontFamily: 'monospace',
+  fontSize: '16px',
+  outline: 'none',
+};
+
+const chooseDifficultyStyle: React.CSSProperties = {
+  margin: '8px 0 0 0',
   fontSize: '14px',
-  outline: 'none',
+  color: '#8b949e',
 };
 
-const selectStyle: React.CSSProperties = {
-  padding: '10px 12px',
-  borderRadius: '6px',
-  border: '2px solid #555',
-  backgroundColor: '#1a1a2e',
-  color: '#fff',
-  fontFamily: 'monospace',
-  fontSize: '14px',
-  outline: 'none',
+const presetsContainerStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, 1fr)',
+  gap: '12px',
+  width: '100%',
+  maxWidth: '400px',
 };
 
-const textareaStyle: React.CSSProperties = {
-  padding: '10px 12px',
-  borderRadius: '6px',
-  border: '2px solid #555',
-  backgroundColor: '#1a1a2e',
-  color: '#fff',
-  fontFamily: 'monospace',
-  fontSize: '12px',
-  outline: 'none',
-  resize: 'vertical',
-  minHeight: '100px',
+function presetButtonStyle(
+  preset: Exclude<Preset, 'custom'>,
+  selected: Preset | null,
+  submitting: boolean
+): React.CSSProperties {
+  const colors: Record<Exclude<Preset, 'custom'>, { border: string; bg: string; text: string }> = {
+    easy: { border: '#3fb950', bg: '#1a3d2a', text: '#3fb950' },
+    medium: { border: '#ffd700', bg: '#3d3a1a', text: '#ffd700' },
+    hard: { border: '#f85149', bg: '#3d1a1a', text: '#f85149' },
+  };
+  const isSelected = selected === preset;
+  const c = colors[preset];
+
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '16px 12px',
+    borderRadius: '8px',
+    border: isSelected ? `2px solid ${c.border}` : '2px solid #30363d',
+    backgroundColor: isSelected ? c.bg : '#161b22',
+    color: isSelected ? c.text : '#8b949e',
+    fontFamily: 'monospace',
+    cursor: submitting ? 'wait' : 'pointer',
+    opacity: submitting && selected && selected !== preset ? 0.5 : 1,
+    transition: 'all 0.2s',
+  };
+}
+
+function multiplayerButtonStyle(submitting: boolean): React.CSSProperties {
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '16px 12px',
+    borderRadius: '8px',
+    border: '2px solid #58a6ff',
+    backgroundColor: '#1a2d4a',
+    color: '#58a6ff',
+    fontFamily: 'monospace',
+    cursor: submitting ? 'wait' : 'pointer',
+    transition: 'all 0.2s',
+  };
+}
+
+function customButtonStyle(submitting: boolean): React.CSSProperties {
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '16px 12px',
+    borderRadius: '8px',
+    border: '2px solid #30363d',
+    backgroundColor: '#161b22',
+    color: '#8b949e',
+    fontFamily: 'monospace',
+    cursor: submitting ? 'wait' : 'pointer',
+    gridColumn: '1 / -1',
+    transition: 'all 0.2s',
+  };
+}
+
+const presetLabelStyle: React.CSSProperties = {
+  fontSize: '16px',
+  fontWeight: 'bold',
 };
 
-const charCountStyle: React.CSSProperties = {
+const presetDescStyle: React.CSSProperties = {
   fontSize: '11px',
-  color: '#666',
+  opacity: 0.8,
+  textAlign: 'center',
 };
 
-const resetPromptButtonStyle: React.CSSProperties = {
-  padding: '4px 8px',
-  borderRadius: '4px',
-  border: '1px solid #555',
+const loadingStyle: React.CSSProperties = {
+  margin: '0',
+  color: '#8b949e',
+  fontSize: '14px',
+};
+
+const customFormStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '16px',
+  width: '100%',
+  maxWidth: '400px',
+};
+
+const backButtonStyle: React.CSSProperties = {
+  alignSelf: 'flex-start',
+  padding: '8px 12px',
+  borderRadius: '6px',
+  border: '1px solid #30363d',
   backgroundColor: 'transparent',
-  color: '#888',
+  color: '#8b949e',
   fontFamily: 'monospace',
-  fontSize: '11px',
+  fontSize: '13px',
   cursor: 'pointer',
+  transition: 'background 0.2s',
 };
 
 const radioGroupStyle: React.CSSProperties = {
@@ -487,6 +685,46 @@ function radioButtonStyle(active: boolean): React.CSSProperties {
   };
 }
 
+const selectStyle: React.CSSProperties = {
+  padding: '10px 12px',
+  borderRadius: '6px',
+  border: '2px solid #555',
+  backgroundColor: '#1a1a2e',
+  color: '#fff',
+  fontFamily: 'monospace',
+  fontSize: '14px',
+  outline: 'none',
+};
+
+const textareaStyle: React.CSSProperties = {
+  padding: '10px 12px',
+  borderRadius: '6px',
+  border: '2px solid #555',
+  backgroundColor: '#1a1a2e',
+  color: '#fff',
+  fontFamily: 'monospace',
+  fontSize: '12px',
+  outline: 'none',
+  resize: 'vertical',
+  minHeight: '150px',
+};
+
+const charCountStyle: React.CSSProperties = {
+  fontSize: '11px',
+  color: '#666',
+};
+
+const resetPromptButtonStyle: React.CSSProperties = {
+  padding: '4px 8px',
+  borderRadius: '4px',
+  border: '1px solid #555',
+  backgroundColor: 'transparent',
+  color: '#888',
+  fontFamily: 'monospace',
+  fontSize: '11px',
+  cursor: 'pointer',
+};
+
 const errorStyle: React.CSSProperties = {
   margin: 0,
   color: '#e74c3c',
@@ -508,3 +746,13 @@ function submitStyle(enabled: boolean): React.CSSProperties {
     marginTop: '8px',
   };
 }
+
+const humanNoteStyle: React.CSSProperties = {
+  margin: '16px 0 0 0',
+  fontSize: '12px',
+  color: '#484f58',
+};
+
+const linkStyle: React.CSSProperties = {
+  color: '#58a6ff',
+};

@@ -7,15 +7,16 @@ describe('Move Execution - getReachableHexes', () => {
     config: {
       playerCount: 2,
       boardRadius: 3,
-      shieldCount: 5,
       warriorCount: 5,
       turnTimerMs: null,
+      terrain: 'calm',
     },
     players: [
       { id: 'p1', name: 'Player 1', color: '#ff0000', isEliminated: false },
       { id: 'p2', name: 'Player 2', color: '#0000ff', isEliminated: false },
     ],
     pieces,
+    holes: [],
     phase: 'playing',
     currentPlayerId,
     turnNumber: 1,
@@ -24,21 +25,13 @@ describe('Move Execution - getReachableHexes', () => {
     roundsSinceElimination: 0,
     winnerId: null,
     winCondition: null,
+    moveHistory: [],
   });
 
   describe('basic functionality', () => {
     it('should return empty array for non-existent piece', () => {
       const state = createTestState([]);
       const result = getReachableHexes(state, 'non-existent');
-      expect(result).toEqual([]);
-    });
-
-    it('should return empty array for shield pieces', () => {
-      const pieces: Piece[] = [
-        { id: 'shield1', type: 'shield', playerId: null, position: { q: 0, r: 1 } },
-      ];
-      const state = createTestState(pieces);
-      const result = getReachableHexes(state, 'shield1');
       expect(result).toEqual([]);
     });
   });
@@ -367,20 +360,21 @@ describe('Move Execution - getReachableHexes', () => {
       expect(twoHexMoves.length).toBe(0);
     });
 
-    it('should handle Warrior blocked by shield', () => {
+    it('should handle Warrior blocked by hole', () => {
       const pieces: Piece[] = [
         { id: 'w1', type: 'warrior', playerId: 'p1', position: { q: 0, r: 2 } },
-        { id: 'shield1', type: 'shield', playerId: null, position: { q: 0, r: 1 } },
       ];
       const state = createTestState(pieces);
+      // Add hole to block the path
+      state.holes = [{ q: 0, r: 1 }];
       const result = getReachableHexes(state, 'w1');
 
-      // Should not be able to move to shield position or through it
-      const shieldPos = result.find((r) => r.destination.q === 0 && r.destination.r === 1);
-      expect(shieldPos).toBeUndefined();
+      // Should not be able to move to hole position or through it
+      const holePos = result.find((r) => r.destination.q === 0 && r.destination.r === 1);
+      expect(holePos).toBeUndefined();
 
-      const beyondShield = result.find((r) => r.destination.q === 0 && r.destination.r === 0);
-      expect(beyondShield).toBeUndefined();
+      const beyondHole = result.find((r) => r.destination.q === 0 && r.destination.r === 0);
+      expect(beyondHole).toBeUndefined();
     });
   });
 

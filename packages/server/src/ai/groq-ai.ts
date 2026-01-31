@@ -1,12 +1,4 @@
-import type {
-  GameState,
-  MoveCommand,
-  StarvationCandidates,
-  StarvationChoice,
-  AxialCoord,
-  GroqModel,
-  AIConfig,
-} from '@jarls/shared';
+import type { GameState, MoveCommand, GroqModel, AIConfig } from '@jarls/shared';
 import { DEFAULT_GROQ_MODEL } from '@jarls/shared';
 import { getValidMoves } from '@jarls/shared';
 import type { AIPlayer, ConfigurableAIPlayer } from './types.js';
@@ -91,41 +83,6 @@ export class GroqAI implements AIPlayer, ConfigurableAIPlayer {
     }
   }
 
-  async makeStarvationChoice(
-    candidates: StarvationCandidates,
-    playerId: string
-  ): Promise<StarvationChoice> {
-    const playerCandidates = candidates.find((c) => c.playerId === playerId);
-    if (!playerCandidates || playerCandidates.candidates.length === 0) {
-      throw new Error(`GroqAI: no starvation candidates for player ${playerId}`);
-    }
-
-    // If only one candidate, just return it
-    if (playerCandidates.candidates.length === 1) {
-      return { playerId, pieceId: playerCandidates.candidates[0].id };
-    }
-
-    try {
-      const response = await this.callGroqAPI(
-        this.buildStarvationPrompt(playerCandidates.candidates)
-      );
-
-      const parsed = this.parseJSON(response);
-      if (parsed?.pieceId && typeof parsed.pieceId === 'string') {
-        const valid = playerCandidates.candidates.find((c) => c.id === parsed.pieceId);
-        if (valid) {
-          return { playerId, pieceId: parsed.pieceId as string };
-        }
-      }
-
-      // Fallback to random
-      return this.randomStarvationChoice(playerCandidates.candidates, playerId);
-    } catch (error) {
-      console.error('GroqAI makeStarvationChoice error:', error);
-      return this.randomStarvationChoice(playerCandidates.candidates, playerId);
-    }
-  }
-
   private async callGroqAPI(messages: { role: string; content: string }[]): Promise<string> {
     let lastError: Error | null = null;
 
@@ -182,24 +139,6 @@ export class GroqAI implements AIPlayer, ConfigurableAIPlayer {
 
     // Build user prompt with game state (rules-based, no pre-computed moves)
     const userPrompt = buildUserPrompt(state, playerId);
-
-    return [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ];
-  }
-
-  private buildStarvationPrompt(
-    candidates: { id: string; type: string; position: AxialCoord }[]
-  ): { role: string; content: string }[] {
-    const systemPrompt = `You must sacrifice one warrior due to starvation.
-Choose the least valuable piece (furthest from battle, least strategic).
-Respond ONLY with JSON: {"pieceId": "..."}`;
-
-    const userPrompt = `Warriors that can be sacrificed:
-${candidates.map((c) => `- ${c.id} at (${c.position.q},${c.position.r})`).join('\n')}
-
-Choose which to sacrifice. JSON only:`;
 
     return [
       { role: 'system', content: systemPrompt },
@@ -278,11 +217,6 @@ Choose which to sacrifice. JSON only:`;
 
   private randomMove(validMoves: MoveCommand[]): MoveCommand {
     return validMoves[Math.floor(Math.random() * validMoves.length)];
-  }
-
-  private randomStarvationChoice(candidates: { id: string }[], playerId: string): StarvationChoice {
-    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-    return { playerId, pieceId: chosen.id };
   }
 
   private sleep(ms: number): Promise<void> {

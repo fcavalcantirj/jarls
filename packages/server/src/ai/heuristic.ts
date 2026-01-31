@@ -1,5 +1,25 @@
-import type { GameState, ValidMove, MoveCommand } from '@jarls/shared';
-import { applyMove, hexDistanceAxial, isOnEdgeAxial, getPieceById } from '@jarls/shared';
+import type { GameState, ValidMove, MoveCommand, AxialCoord, HexDirection } from '@jarls/shared';
+import {
+  applyMove,
+  hexDistanceAxial,
+  isOnEdgeAxial,
+  getPieceById,
+  hexToKey,
+  getNeighborAxial,
+} from '@jarls/shared';
+
+/**
+ * Check if a position is adjacent to any hole.
+ */
+function isAdjacentToHole(pos: AxialCoord, holes: AxialCoord[]): boolean {
+  if (!holes || holes.length === 0) return false;
+  const holeSet = new Set(holes.map(hexToKey));
+  for (let d = 0; d < 6; d++) {
+    const neighbor = getNeighborAxial(pos, d as HexDirection);
+    if (holeSet.has(hexToKey(neighbor))) return true;
+  }
+  return false;
+}
 
 /**
  * Score a move for a given player based on heuristic evaluation.
@@ -9,10 +29,12 @@ import { applyMove, hexDistanceAxial, isOnEdgeAxial, getPieceById } from '@jarls
  * - +50: enemy Jarl elimination
  * - +20: enemy piece elimination
  * - +10: successful push
+ * - +8: enemy piece pushed adjacent to hole
  * - +5: momentum attack
  *
  * Negative factors:
  * - -30: own Jarl ends up on edge
+ * - -15: own piece ends up adjacent to hole
  * - -10: own piece ends up on edge after move
  * - +3 per hex closer to throne for Jarl
  *
@@ -63,6 +85,16 @@ export function scoreMove(
   // +10: successful push (attack that results in push outcome)
   if (move.moveType === 'attack' && move.combatPreview?.outcome === 'push') {
     score += 10;
+
+    // +8: enemy piece pushed adjacent to a hole (sets up elimination)
+    const enemyPiecesAfter = newState.pieces.filter(
+      (p) => p.playerId !== playerId && p.playerId !== null
+    );
+    for (const enemy of enemyPiecesAfter) {
+      if (isAdjacentToHole(enemy.position, newState.holes)) {
+        score += 8;
+      }
+    }
   }
 
   // +5: momentum attack (moved 2 hexes to attack)
@@ -83,6 +115,11 @@ export function scoreMove(
     // -10: own piece on edge after move (non-Jarl)
     if (movedPiece.type !== 'jarl' && isOnEdgeAxial(movedPiece.position, boardRadius)) {
       score -= 10;
+    }
+
+    // -15: own piece ends up adjacent to a hole (danger zone)
+    if (isAdjacentToHole(movedPiece.position, newState.holes)) {
+      score -= 15;
     }
 
     // +3 per hex closer to throne for Jarl

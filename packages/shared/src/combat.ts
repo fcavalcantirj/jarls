@@ -18,7 +18,7 @@ import type {
   PushResult,
 } from './types.js';
 
-import { getNeighborAxial, isOnBoardAxial } from './hex.js';
+import { getNeighborAxial, isOnBoardAxial, hexToKey } from './hex.js';
 
 // Re-export core combat functions from combat-core.ts
 export {
@@ -145,21 +145,16 @@ export function detectChain(
   const pieces: Piece[] = [];
   let currentPos = startPosition;
 
+  // Build a set of hole positions for quick lookup
+  const holes = state.holes || [];
+  const holeSet = new Set(holes.map(hexToKey));
+
   // Walk in the push direction, collecting pieces until we hit a terminator
   while (true) {
     const pieceAtCurrent = getPieceAt(state, currentPos);
 
-    // If there's a piece at the current position, check what type it is
+    // If there's a piece at the current position, add it to chain
     if (pieceAtCurrent) {
-      // Shields don't move - they terminate the chain
-      if (pieceAtCurrent.type === 'shield') {
-        return {
-          pieces,
-          terminator: 'shield',
-          terminatorPosition: currentPos,
-        };
-      }
-
       // This piece is part of the chain (jarl or warrior)
       pieces.push(pieceAtCurrent);
     } else {
@@ -183,10 +178,18 @@ export function detectChain(
       };
     }
 
+    // Check if next position is a hole - pieces fall into holes and are eliminated
+    if (holeSet.has(hexToKey(nextPos))) {
+      return {
+        pieces,
+        terminator: 'hole',
+        terminatorPosition: nextPos,
+      };
+    }
+
     // Check if next position is the Throne (0,0) and the last piece in the chain
     // is a Warrior. Warriors cannot enter the Throne — it acts as a compression
-    // point (like a Shield). Jarls CAN be pushed onto the Throne (they just
-    // don't win from being pushed).
+    // point. Jarls CAN be pushed onto the Throne (they just don't win from being pushed).
     const lastPieceInChain = pieces[pieces.length - 1];
     if (
       nextPos.q === 0 &&
@@ -206,13 +209,13 @@ export function detectChain(
 }
 
 /**
- * Resolve a push where the chain terminates at the board edge.
- * Pieces at the edge are eliminated (pushed off the board).
- * The chain compresses toward the edge, with pieces filling in positions
+ * Resolve a push where the chain terminates at the board edge or a hole.
+ * The last piece in the chain is eliminated (pushed off the board or into a hole).
+ * The chain compresses toward the terminator, with pieces filling in positions
  * from those that were eliminated.
  *
- * Example: If pieces A, B, C are in a chain being pushed toward the edge,
- * and C is at the edge, then C is eliminated, B moves to C's position,
+ * Example: If pieces A, B, C are in a chain being pushed toward the edge/hole,
+ * and C is at the edge/hole, then C is eliminated, B moves to C's position,
  * A moves to B's position, and the attacker takes A's original position.
  *
  * @param state - The current game state
@@ -242,9 +245,11 @@ export function resolveEdgePush(
     throw new Error(`Attacker with ID ${attackerId} not found`);
   }
 
-  // Validate chain terminator is edge
-  if (chain.terminator !== 'edge') {
-    throw new Error(`resolveEdgePush called with non-edge terminator: ${chain.terminator}`);
+  // Validate chain terminator is edge or hole
+  if (chain.terminator !== 'edge' && chain.terminator !== 'hole') {
+    throw new Error(
+      `resolveEdgePush called with invalid terminator: ${chain.terminator}. Expected 'edge' or 'hole'.`
+    );
   }
 
   // The chain pieces are ordered from first pushed (closest to attacker) to last (closest to edge)
@@ -271,12 +276,13 @@ export function resolveEdgePush(
   const lastPosition = chainPositions[chainPositions.length - 1];
 
   // Create eliminated event for the last piece
+  // Use the chain terminator as the cause ('edge' or 'hole')
   const eliminatedEvent: EliminatedEvent = {
     type: 'ELIMINATED',
     pieceId: lastPiece.id,
     playerId: lastPiece.playerId,
     position: lastPosition,
-    cause: 'edge',
+    cause: chain.terminator as 'edge' | 'hole',
   };
   events.push(eliminatedEvent);
   eliminatedPieceIds.push(lastPiece.id);
@@ -342,8 +348,8 @@ export function resolveEdgePush(
 }
 
 /**
- * Resolve a push where the chain compresses against a blocker (shield or throne).
- * Unlike edge pushes, compression does not eliminate any pieces - they simply
+ * Resolve a push where the chain compresses against the throne.
+ * Unlike edge/hole pushes, compression does not eliminate any pieces - they simply
  * compress against the immovable blocker.
  *
  * The resolution:
@@ -351,10 +357,8 @@ export function resolveEdgePush(
  * 2. Attacker takes the first defender's position
  * 3. No pieces are eliminated
  *
- * This handles:
- * - Shield blocking: pieces compress against an immovable shield
- * - Throne blocking: Warriors compress against throne (they can't enter)
- *                    Jarls also compress against throne when pushed (can't be pushed onto it)
+ * This handles throne blocking: Warriors compress against throne (they can't enter).
+ * Jarls also compress against throne when pushed (can't be pushed onto it).
  *
  * @param state - The current game state
  * @param attackerId - The ID of the attacking piece
@@ -382,10 +386,10 @@ export function resolveCompression(
     throw new Error(`Attacker with ID ${attackerId} not found`);
   }
 
-  // Validate chain terminator is shield or throne
-  if (chain.terminator !== 'shield' && chain.terminator !== 'throne') {
+  // Validate chain terminator is throne
+  if (chain.terminator !== 'throne') {
     throw new Error(
-      `resolveCompression called with invalid terminator: ${chain.terminator}. Expected 'shield' or 'throne'.`
+      `resolveCompression called with invalid terminator: ${chain.terminator}. Expected 'throne'.`
     );
   }
 
@@ -483,19 +487,19 @@ export function resolveCompression(
  *
  * This function orchestrates push resolution by:
  * 1. Detecting the chain of pieces that will be affected
- * 2. Determining the chain terminator (edge, shield, throne, or empty)
+ * 2. Determining the chain terminator (edge, hole, throne, or empty)
  * 3. Routing to the appropriate resolution function
  *
  * Chain terminators and their resolutions:
  * - empty: Chain push - all pieces shift one position in push direction
  * - edge: Edge elimination - pieces pushed off board are eliminated (resolveEdgePush)
- * - shield: Compression - pieces compress against immovable shield (resolveCompression)
+ * - hole: Hole elimination - pieces pushed into holes are eliminated (resolveEdgePush)
  * - throne: Compression - pieces compress against throne (resolveCompression)
  *
  * Events are generated with correct depth values for staggered animation:
  * - MOVE event for attacker (depth implicit)
  * - PUSH events for each chain piece with increasing depth
- * - ELIMINATED events for pieces pushed off edge
+ * - ELIMINATED events for pieces pushed off edge or into holes
  *
  * @param state - The current game state
  * @param attackerId - The ID of the attacking piece
@@ -595,8 +599,9 @@ export function resolvePush(
       };
     }
 
-    case 'edge': {
-      // Edge elimination - pieces pushed off board are eliminated
+    case 'edge':
+    case 'hole': {
+      // Edge/hole elimination - pieces pushed off board or into hole are eliminated
       const result = resolveEdgePush(
         state,
         attackerId,
@@ -613,9 +618,8 @@ export function resolvePush(
       };
     }
 
-    case 'shield':
     case 'throne': {
-      // Compression - pieces compress against shield or throne
+      // Compression - pieces compress against throne (warriors can't enter)
       const result = resolveCompression(
         state,
         attackerId,

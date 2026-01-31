@@ -6,6 +6,5 @@ export type {
   JoinGameResponse,
   PlayTurnResponse,
   StartGameResponse,
-  StarvationChoiceResponse,
 } from './client';
 export { useSocket } from '@/hooks/useSocket';

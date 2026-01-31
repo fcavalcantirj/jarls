@@ -64,7 +64,7 @@ describe('Game Machine - Lobby State', () => {
         name: 'Alice',
         color: '#e63946',
         isEliminated: false,
-        roundsSinceLastWarrior: null,
+        isAI: false,
       });
 
       actor.stop();

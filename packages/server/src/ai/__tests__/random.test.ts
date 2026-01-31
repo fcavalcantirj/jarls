@@ -1,5 +1,5 @@
 import { createInitialState, getValidMoves } from '@jarls/shared';
-import type { GameState, StarvationCandidates } from '@jarls/shared';
+import type { GameState } from '@jarls/shared';
 import { RandomAI } from '../random.js';
 
 // Use zero delay for tests
@@ -78,38 +78,6 @@ describe('RandomAI', () => {
       // With a fresh board there should be multiple valid moves,
       // so we expect at least 2 different moves out of 20 tries
       expect(moves.size).toBeGreaterThan(1);
-    });
-  });
-
-  describe('makeStarvationChoice', () => {
-    it('returns a valid starvation choice', async () => {
-      const ai = createTestAI();
-      const state = createTestState();
-      const playerId = state.players[0].id;
-
-      // Build fake candidates from the player's warriors
-      const warriors = state.pieces.filter((p) => p.playerId === playerId && p.type === 'warrior');
-      const candidates: StarvationCandidates = [
-        {
-          playerId,
-          candidates: warriors,
-          maxDistance: 3,
-        },
-      ];
-
-      const choice = await ai.makeStarvationChoice(candidates, playerId);
-
-      expect(choice.playerId).toBe(playerId);
-      expect(warriors.some((w) => w.id === choice.pieceId)).toBe(true);
-    });
-
-    it('throws when no candidates exist for the player', async () => {
-      const ai = createTestAI();
-      const candidates: StarvationCandidates = [];
-
-      await expect(ai.makeStarvationChoice(candidates, 'somePlayer')).rejects.toThrow(
-        'no starvation candidates'
-      );
     });
   });
 });

@@ -36,6 +36,7 @@ const createGameSchema = z.object({
     .optional()
     .default(null),
   boardRadius: z.number().int().min(3).max(10).optional(),
+  terrain: z.enum(['calm', 'treacherous', 'chaotic']).optional().default('calm'),
 });
 
 /**
@@ -56,8 +57,8 @@ export function createGameRoutes(manager: GameManager): Router {
         throw new ValidationError(parsed.error.issues.map((i) => i.message).join(', '));
       }
 
-      const { playerCount, turnTimerMs, boardRadius } = parsed.data;
-      const config = getConfigForPlayerCount(playerCount, turnTimerMs);
+      const { playerCount, turnTimerMs, boardRadius, terrain } = parsed.data;
+      const config = getConfigForPlayerCount(playerCount, turnTimerMs, terrain);
       if (boardRadius) {
         config.boardRadius = boardRadius;
       }

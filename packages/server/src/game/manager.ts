@@ -390,7 +390,6 @@ export class GameManager {
         }
         case 'playing':
         case 'paused':
-        case 'starvation':
           gamesInProgress++;
           break;
         case 'ended':
@@ -633,49 +632,6 @@ export class GameManager {
   }
 
   /**
-   * Submit a starvation choice for a player.
-   * Sends STARVATION_CHOICE to the actor.
-   * Throws if the game doesn't exist or is not in the starvation state.
-   */
-  submitStarvationChoice(gameId: string, playerId: string, pieceId: string): void {
-    const managed = this.games.get(gameId);
-    if (!managed) {
-      throw new Error(`Game not found: ${gameId}`);
-    }
-
-    const snapshot = managed.actor.getSnapshot();
-    const stateName = getStateName(snapshot.value);
-    if (stateName !== 'starvation') {
-      throw new Error(`Cannot submit starvation choice in state: ${stateName}`);
-    }
-
-    const context = snapshot.context as GameMachineContext;
-
-    // Validate the player has candidates
-    const playerCandidates = context.starvationCandidates.find((c) => c.playerId === playerId);
-    if (!playerCandidates || playerCandidates.candidates.length === 0) {
-      throw new Error(`Player has no starvation candidates: ${playerId}`);
-    }
-
-    // Validate the selected piece is a valid candidate
-    const isValidCandidate = playerCandidates.candidates.some((c) => c.id === pieceId);
-    if (!isValidCandidate) {
-      throw new Error(`Invalid starvation candidate: ${pieceId}`);
-    }
-
-    // Check if the player already submitted a choice
-    if (context.starvationChoices.some((sc) => sc.playerId === playerId)) {
-      throw new Error(`Player already submitted starvation choice: ${playerId}`);
-    }
-
-    managed.actor.send({
-      type: 'STARVATION_CHOICE',
-      playerId,
-      pieceId,
-    });
-  }
-
-  /**
    * Handle a player disconnecting from the game.
    * Sends PLAYER_DISCONNECTED to the actor, which may pause the game
    * if it's the current player's turn.
@@ -689,7 +645,7 @@ export class GameManager {
 
     const snapshot = managed.actor.getSnapshot();
     const stateName = getStateName(snapshot.value);
-    if (stateName !== 'playing' && stateName !== 'paused' && stateName !== 'starvation') {
+    if (stateName !== 'playing' && stateName !== 'paused') {
       throw new Error(`Cannot disconnect in state: ${stateName}`);
     }
 
@@ -719,7 +675,7 @@ export class GameManager {
 
     const snapshot = managed.actor.getSnapshot();
     const stateName = getStateName(snapshot.value);
-    if (stateName !== 'playing' && stateName !== 'paused' && stateName !== 'starvation') {
+    if (stateName !== 'playing' && stateName !== 'paused') {
       throw new Error(`Cannot reconnect in state: ${stateName}`);
     }
 
@@ -923,8 +879,6 @@ export class GameManager {
 
     if (!isAwaitingMove) {
       console.log(`[handleAITurn] Not in awaitingMove state, skipping`);
-      // Also handle starvation state for AI players
-      this.handleAIStarvation(gameId, managedGame, snapshot);
       return;
     }
 
@@ -1025,79 +979,6 @@ export class GameManager {
       .finally(() => {
         this.pendingAIMoves.delete(aiKey);
       });
-  }
-
-  /**
-   * Handle AI starvation choices when the game enters starvation state.
-   */
-  private handleAIStarvation(
-    gameId: string,
-    managedGame: ManagedGame,
-    snapshot: GameSnapshot
-  ): void {
-    const stateValue = snapshot.value;
-    const context = snapshot.context as GameMachineContext;
-
-    // Check if we're in the starvation.awaitingChoices substate
-    const isAwaitingStarvation =
-      typeof stateValue === 'object' &&
-      stateValue !== null &&
-      'starvation' in stateValue &&
-      (stateValue as Record<string, string>).starvation === 'awaitingChoices';
-
-    if (!isAwaitingStarvation) return;
-
-    // For each AI player that has candidates and hasn't submitted a choice yet
-    for (const aiPlayer of managedGame.aiPlayers) {
-      const playerCandidates = context.starvationCandidates.find(
-        (c) => c.playerId === aiPlayer.playerId
-      );
-      const hasCandidates = playerCandidates && playerCandidates.candidates.length > 0;
-      const alreadyChosen = context.starvationChoices.some(
-        (sc) => sc.playerId === aiPlayer.playerId
-      );
-
-      if (!hasCandidates || alreadyChosen) continue;
-
-      const starvationKey = `starvation:${gameId}:${aiPlayer.playerId}:${context.roundNumber}`;
-      if (this.pendingAIMoves.has(starvationKey)) continue;
-      this.pendingAIMoves.add(starvationKey);
-
-      // Timeout for AI starvation choice (same as move timeout)
-      const timeoutMs = 10000;
-
-      const choicePromise = Promise.race([
-        aiPlayer.ai.makeStarvationChoice(context.starvationCandidates, aiPlayer.playerId),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('AI starvation choice timeout')), timeoutMs)
-        ),
-      ]);
-
-      choicePromise
-        .then((choice) => {
-          this.submitStarvationChoice(gameId, choice.playerId, choice.pieceId);
-        })
-        .catch((err) => {
-          console.error(`AI starvation choice failed for game ${gameId}:`, err);
-
-          // Fallback: select a random candidate
-          if (playerCandidates && playerCandidates.candidates.length > 0) {
-            const randomIndex = Math.floor(Math.random() * playerCandidates.candidates.length);
-            const fallbackChoice = playerCandidates.candidates[randomIndex];
-            console.log(
-              `[AI STARVATION FALLBACK] Using random candidate ${fallbackChoice.id} for player ${aiPlayer.playerId}`
-            );
-            try {
-              this.submitStarvationChoice(gameId, aiPlayer.playerId, fallbackChoice.id);
-            } catch (submitErr) {
-              console.error(`Failed to submit fallback starvation choice:`, submitErr);
-            }
-          }
-        })
-        .finally(() => {
-          this.pendingAIMoves.delete(starvationKey);
-        });
-    }
   }
 
   /**

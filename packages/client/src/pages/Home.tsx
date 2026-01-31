@@ -46,6 +46,10 @@ export default function Home() {
           Browse Games
           {stats && stats.openLobbies > 0 && <span style={badgeStyle}>{stats.openLobbies}</span>}
         </Link>
+        <Link to="/rules" style={tertiaryButtonStyle}>
+          <span style={buttonIconStyle}>📜</span>
+          Game Rules
+        </Link>
       </div>
 
       {/* Stats Dashboard */}
@@ -70,8 +74,8 @@ export default function Home() {
       {/* Game Description */}
       <div style={descriptionStyle}>
         <p>
-          Command your Jarl and warriors on a hexagonal battlefield. Push enemies off the edge or
-          capture the throne to claim victory.
+          Command your Jarl and warriors on a hexagonal battlefield. Push enemies off the edge, into
+          deadly holes, or capture the throne to claim victory.
         </p>
       </div>
 
@@ -175,6 +179,22 @@ const secondaryButtonStyle: React.CSSProperties = {
   fontWeight: 'bold',
   transition: 'background 0.2s, border-color 0.2s',
   position: 'relative',
+};
+
+const tertiaryButtonStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '10px',
+  padding: '10px 32px',
+  background: 'transparent',
+  color: '#8b949e',
+  textDecoration: 'none',
+  borderRadius: '8px',
+  border: '1px solid #30363d',
+  fontSize: '0.9rem',
+  fontFamily: 'monospace',
+  transition: 'background 0.2s, color 0.2s',
 };
 
 const buttonIconStyle: React.CSSProperties = {

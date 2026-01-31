@@ -16,7 +16,7 @@ function createTestState(pieces: Piece[]): GameState {
     config: {
       playerCount: 2,
       boardRadius: 3,
-      shieldCount: 0,
+      terrain: 'calm',
       warriorCount: 0,
       turnTimerMs: null,
     },
@@ -549,7 +549,7 @@ describe('hasDraftFormation', () => {
         config: {
           playerCount: 2,
           boardRadius: 5, // Larger board
-          shieldCount: 0,
+          terrain: 'calm',
           warriorCount: 0,
           turnTimerMs: null,
         },

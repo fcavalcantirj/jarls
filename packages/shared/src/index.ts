@@ -6,6 +6,7 @@ export type {
   CubeCoord,
   HexDirection,
   PieceType,
+  TerrainType,
   Piece,
   Player,
   GameConfig,
@@ -23,9 +24,6 @@ export type {
   EliminatedEvent,
   TurnEndedEvent,
   GameEndedEvent,
-  StarvationTriggeredEvent,
-  StarvationResolvedEvent,
-  JarlStarvedEvent,
   PlayerJoinedEvent,
   PlayerLeftEvent,
   TurnSkippedEvent,
@@ -45,10 +43,6 @@ export type {
   WinCondition,
   WinConditionsResult,
   ReachableHex,
-  PlayerStarvationCandidates,
-  StarvationCandidates,
-  StarvationChoice,
-  StarvationResult,
   // Move History Types
   MoveHistoryEntry,
   // AI Configuration Types
@@ -96,12 +90,10 @@ export {
   hexToAngle,
   calculateStartingPositions,
   rotateHex,
-  generateSymmetricalShields,
-  hasPathToThrone,
-  validateShieldPlacement,
   getDirectionTowardThrone,
   placeWarriors,
   generateId,
+  generateRandomHoles,
   createInitialState,
 } from './board.js';
 
@@ -140,15 +132,6 @@ export {
   hasLegalMoves,
   applyMove,
 } from './move.js';
-
-// Re-export starvation functions and types
-export type { StarvationTriggerResult } from './starvation.js';
-export {
-  checkStarvationTrigger,
-  calculateStarvationCandidates,
-  resolveStarvation,
-  incrementJarlGracePeriods,
-} from './starvation.js';
 
 // Re-export AI prompts
 export {
