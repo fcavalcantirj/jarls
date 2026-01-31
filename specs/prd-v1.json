@@ -2471,7 +2471,7 @@
       "Test in Safari (latest 2 versions)",
       "Test in Edge (latest 2 versions)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "non-functional",
@@ -2481,7 +2481,7 @@
       "Test on Chrome Android mobile",
       "Verify all features work, no console errors"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "non-functional",
@@ -2493,7 +2493,7 @@
       "Verify responsive design works at all viewports",
       "Verify touch input works on mobile"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "deployment",
@@ -2520,7 +2520,7 @@
     "category": "deployment",
     "description": "Test Dockerfile locally",
     "steps": ["Build and test locally"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "deployment",
