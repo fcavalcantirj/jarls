@@ -21,22 +21,6 @@ export function initGA(): void {
 }
 
 /**
- * Track page view
- */
-export function trackPageView(path: string, title?: string): void {
-  if (!IS_PRODUCTION) {
-    console.debug('[Analytics] Page view:', path, title);
-    return;
-  }
-
-  ReactGA.send({
-    hitType: 'pageview',
-    page: path,
-    title: title,
-  });
-}
-
-/**
  * Track custom event
  */
 export function trackEvent(category: string, action: string, label?: string, value?: number): void {
