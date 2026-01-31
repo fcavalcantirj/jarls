@@ -304,14 +304,24 @@ export function Board() {
     (event: MouseEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
       const renderer = rendererRef.current;
-      if (!canvas || !renderer || !gameState) return;
+
+      // IMPORTANT: Read ALL state directly from store to avoid React stale closure issues.
+      // This matches the pattern used in handleInteraction above.
+      const store = useGameStore.getState();
+      const freshGameState = store.gameState;
+      const freshIsAnimating = store.isAnimating;
+      const freshSelectedPieceId = store.selectedPieceId;
+      const freshValidMoves = store.validMoves;
+      const freshHoveredCombat = store.hoveredCombat;
+
+      if (!canvas || !renderer || !freshGameState) return;
 
       // No tooltip during animations
-      if (isAnimating) return;
+      if (freshIsAnimating) return;
 
       // Only show tooltip when a piece is selected with valid attack moves
-      if (!selectedPieceId || validMoves.length === 0) {
-        if (hoveredCombat) useGameStore.getState().clearHoveredCombat();
+      if (!freshSelectedPieceId || freshValidMoves.length === 0) {
+        if (freshHoveredCombat) store.clearHoveredCombat();
         return;
       }
 
@@ -325,28 +335,27 @@ export function Board() {
       const hex = pixelToHex(canvasX, canvasY, dims.hexSize, dims.centerX, dims.centerY);
 
       // Check if hovering over an attack destination
-      const attackMove = validMoves.find(
+      const attackMove = freshValidMoves.find(
         (m) => m.moveType === 'attack' && m.destination.q === hex.q && m.destination.r === hex.r
       );
 
       if (attackMove?.combatPreview) {
-        useGameStore
-          .getState()
-          .setHoveredCombat(
-            attackMove.combatPreview,
-            event.clientX - rect.left,
-            event.clientY - rect.top
-          );
+        store.setHoveredCombat(
+          attackMove.combatPreview,
+          event.clientX - rect.left,
+          event.clientY - rect.top
+        );
       } else {
-        if (hoveredCombat) useGameStore.getState().clearHoveredCombat();
+        if (freshHoveredCombat) store.clearHoveredCombat();
       }
     },
-    [gameState, selectedPieceId, validMoves, hoveredCombat, isAnimating]
+    [] // No dependencies - we read everything fresh from store
   );
 
   const handleMouseLeave = useCallback(() => {
+    const { hoveredCombat } = useGameStore.getState();
     if (hoveredCombat) useGameStore.getState().clearHoveredCombat();
-  }, [hoveredCombat]);
+  }, []);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>

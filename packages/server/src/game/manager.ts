@@ -1049,9 +1049,10 @@ export class GameManager {
 
     // For each AI player that has candidates and hasn't submitted a choice yet
     for (const aiPlayer of managedGame.aiPlayers) {
-      const hasCandidates = context.starvationCandidates.some(
-        (c) => c.playerId === aiPlayer.playerId && c.candidates.length > 0
+      const playerCandidates = context.starvationCandidates.find(
+        (c) => c.playerId === aiPlayer.playerId
       );
+      const hasCandidates = playerCandidates && playerCandidates.candidates.length > 0;
       const alreadyChosen = context.starvationChoices.some(
         (sc) => sc.playerId === aiPlayer.playerId
       );
@@ -1062,13 +1063,36 @@ export class GameManager {
       if (this.pendingAIMoves.has(starvationKey)) continue;
       this.pendingAIMoves.add(starvationKey);
 
-      aiPlayer.ai
-        .makeStarvationChoice(context.starvationCandidates, aiPlayer.playerId)
+      // Timeout for AI starvation choice (same as move timeout)
+      const timeoutMs = 10000;
+
+      const choicePromise = Promise.race([
+        aiPlayer.ai.makeStarvationChoice(context.starvationCandidates, aiPlayer.playerId),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('AI starvation choice timeout')), timeoutMs)
+        ),
+      ]);
+
+      choicePromise
         .then((choice) => {
           this.submitStarvationChoice(gameId, choice.playerId, choice.pieceId);
         })
         .catch((err) => {
           console.error(`AI starvation choice failed for game ${gameId}:`, err);
+
+          // Fallback: select a random candidate
+          if (playerCandidates && playerCandidates.candidates.length > 0) {
+            const randomIndex = Math.floor(Math.random() * playerCandidates.candidates.length);
+            const fallbackChoice = playerCandidates.candidates[randomIndex];
+            console.log(
+              `[AI STARVATION FALLBACK] Using random candidate ${fallbackChoice.id} for player ${aiPlayer.playerId}`
+            );
+            try {
+              this.submitStarvationChoice(gameId, aiPlayer.playerId, fallbackChoice.id);
+            } catch (submitErr) {
+              console.error(`Failed to submit fallback starvation choice:`, submitErr);
+            }
+          }
         })
         .finally(() => {
           this.pendingAIMoves.delete(starvationKey);
