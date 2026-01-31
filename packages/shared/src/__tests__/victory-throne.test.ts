@@ -18,6 +18,8 @@ describe('checkThroneVictory', () => {
         { id: 'p2', name: 'Player 2', color: '#0000ff', isEliminated: false },
       ],
       pieces,
+      holes: [],
+      moveHistory: [],
       currentPlayerId: 'p1',
       turnNumber: 1,
       roundNumber: 1,
@@ -139,21 +141,6 @@ describe('checkThroneVictory', () => {
       expect(result.isVictory).toBe(false);
       expect(result.winnerId).toBeNull();
     });
-
-    it('should return no victory when Shield is on throne (hypothetically)', () => {
-      const shield: Piece = {
-        id: 'shield-1',
-        type: 'shield',
-        playerId: null,
-        position: { q: 0, r: 0 }, // On throne (shouldn't happen in game)
-      };
-      const state = createTestState([shield]);
-
-      const result = checkThroneVictory(state, 'shield-1', true);
-
-      expect(result.isVictory).toBe(false);
-      expect(result.winnerId).toBeNull();
-    });
   });
 
   describe('returns no victory when piece is not found', () => {
@@ -227,7 +214,6 @@ describe('checkThroneVictory', () => {
         { id: 'p1-w2', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
         { id: 'p2-jarl', type: 'jarl', playerId: 'p2', position: { q: -2, r: 2 } },
         { id: 'p2-w1', type: 'warrior', playerId: 'p2', position: { q: -1, r: 1 } },
-        { id: 'shield-1', type: 'shield', playerId: null, position: { q: 2, r: -1 } },
       ];
       const state = createTestState(pieces);
 

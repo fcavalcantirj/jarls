@@ -364,13 +364,13 @@ export class GameManager {
 
   /**
    * Get stats for the dashboard.
-   * openLobbies only counts joinable lobbies (not full, not stale >1hr).
+   * openLobbies only counts joinable lobbies (not full, not stale >30min).
    */
   getStats(): GameStats {
     let openLobbies = 0;
     let gamesInProgress = 0;
     let gamesEnded = 0;
-    const ONE_HOUR = 60 * 60 * 1000;
+    const THIRTY_MINUTES = 30 * 60 * 1000;
     const now = Date.now();
 
     for (const [, managed] of this.games) {
@@ -382,7 +382,7 @@ export class GameManager {
         case 'lobby': {
           // Only count joinable lobbies (not full, not stale)
           const isFull = context.players.length >= context.config.playerCount;
-          const isStale = now - managed.createdAt.getTime() > ONE_HOUR;
+          const isStale = now - managed.createdAt.getTime() > THIRTY_MINUTES;
           if (!isFull && !isStale) {
             openLobbies++;
           }
@@ -399,7 +399,7 @@ export class GameManager {
     }
 
     return {
-      totalGames: this.games.size,
+      totalGames: openLobbies + gamesInProgress,
       openLobbies,
       gamesInProgress,
       gamesEnded,

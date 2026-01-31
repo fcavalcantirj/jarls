@@ -17,6 +17,8 @@ describe('eliminatePlayer', () => {
         { id: 'p2', name: 'Player 2', color: '#0000ff', isEliminated: false },
       ],
       pieces,
+      holes: [],
+      moveHistory: [],
       currentPlayerId: 'p1',
       turnNumber: 1,
       roundNumber: 1,
@@ -218,24 +220,6 @@ describe('eliminatePlayer', () => {
       expect(state.players).toHaveLength(originalPlayerCount);
       expect(state.pieces).toHaveLength(originalPieceCount);
       expect(state.players[0].isEliminated).toBe(originalP1Eliminated);
-    });
-  });
-
-  describe('does not remove shields', () => {
-    it('should not remove shields when eliminating player', () => {
-      const pieces: Piece[] = [
-        { id: 'p1-w1', type: 'warrior', playerId: 'p1', position: { q: 1, r: 0 } },
-        { id: 'shield-1', type: 'shield', playerId: null, position: { q: 0, r: 1 } },
-        { id: 'shield-2', type: 'shield', playerId: null, position: { q: 0, r: -1 } },
-        { id: 'p2-jarl', type: 'jarl', playerId: 'p2', position: { q: -2, r: 0 } },
-      ];
-      const state = createTestState(pieces);
-
-      const result = eliminatePlayer(state, 'p1');
-
-      // Shields should remain
-      expect(result.newState.pieces.find((p) => p.id === 'shield-1')).toBeDefined();
-      expect(result.newState.pieces.find((p) => p.id === 'shield-2')).toBeDefined();
     });
   });
 

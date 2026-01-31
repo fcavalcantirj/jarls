@@ -16,6 +16,8 @@ function createTestState(pieces: Piece[]): GameState {
       { id: 'p2', name: 'Player 2', color: '#0000ff', isEliminated: false },
     ],
     pieces,
+    holes: [],
+    moveHistory: [],
     currentPlayerId: 'p1',
     turnNumber: 1,
     roundNumber: 1,
@@ -179,20 +181,6 @@ describe('checkLastStanding', () => {
 
       expect(result.isVictory).toBe(false);
       expect(result.winnerId).toBeNull();
-    });
-
-    it('should not count shields as Jarls', () => {
-      const pieces: Piece[] = [
-        { id: 'p1-jarl', type: 'jarl', playerId: 'p1', position: { q: 2, r: 0 } },
-        { id: 'shield-1', type: 'shield', playerId: null, position: { q: 0, r: 1 } },
-        { id: 'shield-2', type: 'shield', playerId: null, position: { q: 0, r: -1 } },
-      ];
-      const state = createTestState(pieces);
-
-      const result = checkLastStanding(state);
-
-      expect(result.isVictory).toBe(true);
-      expect(result.winnerId).toBe('p1');
     });
 
     it('should not count warriors as Jarls', () => {

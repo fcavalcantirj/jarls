@@ -40,6 +40,9 @@ const PRESETS: Record<
   },
 };
 
+// localStorage key for persisting player name
+const PLAYER_NAME_KEY = 'jarls-player-name';
+
 export default function CreateGameForm() {
   const navigate = useNavigate();
   const setSession = useGameStore((s) => s.setSession);
@@ -47,7 +50,12 @@ export default function CreateGameForm() {
   const clearGame = useGameStore((s) => s.clearGame);
   const setAIConfig = useGameStore((s) => s.setAIConfig);
 
-  const [playerName, setPlayerName] = useState('');
+  const [playerName, setPlayerName] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(PLAYER_NAME_KEY) || '';
+    }
+    return '';
+  });
   const [selectedPreset, setSelectedPreset] = useState<Preset | null>(null);
   const [showCustomForm, setShowCustomForm] = useState(false);
 
@@ -157,7 +165,10 @@ export default function CreateGameForm() {
           throw new Error(body.message ?? 'Failed to start game');
         }
 
-        // 6. Navigate directly to game (skip waiting room)
+        // 6. Save player name to localStorage for future sessions
+        localStorage.setItem(PLAYER_NAME_KEY, name);
+
+        // 7. Navigate directly to game (skip waiting room)
         navigate(`/game/${gameId}`);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -237,7 +248,10 @@ export default function CreateGameForm() {
       setSession(sessionToken);
       setPlayer(playerId);
 
-      // 4. Navigate to waiting room (human opponent will join via Browse)
+      // 4. Save player name to localStorage for future sessions
+      localStorage.setItem(PLAYER_NAME_KEY, name);
+
+      // 5. Navigate to waiting room (human opponent will join via Browse)
       navigate(`/lobby/${gameId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');

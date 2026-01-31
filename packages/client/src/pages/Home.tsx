@@ -57,16 +57,16 @@ export default function Home() {
         <h3 style={statsHeaderStyle}>Live Activity</h3>
         <div style={statsGridStyle}>
           <div style={statCardStyle}>
+            <span style={statValueStyle}>{loading ? '...' : (stats?.totalGames ?? 0)}</span>
+            <span style={statLabelStyle}>Total Games</span>
+          </div>
+          <div style={statCardStyle}>
             <span style={statValueStyle}>{loading ? '...' : (stats?.openLobbies ?? 0)}</span>
             <span style={statLabelStyle}>Open Lobbies</span>
           </div>
           <div style={statCardStyle}>
             <span style={statValueStyle}>{loading ? '...' : (stats?.gamesInProgress ?? 0)}</span>
             <span style={statLabelStyle}>In Progress</span>
-          </div>
-          <div style={statCardStyle}>
-            <span style={statValueStyle}>{loading ? '...' : (stats?.totalGames ?? 0)}</span>
-            <span style={statLabelStyle}>Total Games</span>
           </div>
         </div>
       </div>
