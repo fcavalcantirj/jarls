@@ -1,8 +1,22 @@
 import { Link, useLocation } from 'react-router-dom';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 interface LayoutProps {
   children: ReactNode;
+}
+
+function NavLink({ to, children }: { to: string; children: ReactNode }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <Link
+      to={to}
+      style={hovered ? navLinkHoverStyle : navLinkStyle}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {children}
+    </Link>
+  );
 }
 
 export default function Layout({ children }: LayoutProps) {
@@ -18,21 +32,13 @@ export default function Layout({ children }: LayoutProps) {
         <nav style={navStyle}>
           {isGamePage ? (
             // Minimal nav during gameplay
-            <Link to="/" style={navLinkStyle}>
-              Leave Game
-            </Link>
+            <NavLink to="/">Leave Game</NavLink>
           ) : (
             // Full nav in lobby
             <>
-              <Link to="/lobby/create" style={navLinkStyle}>
-                Create
-              </Link>
-              <Link to="/lobby/games" style={navLinkStyle}>
-                Browse
-              </Link>
-              <Link to="/rules" style={navLinkStyle}>
-                Rules
-              </Link>
+              <NavLink to="/lobby/create">Create</NavLink>
+              <NavLink to="/lobby/games">Browse</NavLink>
+              <NavLink to="/rules">Rules</NavLink>
             </>
           )}
         </nav>
@@ -87,6 +93,15 @@ const navLinkStyle: React.CSSProperties = {
   fontSize: '14px',
   fontFamily: 'monospace',
   textDecoration: 'none',
+  padding: '6px 10px',
+  borderRadius: '4px',
+  transition: 'color 0.15s, background 0.15s',
+};
+
+const navLinkHoverStyle: React.CSSProperties = {
+  ...navLinkStyle,
+  color: '#ffd700',
+  backgroundColor: 'rgba(255, 215, 0, 0.1)',
 };
 
 const mainStyle: React.CSSProperties = {

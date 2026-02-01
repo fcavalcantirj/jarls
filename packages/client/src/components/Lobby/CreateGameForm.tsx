@@ -294,7 +294,14 @@ export default function CreateGameForm() {
 
   return (
     <div style={containerStyle}>
-      <h2 style={titleStyle}>Create Game</h2>
+      <div style={titleRowStyle}>
+        {showCustomForm && (
+          <button type="button" onClick={() => setShowCustomForm(false)} style={backButtonStyle}>
+            ←
+          </button>
+        )}
+        <h2 style={titleStyle}>Create Game</h2>
+      </div>
 
       {/* Name Input - Always shown */}
       <div style={nameContainerStyle}>
@@ -367,17 +374,16 @@ export default function CreateGameForm() {
             </button>
           </div>
           {submitting && <p style={loadingStyle}>Creating game...</p>}
+          <a href="/lobby/games" style={presetBrowseButtonStyle}>
+            Or browse existing games →
+          </a>
         </>
       )}
 
       {/* Custom Form - Shown when Custom is selected */}
       {showCustomForm && (
         <form onSubmit={handleCustomSubmit} style={customFormStyle}>
-          <button type="button" onClick={() => setShowCustomForm(false)} style={backButtonStyle}>
-            ← Back to Presets
-          </button>
-
-          <label style={labelStyle}>
+          <label style={fullWidthLabelStyle}>
             AI Type
             <div style={radioGroupStyle}>
               <button
@@ -456,7 +462,7 @@ export default function CreateGameForm() {
           </label>
 
           {aiType === 'groq' && (
-            <label style={labelStyle}>
+            <label style={fullWidthLabelStyle}>
               <div
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               >
@@ -481,39 +487,35 @@ export default function CreateGameForm() {
             </label>
           )}
 
-          <button
-            type="submit"
-            style={submitStyle(isNameValid && !submitting)}
-            disabled={!isNameValid || submitting}
-          >
-            {submitting ? 'Creating...' : 'Create Game'}
-          </button>
-
-          {aiType === 'groq' && (
-            <a
-              href="https://groq.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ alignSelf: 'center', marginTop: '8px' }}
+          <div style={buttonRowStyle}>
+            <button
+              type="submit"
+              style={submitStyle(isNameValid && !submitting)}
+              disabled={!isNameValid || submitting}
             >
-              <img
-                src="https://console.groq.com/powered-by-groq-dark.svg"
-                alt="Powered by Groq for fast inference."
-                style={{ height: '24px', maxWidth: '100%' }}
-              />
+              {submitting ? 'Creating...' : 'Create Game'}
+            </button>
+            <a href="/lobby/games" style={browseButtonStyle}>
+              Browse
             </a>
-          )}
+          </div>
         </form>
       )}
 
-      {/* Browse games note */}
-      <p style={humanNoteStyle}>
-        Or{' '}
-        <a href="/lobby/games" style={linkStyle}>
-          browse existing games
-        </a>{' '}
-        to join
-      </p>
+      {showCustomForm && aiType === 'groq' && (
+        <a
+          href="https://groq.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={groqBadgeLinkStyle}
+        >
+          <img
+            src="https://console.groq.com/powered-by-groq-dark.svg"
+            alt="Powered by Groq for fast inference."
+            style={{ height: '24px', maxWidth: '100%' }}
+          />
+        </a>
+      )}
     </div>
   );
 }
@@ -529,6 +531,14 @@ const containerStyle: React.CSSProperties = {
   color: '#e0e0e0',
   overflow: 'auto',
   gap: '16px',
+  flex: 1,
+  minHeight: 0,
+};
+
+const titleRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
 };
 
 const titleStyle: React.CSSProperties = {
@@ -542,12 +552,25 @@ const nameContainerStyle: React.CSSProperties = {
   maxWidth: '400px',
 };
 
+const customFormStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, 1fr)',
+  gap: '16px',
+  width: '100%',
+  maxWidth: '600px',
+};
+
 const labelStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: '6px',
   fontSize: '14px',
   color: '#aaa',
+};
+
+const fullWidthLabelStyle: React.CSSProperties = {
+  ...labelStyle,
+  gridColumn: '1 / -1',
 };
 
 const inputStyle: React.CSSProperties = {
@@ -657,25 +680,39 @@ const loadingStyle: React.CSSProperties = {
   fontSize: '14px',
 };
 
-const customFormStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '16px',
-  width: '100%',
-  maxWidth: '400px',
-};
-
 const backButtonStyle: React.CSSProperties = {
-  alignSelf: 'flex-start',
-  padding: '8px 12px',
+  padding: '6px 12px',
   borderRadius: '6px',
   border: '1px solid #30363d',
   backgroundColor: 'transparent',
   color: '#8b949e',
   fontFamily: 'monospace',
-  fontSize: '13px',
+  fontSize: '12px',
   cursor: 'pointer',
   transition: 'background 0.2s',
+};
+
+const buttonRowStyle: React.CSSProperties = {
+  gridColumn: '1 / -1',
+  display: 'flex',
+  gap: '8px',
+  marginTop: '8px',
+};
+
+const browseButtonStyle: React.CSSProperties = {
+  flex: '0 0 auto',
+  padding: '12px 16px',
+  borderRadius: '6px',
+  border: '2px solid #58a6ff',
+  backgroundColor: 'transparent',
+  color: '#58a6ff',
+  fontFamily: 'monospace',
+  fontSize: '14px',
+  fontWeight: 'bold',
+  textDecoration: 'none',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 };
 
 const radioGroupStyle: React.CSSProperties = {
@@ -747,6 +784,7 @@ const errorStyle: React.CSSProperties = {
 
 function submitStyle(enabled: boolean): React.CSSProperties {
   return {
+    flex: 1,
     padding: '12px 20px',
     borderRadius: '6px',
     border: 'none',
@@ -757,16 +795,25 @@ function submitStyle(enabled: boolean): React.CSSProperties {
     fontWeight: 'bold',
     cursor: enabled ? 'pointer' : 'default',
     opacity: enabled ? 1 : 0.5,
-    marginTop: '8px',
   };
 }
 
-const humanNoteStyle: React.CSSProperties = {
-  margin: '16px 0 0 0',
-  fontSize: '12px',
-  color: '#484f58',
+const groqBadgeLinkStyle: React.CSSProperties = {
+  marginTop: 'auto',
+  paddingTop: '16px',
 };
 
-const linkStyle: React.CSSProperties = {
-  color: '#58a6ff',
+const presetBrowseButtonStyle: React.CSSProperties = {
+  width: '100%',
+  maxWidth: '400px',
+  marginTop: '8px',
+  padding: '10px 16px',
+  borderRadius: '6px',
+  border: '1px solid #30363d',
+  backgroundColor: 'transparent',
+  color: '#8b949e',
+  fontFamily: 'monospace',
+  fontSize: '13px',
+  textDecoration: 'none',
+  textAlign: 'center',
 };

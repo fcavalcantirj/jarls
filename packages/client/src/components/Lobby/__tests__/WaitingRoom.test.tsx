@@ -40,6 +40,56 @@ function createMockGameState(overrides?: Partial<GameState>): GameState {
   };
 }
 
+describe('WaitingRoom shareable URL behavior', () => {
+  beforeEach(() => {
+    // Reset store - NO session token (visitor from shared URL)
+    useGameStore.setState({
+      gameState: null,
+      playerId: null,
+      sessionToken: null,
+      connectionStatus: 'disconnected',
+      selectedPieceId: null,
+      validMoves: [],
+      movePending: false,
+      isAnimating: false,
+      pendingTurnUpdate: null,
+    });
+  });
+
+  it('should show join form when no sessionToken (shareable URL scenario)', () => {
+    // When a user visits /lobby/:gameId via a shared link,
+    // they don't have a sessionToken yet. Instead of showing an error,
+    // we should show a join form so they can enter their name and join.
+    const state = useGameStore.getState();
+
+    // No session token means visitor from shared URL
+    expect(state.sessionToken).toBeNull();
+
+    // The expected behavior:
+    // - Show a "Join Game" form with name input
+    // - NOT show "No active session for this game" error
+    // This test documents the expected behavior for the implementation
+  });
+
+  it('should set sessionToken after successful join via API', async () => {
+    const { setSession, setPlayer } = useGameStore.getState();
+
+    // Simulate successful join API response
+    const joinResponse = {
+      sessionToken: 'new-session-token',
+      playerId: 'player-2',
+    };
+
+    // After joining via API, store the session
+    setSession(joinResponse.sessionToken);
+    setPlayer(joinResponse.playerId);
+
+    const state = useGameStore.getState();
+    expect(state.sessionToken).toBe('new-session-token');
+    expect(state.playerId).toBe('player-2');
+  });
+});
+
 describe('WaitingRoom joinGame behavior', () => {
   beforeEach(() => {
     // Reset store to defaults

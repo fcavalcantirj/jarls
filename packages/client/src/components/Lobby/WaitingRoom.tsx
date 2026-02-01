@@ -4,6 +4,9 @@ import { useGameStore } from '../../store/gameStore';
 import { useSocket } from '../../hooks/useSocket';
 import { GameEvents } from '../../lib/analytics';
 
+// localStorage key for persisting player name (shared with CreateGameForm)
+const PLAYER_NAME_KEY = 'jarls-player-name';
+
 interface WaitingRoomProps {
   gameId: string;
 }
@@ -18,10 +21,21 @@ export default function WaitingRoom({ gameId }: WaitingRoomProps) {
 
   const setGameState = useGameStore((s) => s.setGameState);
   const setPlayer = useGameStore((s) => s.setPlayer);
+  const setSession = useGameStore((s) => s.setSession);
 
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
+
+  // Join form state (for shareable URL - when visitor has no session)
+  const [joinName, setJoinName] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(PLAYER_NAME_KEY) || '';
+    }
+    return '';
+  });
+  const [joining, setJoining] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Determine host status: first player in the list is the host
   const isHost =
@@ -86,15 +100,104 @@ export default function WaitingRoom({ gameId }: WaitingRoomProps) {
     navigate('/');
   }, [navigate]);
 
-  // No session token - stale/bookmarked URL
+  const handleCopyInvite = useCallback(async () => {
+    const inviteUrl = window.location.href;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = inviteUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    }
+  }, []);
+
+  // Join game via API (for shareable URL - when visitor has no session)
+  const handleJoin = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      const name = joinName.trim();
+      if (!name || joining) return;
+
+      setJoining(true);
+      setError(null);
+
+      try {
+        const res = await fetch(`/api/games/${gameId}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playerName: name }),
+        });
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.message ?? 'Failed to join game');
+        }
+
+        const { sessionToken: token, playerId: pid } = (await res.json()) as {
+          sessionToken: string;
+          playerId: string;
+        };
+
+        // Store session and player
+        setSession(token);
+        setPlayer(pid);
+
+        // Save name for future sessions
+        localStorage.setItem(PLAYER_NAME_KEY, name);
+
+        // Track join
+        GameEvents.multiplayerJoined(gameId);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to join game');
+        setJoining(false);
+      }
+    },
+    [joinName, joining, gameId, setSession, setPlayer]
+  );
+
+  // No session token - show join form (shareable URL scenario)
   if (!sessionToken) {
     return (
       <div style={containerStyle}>
-        <h2 style={titleStyle}>Waiting Room</h2>
-        <p style={{ color: '#e74c3c', marginBottom: '8px' }}>No active session for this game.</p>
-        <p style={{ color: '#888', fontSize: '14px', marginBottom: '16px' }}>
-          This link may have expired or you need to create/join a game first.
-        </p>
+        <h2 style={titleStyle}>Join Game</h2>
+        <div style={gameIdStyle}>
+          Game: <span style={gameIdValueStyle}>{gameId.slice(0, 8)}...</span>
+        </div>
+
+        <form onSubmit={handleJoin} style={joinFormStyle}>
+          <label style={labelStyle}>
+            Your Name
+            <input
+              type="text"
+              value={joinName}
+              onChange={(e) => setJoinName(e.target.value)}
+              placeholder="Enter your name"
+              maxLength={30}
+              style={inputStyle}
+              autoFocus
+              disabled={joining}
+            />
+          </label>
+
+          {error && <p style={errorStyle}>{error}</p>}
+
+          <button
+            type="submit"
+            style={joinButtonStyle(joinName.trim().length > 0 && !joining)}
+            disabled={joinName.trim().length === 0 || joining}
+          >
+            {joining ? 'Joining...' : 'Join Game'}
+          </button>
+        </form>
+
         <button style={backButtonStyle} onClick={handleBack}>
           Back to Home
         </button>
@@ -141,6 +244,11 @@ export default function WaitingRoom({ gameId }: WaitingRoomProps) {
           );
         })}
       </div>
+
+      {/* Invite Link */}
+      <button style={inviteButtonStyle} onClick={handleCopyInvite}>
+        {linkCopied ? '✓ Link Copied!' : 'Copy Invite Link'}
+      </button>
 
       {/* Error */}
       {error && <p style={errorStyle}>{error}</p>}
@@ -206,7 +314,22 @@ const statusBannerStyle: React.CSSProperties = {
 const slotsContainerStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '360px',
-  marginBottom: '24px',
+  marginBottom: '16px',
+};
+
+const inviteButtonStyle: React.CSSProperties = {
+  width: '100%',
+  maxWidth: '360px',
+  padding: '12px 20px',
+  marginBottom: '16px',
+  borderRadius: '6px',
+  border: '2px solid #58a6ff',
+  backgroundColor: '#1a2d4a',
+  color: '#58a6ff',
+  fontFamily: 'monospace',
+  fontSize: '14px',
+  fontWeight: 'bold',
+  cursor: 'pointer',
 };
 
 const slotsTitle: React.CSSProperties = {
@@ -297,3 +420,48 @@ const backButtonStyle: React.CSSProperties = {
   fontSize: '13px',
   cursor: 'pointer',
 };
+
+// Join form styles (for shareable URL)
+const joinFormStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '16px',
+  width: '100%',
+  maxWidth: '360px',
+  marginBottom: '16px',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '6px',
+  fontSize: '14px',
+  color: '#aaa',
+};
+
+const inputStyle: React.CSSProperties = {
+  padding: '12px 14px',
+  borderRadius: '6px',
+  border: '2px solid #555',
+  backgroundColor: '#1a1a2e',
+  color: '#fff',
+  fontFamily: 'monospace',
+  fontSize: '16px',
+  outline: 'none',
+};
+
+function joinButtonStyle(enabled: boolean): React.CSSProperties {
+  return {
+    width: '100%',
+    padding: '12px 20px',
+    borderRadius: '6px',
+    border: 'none',
+    backgroundColor: enabled ? '#2ecc71' : '#444',
+    color: '#fff',
+    fontFamily: 'monospace',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    cursor: enabled ? 'pointer' : 'default',
+    opacity: enabled ? 1 : 0.5,
+  };
+}

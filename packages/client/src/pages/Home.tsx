@@ -35,55 +35,80 @@ export default function Home() {
         <p style={versionStyle}>v{__APP_VERSION__}</p>
       </div>
 
-      {/* Quick Actions */}
-      <div style={actionsContainerStyle}>
-        <Link to="/lobby/create" style={primaryButtonStyle}>
-          <span style={buttonIconStyle}>⚔</span>
-          Create Game
-        </Link>
-        <Link to="/lobby/games" style={secondaryButtonStyle}>
-          <span style={buttonIconStyle}>🛡</span>
-          Browse Games
-          {stats && stats.openLobbies > 0 && <span style={badgeStyle}>{stats.openLobbies}</span>}
-        </Link>
-        <Link to="/rules" style={tertiaryButtonStyle}>
-          <span style={buttonIconStyle}>📜</span>
-          Game Rules
-        </Link>
-      </div>
+      {/* Main Content - Actions + Stats side by side on desktop */}
+      <div style={mainContentStyle}>
+        {/* Quick Actions */}
+        <div style={actionsContainerStyle}>
+          <Link to="/lobby/create" style={primaryButtonStyle}>
+            <span style={buttonIconStyle}>⚔</span>
+            Create Game
+          </Link>
+          <Link to="/lobby/games" style={secondaryButtonStyle}>
+            <span style={buttonIconStyle}>🛡</span>
+            Browse Games
+            {stats && stats.openLobbies > 0 && <span style={badgeStyle}>{stats.openLobbies}</span>}
+          </Link>
+          <Link to="/rules" style={tertiaryButtonStyle}>
+            <span style={buttonIconStyle}>📜</span>
+            Game Rules
+          </Link>
+        </div>
 
-      {/* Stats Dashboard */}
-      <div style={statsContainerStyle}>
-        <h3 style={statsHeaderStyle}>Live Activity</h3>
-        <div style={statsGridStyle}>
-          <div style={statCardStyle}>
-            <span style={statValueStyle}>{loading ? '...' : (stats?.totalGames ?? 0)}</span>
-            <span style={statLabelStyle}>Total Games</span>
-          </div>
-          <div style={statCardStyle}>
-            <span style={statValueStyle}>{loading ? '...' : (stats?.openLobbies ?? 0)}</span>
-            <span style={statLabelStyle}>Open Lobbies</span>
-          </div>
-          <div style={statCardStyle}>
-            <span style={statValueStyle}>{loading ? '...' : (stats?.gamesInProgress ?? 0)}</span>
-            <span style={statLabelStyle}>In Progress</span>
+        {/* Stats Dashboard */}
+        <div style={statsContainerStyle}>
+          <h3 style={statsHeaderStyle}>Live Activity</h3>
+          <div style={statsGridStyle}>
+            <div style={statCardStyle}>
+              <span style={statValueStyle}>{loading ? '...' : (stats?.totalGames ?? 0)}</span>
+              <span style={statLabelStyle}>Total Games</span>
+            </div>
+            <div style={statCardStyle}>
+              <span style={statValueStyle}>{loading ? '...' : (stats?.openLobbies ?? 0)}</span>
+              <span style={statLabelStyle}>Open Lobbies</span>
+            </div>
+            <div style={statCardStyle}>
+              <span style={statValueStyle}>{loading ? '...' : (stats?.gamesInProgress ?? 0)}</span>
+              <span style={statLabelStyle}>In Progress</span>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Game Modes */}
+      <div style={modesContainerStyle}>
+        <div style={modeCardStyle}>
+          <span style={modeIconStyle}>👥</span>
+          <span style={modeLabelStyle}>Human vs Human</span>
+        </div>
+        <div style={modeCardStyle}>
+          <span style={modeIconStyle}>🤖</span>
+          <span style={modeLabelStyle}>Human vs AI</span>
+        </div>
+        <div style={modeCardStyle}>
+          <span style={modeIconStyle}>⚔️</span>
+          <span style={modeLabelStyle}>Mixed Battle</span>
+        </div>
+      </div>
+      <p style={modeSubtextStyle}>2-4 players • Multiple AI models • Lightning fast</p>
+
       {/* Game Description */}
       <div style={descriptionStyle}>
-        <p style={descriptionTextStyle}>
-          ⚔️ Command your <span style={termJarlStyle}>Jarl</span> and{' '}
-          <span style={termWarriorStyle}>warriors</span> on a hexagonal battlefield
+        <p style={taglineStyle}>
+          Inspired by <span style={termJarlStyle}>Hnefatafl</span> — the ancient Viking board game
         </p>
-        <p style={descriptionTextStyle}>
-          💀 Push enemies off the edge or into deadly <span style={termHoleStyle}>holes</span>
+      </div>
+      <div style={featuresStyle}>
+        <p style={featureTextStyle}>
+          Your <span style={termJarlStyle}>Jarl</span> leads. Your{' '}
+          <span style={termWarriorStyle}>warriors</span> fight. The board is unforgiving.
         </p>
-        <p style={descriptionTextStyle}>
-          👑 Capture the <span style={termThroneStyle}>throne</span> to claim{' '}
-          <span style={termVictoryStyle}>victory!</span>
+        <p style={featureTextStyle}>
+          Push enemies into <span style={termHoleStyle}>the void</span>. Seize the{' '}
+          <span style={termThroneStyle}>throne</span>. There is no retreat.
         </p>
+        <Link to="/rules" style={rulesLinkStyle}>
+          Learn the rules →
+        </Link>
       </div>
 
       {/* Powered by Groq Badge */}
@@ -105,13 +130,16 @@ const containerStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: 'center',
-  padding: 'var(--padding-page)',
+  justifyContent: 'flex-start',
+  padding: '20px 20px 32px',
+  paddingTop: 'max(20px, env(safe-area-inset-top))',
+  paddingBottom: 'max(32px, env(safe-area-inset-bottom))',
   background: 'linear-gradient(180deg, #0d1117 0%, #161b22 50%, #0d1117 100%)',
   color: '#e0e0e0',
   fontFamily: 'monospace',
   gap: '16px',
-  overflow: 'hidden',
+  overflowY: 'auto',
+  minHeight: 0,
 };
 
 const heroStyle: React.CSSProperties = {
@@ -134,10 +162,10 @@ const titleGradientStyle: React.CSSProperties = {
 };
 
 const subtitleStyle: React.CSSProperties = {
-  fontSize: '1rem',
+  fontSize: '0.9rem',
   color: '#8b949e',
-  margin: '8px 0 4px 0',
-  letterSpacing: '0.1em',
+  margin: '4px 0 2px 0',
+  letterSpacing: '0.08em',
 };
 
 const versionStyle: React.CSSProperties = {
@@ -145,12 +173,23 @@ const versionStyle: React.CSSProperties = {
   color: '#484f58',
 };
 
+const mainContentStyle: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  gap: '24px',
+  width: '100%',
+  maxWidth: '900px',
+};
+
 const actionsContainerStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
-  gap: '12px',
+  gap: '10px',
   width: '100%',
-  maxWidth: '320px',
+  minWidth: '280px',
+  maxWidth: '360px',
+  flex: '1 1 300px',
 };
 
 const primaryButtonStyle: React.CSSProperties = {
@@ -222,16 +261,18 @@ const badgeStyle: React.CSSProperties = {
 
 const statsContainerStyle: React.CSSProperties = {
   width: '100%',
-  maxWidth: '400px',
-  padding: '12px 16px',
+  minWidth: '280px',
+  maxWidth: '360px',
+  flex: '1 1 300px',
+  padding: '12px 20px',
   background: 'rgba(22, 27, 34, 0.8)',
-  borderRadius: '12px',
+  borderRadius: '10px',
   border: '1px solid #30363d',
 };
 
 const statsHeaderStyle: React.CSSProperties = {
-  margin: '0 0 8px 0',
-  fontSize: '0.8rem',
+  margin: '0 0 6px 0',
+  fontSize: '0.7rem',
   color: '#8b949e',
   textTransform: 'uppercase',
   letterSpacing: '0.1em',
@@ -270,20 +311,84 @@ const statLabelStyle: React.CSSProperties = {
   textAlign: 'center',
 };
 
+const modesContainerStyle: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  gap: '16px',
+  width: '100%',
+  maxWidth: '600px',
+};
+
+const modeCardStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '4px',
+  padding: '12px 24px',
+  background: 'rgba(88, 166, 255, 0.1)',
+  borderRadius: '8px',
+  border: '1px solid rgba(88, 166, 255, 0.2)',
+};
+
+const modeIconStyle: React.CSSProperties = {
+  fontSize: '1.5rem',
+};
+
+const modeLabelStyle: React.CSSProperties = {
+  fontSize: '0.85rem',
+  color: '#58a6ff',
+  fontWeight: 'bold',
+};
+
+const modeSubtextStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: '0.85rem',
+  color: '#8b949e',
+  whiteSpace: 'nowrap',
+};
+
 const descriptionStyle: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  gap: '8px 24px',
+  width: '100%',
+  maxWidth: '900px',
+  textAlign: 'center',
+  padding: '4px 0',
+};
+
+const taglineStyle: React.CSSProperties = {
+  margin: 0,
+  color: '#8b949e',
+  fontSize: '0.9rem',
+  fontStyle: 'italic',
+  whiteSpace: 'nowrap',
+};
+
+const featuresStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: '8px',
-  maxWidth: '450px',
+  width: '100%',
+  maxWidth: '600px',
   textAlign: 'center',
-  padding: '0 var(--padding-page)',
 };
 
-const descriptionTextStyle: React.CSSProperties = {
+const featureTextStyle: React.CSSProperties = {
   margin: 0,
   color: '#c9d1d9',
-  fontSize: 'clamp(0.9rem, 3vw, 1.1rem)',
-  lineHeight: '1.6',
+  fontSize: '1rem',
+  lineHeight: '1.5',
+  whiteSpace: 'nowrap',
+};
+
+const rulesLinkStyle: React.CSSProperties = {
+  color: '#58a6ff',
+  textDecoration: 'none',
+  fontSize: '0.9rem',
+  marginTop: '4px',
 };
 
 const termJarlStyle: React.CSSProperties = {
@@ -306,18 +411,14 @@ const termThroneStyle: React.CSSProperties = {
   fontWeight: 'bold',
 };
 
-const termVictoryStyle: React.CSSProperties = {
-  color: '#3fb950',
-  fontWeight: 'bold',
-};
-
 const groqBadgeStyle: React.CSSProperties = {
-  marginTop: '4px',
+  marginTop: 'auto',
+  paddingTop: '16px',
   opacity: 0.7,
   transition: 'opacity 0.2s',
 };
 
 const groqBadgeImgStyle: React.CSSProperties = {
-  height: '32px',
+  height: '28px',
   maxWidth: '100%',
 };
