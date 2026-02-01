@@ -18,6 +18,7 @@ export default function Game() {
   const connectionStatus = useGameStore((s) => s.connectionStatus);
   const aiConfig = useGameStore((s) => s.aiConfig);
   const setAIConfig = useGameStore((s) => s.setAIConfig);
+  const setGameState = useGameStore((s) => s.setGameState);
 
   const [joined, setJoined] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,11 +33,15 @@ export default function Game() {
     socket.emit('joinGame', { gameId, sessionToken }, (response) => {
       if (response.success) {
         setJoined(true);
+        // Set gameState from response (critical for auto-started games)
+        if (response.gameState) {
+          setGameState(response.gameState);
+        }
       } else {
         setError(response.error ?? 'Failed to join game room');
       }
     });
-  }, [socket, sessionToken, gameId, joined, connectionStatus]);
+  }, [socket, sessionToken, gameId, joined, connectionStatus, setGameState]);
 
   // Listen for AI config updates
   useEffect(() => {
