@@ -198,23 +198,40 @@ export function createGameRoutes(manager: GameManager): Router {
 
       // Try new config format first
       const configParsed = addAIWithConfigSchema.safeParse(req.body);
+      let aiPlayerId: string;
+      let aiConfig = null;
+
       if (configParsed.success) {
-        const aiPlayerId = manager.addAIPlayerWithConfig(id, configParsed.data);
-        const aiConfig = manager.getAIConfig(id, aiPlayerId);
-        res.json({ aiPlayerId, aiConfig });
-        return;
+        aiPlayerId = manager.addAIPlayerWithConfig(id, configParsed.data);
+        aiConfig = manager.getAIConfig(id, aiPlayerId);
+      } else {
+        // Fall back to legacy format
+        const legacyParsed = addAISchema.safeParse(req.body);
+        if (!legacyParsed.success) {
+          throw new ValidationError(legacyParsed.error.issues.map((i) => i.message).join(', '));
+        }
+
+        const { difficulty } = legacyParsed.data;
+        aiPlayerId = manager.addAIPlayer(id, difficulty);
       }
 
-      // Fall back to legacy format
-      const legacyParsed = addAISchema.safeParse(req.body);
-      if (!legacyParsed.success) {
-        throw new ValidationError(legacyParsed.error.issues.map((i) => i.message).join(', '));
+      // Auto-start game if lobby is now full
+      const updatedSnapshot = manager.getState(id);
+      if (updatedSnapshot) {
+        const context = updatedSnapshot.context as GameMachineContext;
+        const stateName =
+          typeof updatedSnapshot.value === 'string'
+            ? updatedSnapshot.value
+            : Object.keys(updatedSnapshot.value)[0];
+
+        if (stateName === 'lobby' && context.players.length >= context.config.playerCount) {
+          // Host is always player[0] - auto-start as host
+          const hostId = context.players[0].id;
+          manager.start(id, hostId);
+        }
       }
 
-      const { difficulty } = legacyParsed.data;
-      const aiPlayerId = manager.addAIPlayer(id, difficulty);
-
-      res.json({ aiPlayerId });
+      res.json({ aiPlayerId, ...(aiConfig && { aiConfig }) });
     } catch (err) {
       next(err);
     }

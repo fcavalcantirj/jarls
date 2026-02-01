@@ -559,6 +559,32 @@ describe('REST API integration tests', () => {
       expect(response.status).toBe(500);
     });
 
+    it('auto-starts game when AI fills the lobby (2-player game)', async () => {
+      const createRes = await request(app).post('/api/games').send({ playerCount: 2 });
+      const gameId = createRes.body.gameId;
+
+      const joinRes = await request(app)
+        .post(`/api/games/${gameId}/join`)
+        .send({ playerName: 'Ragnar' });
+      const token = joinRes.body.sessionToken;
+
+      // Add AI player - should auto-start when lobby is full
+      await request(app)
+        .post(`/api/games/${gameId}/ai`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ difficulty: 'heuristic' });
+
+      // Wait for state machine to transition
+      await new Promise((r) => setTimeout(r, 100));
+
+      // Game should now be in 'playing' state
+      const listRes = await request(app).get('/api/games?status=playing');
+      const game = listRes.body.games.find((g: { gameId: string }) => g.gameId === gameId);
+
+      expect(game).toBeDefined();
+      expect(game.status).toBe('playing');
+    });
+
     it('returns error when game already started', async () => {
       const createRes = await request(app).post('/api/games').send({});
       const gameId = createRes.body.gameId;
