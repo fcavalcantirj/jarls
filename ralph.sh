@@ -77,7 +77,7 @@ for ((i=1; i<=$1; i++)); do
 3. Check that the types check via pnpm typecheck and that the tests pass via pnpm test. \
 4. Update progress.txt with what you did. \
 5. Update @specs/prd-v1.json with passes = TRUE for the feature you completed. \
-6. Commit your changes. \
+6. Commit your changes.  \
 7. Push your changes to the repository. \
 ONLY DO ONE TASK AT A TIME. Ensure no file exceeds 800 lines - split if needed." > "$tmpfile" 2>&1 || true
 
