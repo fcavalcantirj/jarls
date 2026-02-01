@@ -86,12 +86,12 @@ export default function CreateGameForm() {
       setError(null);
 
       try {
-        // 1. Create game
+        // 1. Create game (max 6 players - allows humans to gang up vs AI)
         const createRes = await fetch('/api/games', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            playerCount: 2,
+            playerCount: 6,
             turnTimerMs: config.turnTimerMs,
             boardRadius: config.boardRadius,
           }),
@@ -151,25 +151,11 @@ export default function CreateGameForm() {
           setAIConfig(aiResponse.aiConfig);
         }
 
-        // 5. Auto-start the game (AI opponent - no waiting room needed)
-        const startRes = await fetch(`/api/games/${gameId}/start`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${sessionToken}`,
-          },
-          body: JSON.stringify({ playerId }),
-        });
-        if (!startRes.ok) {
-          const body = await startRes.json().catch(() => ({}));
-          throw new Error(body.message ?? 'Failed to start game');
-        }
-
-        // 6. Save player name to localStorage for future sessions
+        // 5. Save player name to localStorage for future sessions
         localStorage.setItem(PLAYER_NAME_KEY, name);
 
-        // 7. Navigate directly to game (skip waiting room)
-        navigate(`/game/${gameId}`);
+        // 6. Navigate to waiting room (allows more humans to join vs AI)
+        navigate(`/lobby/${gameId}`);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Something went wrong');
         setSubmitting(false);
@@ -213,11 +199,11 @@ export default function CreateGameForm() {
     setError(null);
 
     try {
-      // 1. Create game
+      // 1. Create game (max 6 players - host can start when ready)
       const createRes = await fetch('/api/games', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerCount: 2 }),
+        body: JSON.stringify({ playerCount: 6 }),
       });
       if (!createRes.ok) {
         const body = await createRes.json().catch(() => ({}));

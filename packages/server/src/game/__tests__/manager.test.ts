@@ -564,14 +564,22 @@ describe('GameManager', () => {
       expect(() => manager.join('non-existent', 'Alice')).toThrow('Game not found');
     });
 
-    it('throws when game is full', async () => {
+    it('throws ValidationError when game is full', async () => {
       manager = new GameManager();
       const gameId = await manager.create({ config: createTestConfig() });
 
       manager.join(gameId, 'Alice');
       manager.join(gameId, 'Bob');
 
-      expect(() => manager.join(gameId, 'Charlie')).toThrow('Game is full');
+      try {
+        manager.join(gameId, 'Charlie');
+        fail('Expected ValidationError to be thrown');
+      } catch (err: unknown) {
+        expect(err).toBeInstanceOf(Error);
+        expect((err as Error).message).toBe('Game is full');
+        expect((err as any).code).toBe('VALIDATION_ERROR');
+        expect((err as any).statusCode).toBe(400);
+      }
     });
 
     it('throws when game is not in lobby state', async () => {

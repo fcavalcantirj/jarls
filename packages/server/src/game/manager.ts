@@ -20,7 +20,7 @@ import { RandomAI } from '../ai/random';
 import { HeuristicAI } from '../ai/heuristic-ai';
 import { GroqAI } from '../ai/groq-ai';
 import { generateNorseName } from '../ai/names';
-import { ConfigurationError } from '../errors/index';
+import { ConfigurationError, ValidationError } from '../errors/index';
 
 /**
  * Validate game state integrity - check for corrupted state like duplicate positions.
@@ -438,7 +438,7 @@ export class GameManager {
 
     const context = snapshot.context as GameMachineContext;
     if (context.players.length >= context.config.playerCount) {
-      throw new Error('Game is full');
+      throw new ValidationError('Game is full');
     }
 
     const playerId = generateId();
@@ -722,7 +722,7 @@ export class GameManager {
 
     const context = snapshot.context as GameMachineContext;
     if (context.players.length >= context.config.playerCount) {
-      throw new Error('Game is full');
+      throw new ValidationError('Game is full');
     }
 
     // Create AI instance based on difficulty
@@ -769,7 +769,7 @@ export class GameManager {
 
     const context = snapshot.context as GameMachineContext;
     if (context.players.length >= context.config.playerCount) {
-      throw new Error('Game is full');
+      throw new ValidationError('Game is full');
     }
 
     // Create AI instance based on config

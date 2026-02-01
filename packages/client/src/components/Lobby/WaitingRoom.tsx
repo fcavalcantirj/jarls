@@ -226,7 +226,18 @@ export default function WaitingRoom({ gameId }: WaitingRoomProps) {
       <div style={slotsContainerStyle}>
         <h3 style={slotsTitle}>
           Players ({playerCount}/{maxPlayers})
+          {maxPlayers - playerCount > 0 && (
+            <span style={seatsAvailableStyle}>
+              {' '}
+              — {maxPlayers - playerCount} seat{maxPlayers - playerCount !== 1 ? 's' : ''} available
+            </span>
+          )}
         </h3>
+        {isHost && playerCount >= 2 && (
+          <p style={readyToStartStyle}>
+            Ready to start! You can begin now or wait for more players.
+          </p>
+        )}
         {Array.from({ length: maxPlayers }).map((_, i) => {
           const player = gameState?.players[i];
           return (
@@ -238,7 +249,7 @@ export default function WaitingRoom({ gameId }: WaitingRoomProps) {
                   {player.id === playerId && <span style={youBadgeStyle}> (you)</span>}
                 </span>
               ) : (
-                <span style={emptySlotStyle}>Waiting for player...</span>
+                <span style={emptySlotStyle}>Empty seat</span>
               )}
             </div>
           );
@@ -336,6 +347,21 @@ const slotsTitle: React.CSSProperties = {
   margin: '0 0 12px 0',
   fontSize: '16px',
   color: '#ccc',
+};
+
+const seatsAvailableStyle: React.CSSProperties = {
+  fontSize: '13px',
+  color: '#8b949e',
+  fontWeight: 'normal',
+};
+
+const readyToStartStyle: React.CSSProperties = {
+  margin: '0 0 12px 0',
+  padding: '8px 12px',
+  borderRadius: '4px',
+  backgroundColor: '#1a3d2a',
+  color: '#3fb950',
+  fontSize: '12px',
 };
 
 function slotStyle(filled: boolean): React.CSSProperties {

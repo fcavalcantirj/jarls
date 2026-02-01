@@ -302,7 +302,7 @@ describe('Game routes', () => {
       expect(game.players[0].name).toBe('Viking1');
     });
 
-    it('returns error when game is full', async () => {
+    it('returns 400 VALIDATION_ERROR when game is full', async () => {
       const createRes = await request(app).post('/api/games').send({});
       const gameId = createRes.body.gameId;
 
@@ -315,7 +315,9 @@ describe('Game routes', () => {
         .post(`/api/games/${gameId}/join`)
         .send({ playerName: 'Viking3' });
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('VALIDATION_ERROR');
+      expect(response.body.message).toBe('Game is full');
     });
   });
 

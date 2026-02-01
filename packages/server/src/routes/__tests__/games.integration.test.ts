@@ -231,7 +231,7 @@ describe('REST API integration tests', () => {
       expect(game.players[0].name).toBe('Ragnar');
     });
 
-    it('returns error when game is full', async () => {
+    it('returns 400 VALIDATION_ERROR when game is full', async () => {
       const createRes = await request(app).post('/api/games').send({});
       const gameId = createRes.body.gameId;
 
@@ -242,7 +242,9 @@ describe('REST API integration tests', () => {
         .post(`/api/games/${gameId}/join`)
         .send({ playerName: 'P3' });
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('VALIDATION_ERROR');
+      expect(response.body.message).toBe('Game is full');
     });
   });
 
@@ -559,7 +561,7 @@ describe('REST API integration tests', () => {
       expect(response.status).toBe(400);
     });
 
-    it('returns error when game is full', async () => {
+    it('returns 400 VALIDATION_ERROR when game is full (AI endpoint)', async () => {
       const createRes = await request(app).post('/api/games').send({});
       const gameId = createRes.body.gameId;
 
@@ -573,7 +575,9 @@ describe('REST API integration tests', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ difficulty: 'heuristic' });
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('VALIDATION_ERROR');
+      expect(response.body.message).toBe('Game is full');
     });
 
     it('auto-starts game when AI fills the lobby (2-player game)', async () => {

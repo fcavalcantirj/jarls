@@ -86,10 +86,12 @@ export default function Home() {
         </div>
         <div style={modeCardStyle}>
           <span style={modeIconStyle}>⚔️</span>
-          <span style={modeLabelStyle}>Mixed Battle</span>
+          <span style={modeLabelStyle}>Humans vs AI</span>
         </div>
       </div>
-      <p style={modeSubtextStyle}>2-4 players • Multiple AI models • Lightning fast</p>
+      <p style={modeSubtextStyle}>
+        2-6 players • Gang up on the AI • Multiple models • Lightning fast
+      </p>
 
       {/* Game Description */}
       <div style={descriptionStyle}>
