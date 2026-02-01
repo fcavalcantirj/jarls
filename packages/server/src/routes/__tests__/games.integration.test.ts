@@ -376,6 +376,23 @@ describe('REST API integration tests', () => {
       // Should have at least the game created event and state transitions
       expect(eventsResult.rows.length).toBeGreaterThan(0);
     });
+
+    it('returns success idempotently when game already started', async () => {
+      const { gameId, hostToken } = await createGameWithTwoPlayers();
+
+      // Start the game first time
+      await request(app)
+        .post(`/api/games/${gameId}/start`)
+        .set('Authorization', `Bearer ${hostToken}`);
+
+      // Try to start again - should return success, not error
+      const response = await request(app)
+        .post(`/api/games/${gameId}/start`)
+        .set('Authorization', `Bearer ${hostToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ success: true });
+    });
   });
 
   // ── GET /api/games/:id/valid-moves/:pieceId (auth required) ───

@@ -169,6 +169,15 @@ export function createGameRoutes(manager: GameManager): Router {
         }
 
         const context = snapshot.context as GameMachineContext;
+        const stateName =
+          typeof snapshot.value === 'string' ? snapshot.value : Object.keys(snapshot.value)[0];
+
+        // Idempotent: if game already started, return success
+        if (stateName === 'playing' || stateName === 'setup') {
+          res.json({ success: true });
+          return;
+        }
+
         if (context.players.length === 0 || context.players[0].id !== session.playerId) {
           throw new UnauthorizedError('Only the host can start the game');
         }
