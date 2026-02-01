@@ -12,6 +12,9 @@ import type {
 import { generateId, applyMove } from '@jarls/shared';
 import { saveSnapshot, saveEvent, loadActiveSnapshots } from './persistence';
 import { query } from '../db/pool';
+
+/** Valid top-level states in the current game machine */
+const VALID_STATES = new Set(['lobby', 'setup', 'playing', 'paused', 'ended']);
 import type { AIPlayer, AIDifficulty, ConfigurableAIPlayer } from '../ai/types';
 import { RandomAI } from '../ai/random';
 import { HeuristicAI } from '../ai/heuristic-ai';
@@ -225,6 +228,15 @@ export class GameManager {
 
       // Skip if already loaded (e.g., created during this session)
       if (this.games.has(gameId)) continue;
+
+      // Check for invalid/removed states (e.g., 'starvation' was removed)
+      if (!VALID_STATES.has(snap.status)) {
+        console.warn(`Purging game ${gameId} with invalid state '${snap.status}' from database`);
+        // Delete the game and its events from the database
+        await query('DELETE FROM game_events WHERE game_id = $1', [gameId]);
+        await query('DELETE FROM game_snapshots WHERE game_id = $1', [gameId]);
+        continue;
+      }
 
       try {
         // The state field contains the full XState persisted snapshot
