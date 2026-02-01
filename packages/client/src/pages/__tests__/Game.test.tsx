@@ -93,20 +93,8 @@ describe('Game.tsx joinGame behavior', () => {
     });
 
     it('does not set gameState when joinGame fails', () => {
-      const { setGameState } = useGameStore.getState();
-
-      // Simulate failed joinGame
-      const response = {
-        success: false,
-        error: 'Session expired',
-      };
-
-      // Only set state on success
-      if (response.success && response.gameState) {
-        setGameState(response.gameState);
-      }
-
-      // Verify gameState remains null
+      // Simulate failed joinGame - gameState remains null
+      // (no action needed, just verify initial state)
       expect(useGameStore.getState().gameState).toBeNull();
     });
 
