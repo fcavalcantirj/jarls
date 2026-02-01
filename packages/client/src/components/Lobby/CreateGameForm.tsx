@@ -9,6 +9,7 @@ type Preset = 'easy' | 'medium' | 'hard' | 'custom';
 type AIType = 'local' | 'groq';
 type TurnTimer = 'none' | '30' | '60' | '120';
 type BoardSize = 'default' | '4' | '5' | '6';
+type Terrain = 'calm' | 'treacherous' | 'chaotic';
 
 const GROQ_MODELS: GroqModel[] = [
   'llama-3.1-8b-instant',
@@ -65,6 +66,7 @@ export default function CreateGameForm() {
   const [groqDifficulty, setGroqDifficulty] = useState<GroqDifficulty>('intermediate');
   const [turnTimer, setTurnTimer] = useState<TurnTimer>('none');
   const [boardSize, setBoardSize] = useState<BoardSize>('default');
+  const [terrain, setTerrain] = useState<Terrain>('calm');
   const [customPrompt, setCustomPrompt] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
@@ -78,6 +80,7 @@ export default function CreateGameForm() {
       customPrompt?: string;
       turnTimerMs: number | null;
       boardRadius?: number;
+      terrain?: Terrain;
     }) => {
       const name = playerName.trim();
       if (!name || submitting) return;
@@ -94,6 +97,7 @@ export default function CreateGameForm() {
             playerCount: 6,
             turnTimerMs: config.turnTimerMs,
             boardRadius: config.boardRadius,
+            terrain: config.terrain,
           }),
         });
         if (!createRes.ok) {
@@ -268,9 +272,10 @@ export default function CreateGameForm() {
         customPrompt: customPrompt || undefined,
         turnTimerMs,
         boardRadius,
+        terrain,
       });
     },
-    [aiType, groqModel, groqDifficulty, customPrompt, turnTimer, boardSize, createGame]
+    [aiType, groqModel, groqDifficulty, customPrompt, turnTimer, boardSize, terrain, createGame]
   );
 
   const isNameValid = playerName.trim().length > 0;
@@ -444,6 +449,19 @@ export default function CreateGameForm() {
               <option value="4">Medium (61 hexes)</option>
               <option value="5">Large (91 hexes)</option>
               <option value="6">Extra Large (127 hexes)</option>
+            </select>
+          </label>
+
+          <label style={labelStyle}>
+            Terrain
+            <select
+              value={terrain}
+              onChange={(e) => setTerrain(e.target.value as Terrain)}
+              style={selectStyle}
+            >
+              <option value="calm">Calm (few holes)</option>
+              <option value="treacherous">Treacherous (more holes)</option>
+              <option value="chaotic">Chaotic (many holes)</option>
             </select>
           </label>
 

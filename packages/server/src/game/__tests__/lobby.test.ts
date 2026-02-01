@@ -2,6 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { createActor } from 'xstate';
 import { gameMachine } from '../machine';
 import type { GameMachineInput } from '../types';
+import { PLAYER_COLORS } from '@jarls/shared';
 
 function createTestInput(overrides?: Partial<GameMachineInput>): GameMachineInput {
   return {
@@ -9,9 +10,9 @@ function createTestInput(overrides?: Partial<GameMachineInput>): GameMachineInpu
     config: {
       playerCount: 2,
       boardRadius: 3,
-      shieldCount: 5,
       warriorCount: 5,
       turnTimerMs: null,
+      terrain: 'calm',
     },
     ...overrides,
   };
@@ -62,7 +63,7 @@ describe('Game Machine - Lobby State', () => {
       expect(snapshot.context.players[0]).toEqual({
         id: 'p1',
         name: 'Alice',
-        color: '#e63946',
+        color: PLAYER_COLORS[0],
         isEliminated: false,
         isAI: false,
       });
@@ -78,8 +79,8 @@ describe('Game Machine - Lobby State', () => {
       const snapshot = actor.getSnapshot();
 
       expect(snapshot.context.players).toHaveLength(2);
-      expect(snapshot.context.players[0].color).toBe('#e63946');
-      expect(snapshot.context.players[1].color).toBe('#457b9d');
+      expect(snapshot.context.players[0].color).toBe(PLAYER_COLORS[0]);
+      expect(snapshot.context.players[1].color).toBe(PLAYER_COLORS[1]);
 
       actor.stop();
     });

@@ -95,6 +95,7 @@ export {
   generateId,
   generateRandomHoles,
   createInitialState,
+  PLAYER_COLORS,
 } from './board.js';
 
 // Re-export all combat functions from combat.ts

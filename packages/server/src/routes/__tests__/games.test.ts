@@ -124,6 +124,50 @@ describe('Game routes', () => {
       expect(found.playerCount).toBe(0);
       expect(found.maxPlayers).toBe(2);
     });
+
+    it('creates a game with specified terrain', async () => {
+      const response = await request(app)
+        .post('/api/games')
+        .send({ playerCount: 4, terrain: 'treacherous' });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty('gameId');
+
+      // Verify terrain was set in the game config
+      const gameId = response.body.gameId;
+      const state = manager.getState(gameId);
+      expect(state).toBeDefined();
+      expect(state?.context.config.terrain).toBe('treacherous');
+    });
+
+    it('defaults to calm terrain when not specified', async () => {
+      const response = await request(app).post('/api/games').send({ playerCount: 2 });
+
+      expect(response.status).toBe(201);
+
+      const state = manager.getState(response.body.gameId);
+      expect(state?.context.config.terrain).toBe('calm');
+    });
+
+    it('accepts chaotic terrain', async () => {
+      const response = await request(app)
+        .post('/api/games')
+        .send({ playerCount: 6, terrain: 'chaotic' });
+
+      expect(response.status).toBe(201);
+
+      const state = manager.getState(response.body.gameId);
+      expect(state?.context.config.terrain).toBe('chaotic');
+    });
+
+    it('returns 400 for invalid terrain value', async () => {
+      const response = await request(app)
+        .post('/api/games')
+        .send({ playerCount: 2, terrain: 'invalid' });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error', 'VALIDATION_ERROR');
+    });
   });
 
   describe('GET /api/games', () => {

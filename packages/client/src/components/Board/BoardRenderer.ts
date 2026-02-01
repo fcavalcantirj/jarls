@@ -22,10 +22,8 @@ const THRONE_STROKE = '#daa520';
 const HOLE_FILL = '#1a1a1a';
 /** Stroke color for hole hexes */
 const HOLE_STROKE = '#3a3a3a';
-/** Player colors indexed by player order */
-const PLAYER_COLORS: Record<string, string> = {};
-/** Default player color palette */
-const COLOR_PALETTE = ['#e63946', '#457b9d'];
+/** Default player color palette (fallback only) */
+const COLOR_PALETTE = ['#e63946', '#457b9d', '#43A047', '#FB8C00', '#8E24AA', '#00ACC1'];
 /** Piece shadow color */
 const PIECE_SHADOW = 'rgba(0, 0, 0, 0.4)';
 /** Selection highlight ring color */
@@ -68,6 +66,8 @@ export class BoardRenderer {
   private ctx: CanvasRenderingContext2D;
   private dimensions: BoardDimensions | null = null;
   private boardRadius: number | null = null;
+  /** Player colors from game state, indexed by player ID */
+  private playerColors: Record<string, string> = {};
 
   constructor(ctx: CanvasRenderingContext2D) {
     this.ctx = ctx;
@@ -192,14 +192,26 @@ export class BoardRenderer {
 
   /**
    * Get a color for a given player ID.
-   * Assigns colors from the palette on first encounter and caches them.
+   * Uses the actual player color from game state, falls back to palette if missing.
    */
   getPlayerColor(playerId: string): string {
-    if (!PLAYER_COLORS[playerId]) {
-      const index = Object.keys(PLAYER_COLORS).length;
-      PLAYER_COLORS[playerId] = COLOR_PALETTE[index % COLOR_PALETTE.length];
+    if (this.playerColors[playerId]) {
+      return this.playerColors[playerId];
     }
-    return PLAYER_COLORS[playerId];
+    // Fallback to palette for any missing players
+    const index = Object.keys(this.playerColors).length;
+    return COLOR_PALETTE[index % COLOR_PALETTE.length];
+  }
+
+  /**
+   * Set player colors from game state.
+   * Should be called before rendering to ensure correct colors.
+   */
+  setPlayerColors(players: Array<{ id: string; color: string }>): void {
+    this.playerColors = {};
+    for (const player of players) {
+      this.playerColors[player.id] = player.color;
+    }
   }
 
   /**
@@ -437,6 +449,9 @@ export class BoardRenderer {
     if (!this.dimensions) {
       this.calculateDimensions(state.config.boardRadius, canvas.width, canvas.height);
     }
+
+    // Set player colors from game state
+    this.setPlayerColors(state.players);
 
     // Clear entire canvas
     this.ctx.clearRect(0, 0, canvas.width, canvas.height);

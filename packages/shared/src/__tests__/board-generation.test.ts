@@ -722,7 +722,9 @@ describe('board generation', () => {
     });
 
     describe('holes generation', () => {
-      it('should generate holes for calm terrain (3 holes)', () => {
+      it('should generate holes for calm terrain on radius 3 board (3 holes)', () => {
+        // Radius 3: 37 hexes, sqrt(37/37) = 1.0, calm base = 3
+        // Scaled: round(3 * 1.0) = 3
         const state = createInitialState(['Player 1', 'Player 2']);
         expect(state.holes).toBeDefined();
         expect(Array.isArray(state.holes)).toBe(true);
@@ -748,6 +750,76 @@ describe('board generation', () => {
         const state = createInitialState(['Player 1', 'Player 2']);
         state.holes.forEach((hole) => {
           expect(isOnEdgeAxial(hole, state.config.boardRadius)).toBe(false);
+        });
+      });
+
+      describe('hole count scaling with board size', () => {
+        // Hole count scales by sqrt(boardHexes / 37) where 37 = radius 3 base board
+        // This keeps hazard density proportional without overwhelming large boards
+        // Note: Actual holes may be limited by available valid positions
+
+        it('should scale calm terrain holes with board size', () => {
+          // Radius 3: sqrt(37/37) = 1.0, round(3 * 1.0) = 3
+          const r3 = createInitialState(['P1', 'P2'], null, 3, 'calm');
+          expect(r3.holes.length).toBe(3);
+
+          // Radius 5: sqrt(91/37) = 1.57, round(3 * 1.57) = 5
+          const r5 = createInitialState(['P1', 'P2', 'P3'], null, 5, 'calm');
+          expect(r5.holes.length).toBe(5);
+
+          // Radius 6: sqrt(127/37) = 1.85, round(3 * 1.85) = 6
+          const r6 = createInitialState(['P1', 'P2', 'P3', 'P4'], null, 6, 'calm');
+          expect(r6.holes.length).toBe(6);
+        });
+
+        it('should scale treacherous terrain holes on larger boards', () => {
+          // Radius 5: round(6 * 1.57) = 9
+          const r5 = createInitialState(['P1', 'P2', 'P3'], null, 5, 'treacherous');
+          expect(r5.holes.length).toBe(9);
+
+          // Radius 6: round(6 * 1.85) = 11
+          const r6 = createInitialState(['P1', 'P2', 'P3', 'P4'], null, 6, 'treacherous');
+          expect(r6.holes.length).toBe(11);
+
+          // Radius 8: round(6 * 2.42) = 15
+          const r8 = createInitialState(
+            ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
+            null,
+            8,
+            'treacherous'
+          );
+          expect(r8.holes.length).toBe(15);
+        });
+
+        it('should scale chaotic terrain holes on larger boards', () => {
+          // Radius 6: round(9 * 1.85) = 17
+          const r6 = createInitialState(['P1', 'P2', 'P3', 'P4'], null, 6, 'chaotic');
+          expect(r6.holes.length).toBe(17);
+
+          // Radius 8: round(9 * 2.42) = 22
+          const r8 = createInitialState(['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], null, 8, 'chaotic');
+          expect(r8.holes.length).toBe(22);
+        });
+
+        it('should generate more holes on larger boards with same terrain', () => {
+          const small = createInitialState(['P1', 'P2', 'P3'], null, 5, 'treacherous');
+          const large = createInitialState(
+            ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
+            null,
+            8,
+            'treacherous'
+          );
+
+          expect(large.holes.length).toBeGreaterThan(small.holes.length);
+        });
+
+        it('should generate more holes with more dangerous terrain', () => {
+          const calm = createInitialState(['P1', 'P2', 'P3', 'P4'], null, 6, 'calm');
+          const treacherous = createInitialState(['P1', 'P2', 'P3', 'P4'], null, 6, 'treacherous');
+          const chaotic = createInitialState(['P1', 'P2', 'P3', 'P4'], null, 6, 'chaotic');
+
+          expect(treacherous.holes.length).toBeGreaterThan(calm.holes.length);
+          expect(chaotic.holes.length).toBeGreaterThan(treacherous.holes.length);
         });
       });
     });

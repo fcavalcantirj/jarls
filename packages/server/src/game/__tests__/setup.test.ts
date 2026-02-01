@@ -9,9 +9,9 @@ function createTestInput(overrides?: Partial<GameMachineInput>): GameMachineInpu
     config: {
       playerCount: 2,
       boardRadius: 3,
-      shieldCount: 5,
       warriorCount: 5,
       turnTimerMs: null,
+      terrain: 'calm',
     },
     ...overrides,
   };
@@ -46,12 +46,10 @@ describe('Game Machine - Setup State', () => {
       const snapshot = actor.getSnapshot();
       const { pieces } = snapshot.context;
 
-      // 2 players: 5 shields + 2 jarls + 2*5 warriors = 17 pieces
-      const shields = pieces.filter((p) => p.type === 'shield');
+      // 2 players: 2 jarls + 2*5 warriors = 12 pieces
       const jarls = pieces.filter((p) => p.type === 'jarl');
       const warriors = pieces.filter((p) => p.type === 'warrior');
 
-      expect(shields).toHaveLength(5);
       expect(jarls).toHaveLength(2);
       expect(warriors).toHaveLength(10);
 
@@ -85,18 +83,6 @@ describe('Game Machine - Setup State', () => {
       expect(players).toHaveLength(2);
       expect(players[0].id).toBe('p1');
       expect(players[1].id).toBe('p2');
-
-      actor.stop();
-    });
-
-    it('shields have no player owner', () => {
-      const actor = createGameInSetup();
-      const snapshot = actor.getSnapshot();
-      const shields = snapshot.context.pieces.filter((p) => p.type === 'shield');
-
-      for (const shield of shields) {
-        expect(shield.playerId).toBeNull();
-      }
 
       actor.stop();
     });

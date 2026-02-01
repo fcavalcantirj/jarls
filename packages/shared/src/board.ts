@@ -49,7 +49,7 @@ const TERRAIN_HOLE_COUNTS: Record<TerrainType, number> = {
 };
 
 // Default player colors for up to 6 players
-const PLAYER_COLORS = [
+export const PLAYER_COLORS = [
   '#E53935', // Red
   '#1E88E5', // Blue
   '#43A047', // Green
@@ -301,11 +301,18 @@ export function generateRandomHoles(
   terrain: TerrainType,
   startingPositions: AxialCoord[]
 ): AxialCoord[] {
-  const holeCount = TERRAIN_HOLE_COUNTS[terrain];
+  const baseHoleCount = TERRAIN_HOLE_COUNTS[terrain];
 
-  if (holeCount <= 0) {
+  if (baseHoleCount <= 0) {
     return [];
   }
+
+  // Scale hole count by board area ratio (base = radius 3 with 37 hexes)
+  // Using sqrt of area ratio keeps holes proportional without overwhelming large boards
+  const boardHexes = 3 * radius * radius + 3 * radius + 1;
+  const baseHexes = 37; // radius 3 board
+  const areaRatio = boardHexes / baseHexes;
+  const holeCount = Math.round(baseHoleCount * Math.sqrt(areaRatio));
 
   // Get all hexes and filter to valid hole positions
   const allHexes = generateAllBoardHexes(radius);

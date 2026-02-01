@@ -1,7 +1,7 @@
 import { setup, assign } from 'xstate';
 import type { GameMachineContext, GameMachineEvent, GameMachineInput } from './types';
 import type { Piece, Player } from '@jarls/shared';
-import { createInitialState, applyMove } from '@jarls/shared';
+import { createInitialState, applyMove, PLAYER_COLORS } from '@jarls/shared';
 
 /**
  * Get the next active (non-eliminated) player ID after the current player.
@@ -120,11 +120,12 @@ export const gameMachine = setup({
     initializeBoard: assign(({ context }) => {
       // Generate board using shared logic
       const playerNames = context.players.map((p) => p.name);
-      // Pass custom board radius from config (may differ from default for player count)
+      // Pass custom board radius and terrain from config
       const generated = createInitialState(
         playerNames,
         context.turnTimerMs,
-        context.config.boardRadius
+        context.config.boardRadius,
+        context.config.terrain
       );
 
       // Map generated player IDs to the existing lobby player IDs
@@ -180,7 +181,7 @@ export const gameMachine = setup({
               const newPlayer: Player = {
                 id: event.playerId,
                 name: event.playerName,
-                color: context.players.length === 0 ? '#e63946' : '#457b9d',
+                color: PLAYER_COLORS[context.players.length] ?? PLAYER_COLORS[0],
                 isEliminated: false,
                 isAI: event.isAI ?? false,
               };

@@ -164,7 +164,7 @@ export default function Rules() {
             </li>
           </ul>
           <div style={terrainBoxStyle}>
-            <h4 style={subTitleStyle}>Terrain Types (Hole Count)</h4>
+            <h4 style={subTitleStyle}>Terrain Types (Base Hole Count)</h4>
             <div style={terrainGridStyle}>
               <div style={terrainItemStyle}>
                 <span style={terrainNameStyle}>Calm</span>
@@ -179,6 +179,9 @@ export default function Rules() {
                 <span style={terrainCountStyle}>9 holes</span>
               </div>
             </div>
+            <p style={terrainNoteStyle}>
+              Hole count scales with board size — larger boards get more holes
+            </p>
           </div>
         </div>
       </section>
@@ -194,7 +197,8 @@ export default function Rules() {
             <li>Board radius defines how far from center pieces can be</li>
             <li>Hexes at maximum radius are "edge" hexes — pieces can be pushed off from there</li>
             <li>
-              <span style={termHoleStyle}>Holes</span> are randomly placed based on terrain type
+              <span style={termHoleStyle}>Holes</span> are randomly placed based on terrain type and
+              board size
             </li>
           </ul>
         </div>
@@ -345,6 +349,14 @@ const terrainNameStyle: React.CSSProperties = {
 const terrainCountStyle: React.CSSProperties = {
   color: '#8b949e',
   fontSize: '0.85rem',
+};
+
+const terrainNoteStyle: React.CSSProperties = {
+  margin: '12px 0 0 0',
+  fontSize: '0.8rem',
+  color: '#6e7681',
+  fontStyle: 'italic',
+  textAlign: 'center',
 };
 
 const ctaContainerStyle: React.CSSProperties = {
