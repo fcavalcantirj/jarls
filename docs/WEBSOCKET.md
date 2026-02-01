@@ -1,6 +1,6 @@
 # WebSocket API Documentation
 
-Jarls uses [Socket.IO](https://socket.io/) for real-time game communication. All game actions (joining, playing turns, starvation choices) flow through WebSocket events after initial REST API authentication.
+Jarls uses [Socket.IO](https://socket.io/) for real-time game communication. All game actions (joining, playing turns) flow through WebSocket events after initial REST API authentication.
 
 ## Connection
 
@@ -125,36 +125,6 @@ Executes a move command for the current player.
 
 - Broadcasts `turnPlayed` to all players with move events and new state
 - If game ended: broadcasts `gameEnded`
-- If starvation triggered: broadcasts `starvationRequired`
-
----
-
-### `starvationChoice`
-
-Submits a warrior sacrifice choice during starvation phase.
-
-**Payload:**
-
-```typescript
-{
-  gameId: string;
-  pieceId: string; // ID of the warrior to sacrifice
-}
-```
-
-**Response (callback):**
-
-```typescript
-{
-  success: boolean;
-  error?: string;
-}
-```
-
-**Side effects:**
-
-- If all choices received: broadcasts `gameState` with updated state
-- If game ended from starvation: broadcasts `gameEnded`
 
 ---
 
@@ -164,17 +134,18 @@ Submits a warrior sacrifice choice during starvation phase.
 
 Sends complete game state to clients.
 
-**Emitted when:** Game starts, starvation resolves, player reconnects.
+**Emitted when:** Game starts, player reconnects.
 
 **Payload:**
 
 ```typescript
 {
   id: string;
-  phase: 'lobby' | 'setup' | 'playing' | 'starvation' | 'ended';
+  phase: 'lobby' | 'setup' | 'playing' | 'paused' | 'ended';
   config: GameConfig;
   players: Player[];
   pieces: Piece[];
+  holes: AxialCoord[];
   currentPlayerId: string | null;
   turnNumber: number;
   roundNumber: number;
@@ -205,17 +176,14 @@ Notifies all players of a completed turn with animation data.
 
 **GameEvent types:**
 
-| Event Type             | Fields                                    | Description                   |
-| ---------------------- | ----------------------------------------- | ----------------------------- |
-| `MOVE`                 | `pieceId, from, to, hasMomentum`          | Piece moved to a new hex      |
-| `PUSH`                 | `pieceId, from, to, pushDirection, depth` | Piece pushed by combat        |
-| `ELIMINATED`           | `pieceId, playerId, position, cause`      | Piece removed from board      |
-| `TURN_ENDED`           | `playerId, nextPlayerId, turnNumber`      | Turn completed                |
-| `GAME_ENDED`           | `winnerId, winCondition`                  | Game concluded                |
-| `STARVATION_TRIGGERED` | `round, candidates`                       | Starvation phase started      |
-| `STARVATION_RESOLVED`  | `sacrifices`                              | Starvation phase ended        |
-| `JARL_STARVED`         | `pieceId, playerId, position`             | Jarl eliminated by starvation |
-| `TURN_SKIPPED`         | `playerId, nextPlayerId, turnNumber`      | Turn timed out                |
+| Event Type     | Fields                                    | Description              |
+| -------------- | ----------------------------------------- | ------------------------ |
+| `MOVE`         | `pieceId, from, to, hasMomentum`          | Piece moved to a new hex |
+| `PUSH`         | `pieceId, from, to, pushDirection, depth` | Piece pushed by combat   |
+| `ELIMINATED`   | `pieceId, playerId, position, cause`      | Piece removed from board |
+| `TURN_ENDED`   | `playerId, nextPlayerId, turnNumber`      | Turn completed           |
+| `GAME_ENDED`   | `winnerId, winCondition`                  | Game concluded           |
+| `TURN_SKIPPED` | `playerId, nextPlayerId, turnNumber`      | Turn timed out           |
 
 ---
 
@@ -290,27 +258,6 @@ Notifies remaining players that a disconnected player returned.
 
 ---
 
-### `starvationRequired`
-
-Requests players to choose a warrior to sacrifice.
-
-**Emitted when:** Starvation triggers after a turn (10+ rounds without elimination).
-
-**Payload:**
-
-```typescript
-{
-  candidates: Array<{
-    playerId: string;
-    candidates: Piece[]; // Warriors eligible for sacrifice
-    maxDistance: number; // Distance from throne of furthest warrior
-  }>;
-  timeoutMs: number; // Auto-select timeout in milliseconds
-}
-```
-
----
-
 ### `error`
 
 General error broadcast.
@@ -348,12 +295,6 @@ Client                              Server
   |    [if game ended]                |
   |<-- gameEnded (broadcast) -------- |
   |                                   |
-  |    [if starvation triggered]      |
-  |<-- starvationRequired ----------- |
-  |--- starvationChoice ----------->  |
-  |<-- callback (success) ----------- |
-  |<-- gameState (broadcast) -------- |
-  |                                   |
   |    [on disconnect]                |
   |<-- playerLeft (to others) ------- |
   |                                   |
@@ -384,3 +325,8 @@ Common error scenarios:
 - **Not your turn**: Attempted move on another player's turn
 - **Invalid move**: Move violates game rules
 - **Game not found**: Game ID doesn't exist
+
+---
+
+_Updated: 2026-02-01_
+_Removed: Starvation events_

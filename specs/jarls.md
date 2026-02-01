@@ -105,7 +105,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 
 ### 1.2 Game State Types
 
-- [ ] **1.2.1** Define `PieceType` type (`'warrior' | 'jarl' | 'shield'`)
+- [ ] **1.2.1** Define `PieceType` type (`'warrior' | 'jarl'`)
   - _Source:_ [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.2
 - [ ] **1.2.2** Define `Piece` interface
 - [ ] **1.2.3** Define `Player` interface
@@ -117,11 +117,10 @@ This document breaks down the implementation into small, actionable tasks. Each 
 - [ ] **1.2.8** Define `CombatResult` interface with attack/defense breakdowns
 - [ ] **1.2.9** Define `MoveResult` interface
 - [ ] **1.2.10** Define `GameEvent` union type (MOVE, PUSH, ELIMINATED, etc.)
-- [ ] **1.2.11** Define `StarvationChoice` interface
-- [ ] **1.2.12** Define `ValidationResult` interface
-- [ ] **1.2.13** Define `ValidMove` interface
-- [ ] **1.2.14** Add JSDoc comments to all interfaces
-- [ ] **1.2.15** Export all types from shared package index
+- [ ] **1.2.11** Define `ValidationResult` interface
+- [ ] **1.2.12** Define `ValidMove` interface
+- [ ] **1.2.13** Add JSDoc comments to all interfaces
+- [ ] **1.2.14** Export all types from shared package index
 
 ### 1.3 Board Generation
 
@@ -131,13 +130,10 @@ This document breaks down the implementation into small, actionable tasks. Each 
 - [ ] **1.3.3** Write tests for board hex generation
 - [ ] **1.3.4** Implement `calculateStartingPositions(playerCount, radius)` for equidistant Jarls
 - [ ] **1.3.5** Write tests verifying all Jarls are equidistant from center
-- [ ] **1.3.6** Implement `generateSymmetricalShields(count, radius, playerCount)`
-- [ ] **1.3.7** Implement `validateShieldPlacement(shields, startPositions)` - path check
-- [ ] **1.3.8** Write tests for shield placement constraints
-- [ ] **1.3.9** Implement `placeWarriors(jarlPosition, count, radius)` - place in front of Jarl
-- [ ] **1.3.10** Write tests for warrior placement
-- [ ] **1.3.11** Implement `createInitialState(config)` - full state creation
-- [ ] **1.3.12** Write integration tests for 2-player board generation
+- [ ] **1.3.6** Implement `placeWarriors(jarlPosition, count, radius)` - place in front of Jarl
+- [ ] **1.3.7** Write tests for warrior placement
+- [ ] **1.3.8** Implement `createInitialState(config)` - full state creation
+- [ ] **1.3.9** Write integration tests for 2-player board generation
 
 ### 1.4 Move Validation
 
@@ -202,23 +198,22 @@ This document breaks down the implementation into small, actionable tasks. Each 
 
 - [ ] **1.6.1** Implement `detectChain(state, startPos, direction)` - returns pieces in chain and terminator
   - _Source:_ [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.6
-- [ ] **1.6.2** Write tests for chain detection (empty, edge, shield, throne)
+- [ ] **1.6.2** Write tests for chain detection (empty, edge, hole, throne)
 - [ ] **1.6.3** Implement `resolveSimplePush(state, chain)` - push into empty hex
 - [ ] **1.6.4** Write tests for simple push
 - [ ] **1.6.5** Implement `resolveEdgePush(state, chain)` - elimination at edge
 - [ ] **1.6.6** Write tests for edge elimination (single and multi-piece)
-- [ ] **1.6.7** Implement `resolveCompression(state, chain, blocker)` - shield/throne compression
+- [ ] **1.6.7** Implement `resolveCompression(state, chain, blocker)` - throne compression
   - _Spec:_ [game-rules-v1.md](./game-rules-v1.md) Throne Compression
-- [ ] **1.6.8** Write tests for shield compression
-- [ ] **1.6.9** Write tests for throne compression (Warriors)
-- [ ] **1.6.10** Write tests for throne compression (Jarls cannot be pushed onto Throne)
-- [ ] **1.6.11** Implement `resolvePush(state, attackerPos, direction)` - main resolver
-- [ ] **1.6.12** Ensure events are generated with correct `depth` for staggered animation
-- [ ] **1.6.13** Write integration tests for complex chain scenarios
-- [ ] **1.6.14** Implement Warriors stop adjacent to Throne in push chains
+- [ ] **1.6.8** Write tests for throne compression (Warriors)
+- [ ] **1.6.9** Write tests for throne compression (Jarls cannot be pushed onto Throne)
+- [ ] **1.6.10** Implement `resolvePush(state, attackerPos, direction)` - main resolver
+- [ ] **1.6.11** Ensure events are generated with correct `depth` for staggered animation
+- [ ] **1.6.12** Write integration tests for complex chain scenarios
+- [ ] **1.6.13** Implement Warriors stop adjacent to Throne in push chains
   - In detectChain, check if next hex is Throne
   - If Warrior would be pushed to Throne, mark as compression terminator
-  - Warriors compress against Throne like they do against Shields
+  - Warriors compress against Throne
   - Unit tests: Warrior pushed toward Throne stops adjacent
   - Unit tests: Chain with multiple Warriors compresses at Throne edge
 
@@ -235,55 +230,31 @@ This document breaks down the implementation into small, actionable tasks. Each 
 - [ ] **1.7.8** Implement `checkWinConditions(state)` - checks both conditions
 - [ ] **1.7.9** Write tests for win precedence (throne > last standing)
 
-### 1.8 Starvation Mechanic
+### 1.8 Valid Moves Calculator
 
-- [ ] **1.8.1** Implement `checkStarvationTrigger(state)` - 10 rounds without elimination
-  - _Source:_ [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.8
-  - _Spec:_ [game-rules-v1.md](./game-rules-v1.md) Starvation Mechanic
-- [ ] **1.8.2** Write tests for starvation trigger timing
-- [ ] **1.8.3** Implement `calculateStarvationCandidates(state)` - furthest warriors from throne
-- [ ] **1.8.4** Write tests for candidate selection (hex distance ignoring obstacles)
-- [ ] **1.8.5** Implement tie-breaker: return multiple candidates for player choice
-- [ ] **1.8.6** Write tests for tie-breaker scenarios
-- [ ] **1.8.7** Implement `resolveStarvation(state, choices)` - apply starvation
-- [ ] **1.8.8** Implement Jarl starvation when player has no warriors
-- [ ] **1.8.9** Write tests for Jarl starvation
-- [ ] **1.8.10** Implement starvation counter reset on any elimination
-- [ ] **1.8.11** Write tests for counter reset
-- [ ] **1.8.12** Implement Jarl starvation grace period
-  - Track roundsSinceLastWarrior per player in game state
-  - When player loses last Warrior, start 5-round grace period
-  - During starvation trigger, if no Warriors AND grace period passed (5+ rounds)
-  - Eliminate Jarl, generate JARL_STARVED event
-  - Check for last standing victory after Jarl elimination
-  - Unit tests: Jarl survives during 5-round grace period
-  - Unit tests: Jarl eliminated after grace period expires
-
-### 1.9 Valid Moves Calculator
-
-- [ ] **1.9.1** Implement `getReachableHexes(state, piece)` - all hexes piece can reach
+- [ ] **1.8.1** Implement `getReachableHexes(state, piece)` - all hexes piece can reach
   - _Source:_ [phase-1-core-logic.md](../docs/implementation/phase-1-core-logic.md) Task 1.9
-- [ ] **1.9.2** Write tests for warrior movement range (1-2 hexes)
-- [ ] **1.9.3** Write tests for jarl movement range (1 hex, 2 with draft)
-- [ ] **1.9.4** Implement `getValidMoves(state, playerId, pieceId)` - returns ValidMove[]
-- [ ] **1.9.5** Include move type (move vs attack)
-- [ ] **1.9.6** Include hasMomentum flag
-- [ ] **1.9.7** Include combat preview for attacks
-- [ ] **1.9.8** Write tests for valid moves output
-- [ ] **1.9.9** Write performance test (<10ms)
+- [ ] **1.8.2** Write tests for warrior movement range (1-2 hexes)
+- [ ] **1.8.3** Write tests for jarl movement range (1 hex, 2 with draft)
+- [ ] **1.8.4** Implement `getValidMoves(state, playerId, pieceId)` - returns ValidMove[]
+- [ ] **1.8.5** Include move type (move vs attack)
+- [ ] **1.8.6** Include hasMomentum flag
+- [ ] **1.8.7** Include combat preview for attacks
+- [ ] **1.8.8** Write tests for valid moves output
+- [ ] **1.8.9** Write performance test (<10ms)
 
-### 1.10 Apply Move
+### 1.9 Apply Move
 
-- [ ] **1.10.1** Implement `applyMove(state, playerId, command)` - main move executor
-- [ ] **1.10.2** Handle simple move (no combat)
-- [ ] **1.10.3** Handle attack with push
-- [ ] **1.10.4** Handle attack blocked
+- [ ] **1.9.1** Implement `applyMove(state, playerId, command)` - main move executor
+- [ ] **1.9.2** Handle simple move (no combat)
+- [ ] **1.9.3** Handle attack with push
+- [ ] **1.9.4** Handle attack blocked
   - _Spec:_ [game-rules-v1.md](./game-rules-v1.md) Blocked Attack Position
-- [ ] **1.10.5** Generate all events for animation
-- [ ] **1.10.6** Check win conditions after move
-- [ ] **1.10.7** Return MoveResult with new state
-- [ ] **1.10.8** Write integration tests for complete move scenarios
-- [ ] **1.10.9** Validate blocked attack positioning
+- [ ] **1.9.5** Generate all events for animation
+- [ ] **1.9.6** Check win conditions after move
+- [ ] **1.9.7** Return MoveResult with new state
+- [ ] **1.9.8** Write integration tests for complete move scenarios
+- [ ] **1.9.9** Validate blocked attack positioning
   - When attack is BLOCKED (Attack <= Defense)
   - Move attacker to hex adjacent to defender (last clear hex before target)
   - Attacker does NOT take defender's position
@@ -319,11 +290,9 @@ This document breaks down the implementation into small, actionable tasks. Each 
 - [ ] **2.1.13** Add turn timer with `after` transition
   - _Spec:_ [game-rules-v1.md](./game-rules-v1.md) Turn Timeout (auto-skip)
 - [ ] **2.1.14** Write tests for turn timeout
-- [ ] **2.1.15** Add `starvation` state
-- [ ] **2.1.16** Add `STARVATION_CHOICE` event
-- [ ] **2.1.17** Write tests for starvation flow
-- [ ] **2.1.18** Add `ended` final state
-- [ ] **2.1.19** Write tests for game end transitions
+- [ ] **2.1.15** Add `paused` state for disconnections
+- [ ] **2.1.16** Add `ended` final state
+- [ ] **2.1.17** Write tests for game end transitions
 
 ### 2.2 Game Persistence
 
@@ -415,7 +384,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 - [ ] **4.1.6** Implement `HeuristicAI` class (medium difficulty)
 - [ ] **4.1.7** Write tests for HeuristicAI (prefers winning moves)
 - [ ] **4.1.8** Write tests for HeuristicAI (avoids edge for Jarl)
-- [ ] **4.1.9** Implement `MinimaxAI` class (hard difficulty) - optional
+- [ ] **4.1.9** Implement `GroqAI` class (hard difficulty) - LLM-powered
 - [ ] **4.1.10** Add 2-second timeout for AI moves
 - [ ] **4.1.11** Write performance tests (<2s response)
 
@@ -427,10 +396,7 @@ This document breaks down the implementation into small, actionable tasks. Each 
 - [ ] **4.2.3** Implement AI name generator (Norse names)
 - [ ] **4.2.4** Set up auto-play on AI's turn
 - [ ] **4.2.5** Add thinking delay for UX (500-1500ms)
-- [ ] **4.2.6** Implement AI takeover for disconnected players
-  - _Spec:_ [game-rules-v1.md](./game-rules-v1.md) Disconnection Handling
-- [ ] **4.2.7** Write tests for AI integration
-- [ ] **4.2.8** Write tests for disconnection AI takeover
+- [ ] **4.2.6** Write tests for AI integration
 
 ---
 
@@ -453,12 +419,11 @@ This document breaks down the implementation into small, actionable tasks. Each 
 - [ ] **5.2.4** Implement `drawHexPath(x, y)` helper
 - [ ] **5.2.5** Implement `renderBoardHexes(state)` - draw grid
 - [ ] **5.2.6** Implement `renderThrone(centerX, centerY)` - center hex
-- [ ] **5.2.7** Implement `renderShield(shield)` - shield pieces
-- [ ] **5.2.8** Implement `renderPiece(piece, state)` - warriors and jarls
-- [ ] **5.2.9** Implement `renderHighlights(highlights)` - valid moves
-- [ ] **5.2.10** Implement `render(state, highlights)` - main render function
-- [ ] **5.2.11** Implement `resize()` for responsive scaling
-- [ ] **5.2.12** Write visual tests (screenshot comparison)
+- [ ] **5.2.7** Implement `renderPiece(piece, state)` - warriors and jarls
+- [ ] **5.2.8** Implement `renderHighlights(highlights)` - valid moves
+- [ ] **5.2.9** Implement `render(state, highlights)` - main render function
+- [ ] **5.2.10** Implement `resize()` for responsive scaling
+- [ ] **5.2.11** Write visual tests (screenshot comparison)
 
 ### 5.3 Input Handling
 
@@ -492,9 +457,8 @@ This document breaks down the implementation into small, actionable tasks. Each 
 - [ ] **5.5.2** Create PlayerList component with piece counts
 - [ ] **5.5.3** Create CombatPreview tooltip component
 - [ ] **5.5.4** Create GameEndModal component (victory/defeat)
-- [ ] **5.5.5** Create StarvationSelection modal
-- [ ] **5.5.6** Create ConnectionStatus indicator
-- [ ] **5.5.7** Implement responsive layout
+- [ ] **5.5.5** Create ConnectionStatus indicator
+- [ ] **5.5.6** Implement responsive layout
 
 ### 5.6 Lobby UI
 
@@ -566,13 +530,13 @@ After completing all phases, verify:
 - [ ] Last standing victory works
 - [ ] Push chains resolve correctly
 - [ ] Throne compression works for both Warriors and Jarls
-- [ ] Starvation triggers and resolves correctly
-- [ ] Disconnection/reconnection works with AI takeover
+- [ ] Disconnection/reconnection works
 - [ ] Turn timeout auto-skips correctly
 - [ ] All tests pass
 - [ ] No console errors during gameplay
 
 ---
 
-_Document Version: 1.0_
-_Created: 2026-01-25_
+_Document Version: 1.1_
+_Updated: 2026-02-01_
+_Removed: Starvation mechanic, Shield pieces_

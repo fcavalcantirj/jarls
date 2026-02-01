@@ -318,7 +318,6 @@ interface ServerToClientEvents {
   playerLeft: (playerId: string) => void;
   gameStarted: (state: GameState) => void;
   gameEnded: (data: { winner: string; condition: string }) => void;
-  starvationTriggered: (data: StarvationChoice[]) => void;
   turnTimeout: (data: { playerId: string }) => void;
   error: (error: { code: string; message: string }) => void;
 }
@@ -335,11 +334,6 @@ interface ClientToServerEvents {
   ) => void;
 
   startGame: (callback: (response: { success: boolean; error?: string }) => void) => void;
-
-  starvationChoice: (
-    data: { pieceId: string },
-    callback: (response: { success: boolean }) => void
-  ) => void;
 
   spectate: (
     data: { gameId: string },
@@ -486,10 +480,6 @@ io.on('connection', (socket) => {
 // Subscribe to game manager events for broadcasting
 gameManager.on('turnTimeout', ({ gameId, playerId }) => {
   io.to(`game:${gameId}`).emit('turnTimeout', { playerId });
-});
-
-gameManager.on('starvation', ({ gameId, choices }) => {
-  io.to(`game:${gameId}`).emit('starvationTriggered', choices);
 });
 ```
 
@@ -793,4 +783,6 @@ describe('Session Management', () => {
 
 ---
 
-_Phase 3 Status: Not Started_
+_Phase 3 Status: Complete_
+_Updated: 2026-02-01_
+_Removed: Starvation events_

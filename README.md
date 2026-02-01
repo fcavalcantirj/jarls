@@ -59,8 +59,8 @@ A browser-based turn-based strategy game featuring push-combat mechanics on a he
 - **Multiple AI opponents** (Local heuristic + Groq LLM-powered)
 - **Real-time multiplayer** via Socket.IO
 - **Three difficulty levels** - Beginner, Intermediate, Hard
-- **Starvation mechanics** to prevent stalemates
 - **Move history tracking** for AI context awareness
+- **Holes** - Board hazards that eliminate pieces pushed into them
 
 ---
 
@@ -174,8 +174,7 @@ The server is authoritative: clients send commands, the server validates and app
 - **Pieces**: Each player has 1 Jarl (strength 2) and several Warriors (strength 1).
 - **Movement**: Warriors move 1-2 hexes in a straight line. Jarls move 1 hex (or 2 with a "draft formation" of 2+ Warriors behind).
 - **Combat**: Moving into an occupied hex initiates a push. Attack = base strength + momentum (if moved 2 hexes) + inline support. Defense = base strength + bracing.
-- **Push Resolution**: If attack > defense, the defender is pushed. Chains of pieces push together. Pieces pushed off the board edge are eliminated.
-- **Starvation**: After 10 rounds without an elimination, each player must sacrifice their furthest Warrior from the Throne.
+- **Push Resolution**: If attack > defense, the defender is pushed. Chains of pieces push together. Pieces pushed off the board edge or into holes are eliminated.
 
 ---
 

@@ -20,8 +20,8 @@ Define the complete game state machine with all states, transitions, guards, and
 
 - [ ] Install XState v5: `npm install xstate`
 - [ ] Define machine input types
-- [ ] Define all states: lobby, setup, playing (with substates), starvation, ended
-- [ ] Define all events (PLAYER_JOINED, START_GAME, MAKE_MOVE, END_TURN, etc.)
+- [ ] Define all states: lobby, setup, playing (with substates), paused, ended
+- [ ] Define all events (PLAYER_JOINED, START_GAME, MAKE_MOVE, etc.)
 - [ ] Define guards (isPlayersTurn, isValidMove, hasEnoughPlayers, etc.)
 - [ ] Define actions (addPlayer, applyMove, advanceTurn, etc.)
 - [ ] Configure turn timer with `after` transitions
@@ -44,42 +44,44 @@ Define the complete game state machine with all states, transitions, guards, and
         │  ┌──────────────────────────┐   │
         │  │      awaitingMove        │◄──┼───┐
         │  └─────────────┬────────────┘   │   │
-        │                │ END_TURN       │   │
-        │                │ [isPlayersTurn]│   │
+        │                │ MAKE_MOVE      │   │
         │  ┌─────────────▼────────────┐   │   │
-        │  │       turnEnding         │───┼───┘
-        │  └─────────────┬────────────┘   │ [!isGameOver && !hasStarvation]
+        │  │     checkingGameEnd      │───┼───┘
+        │  └─────────────┬────────────┘   │ [!isGameOver]
         │                │                │
         └────────────────┼────────────────┘
                          │
-         ┌───────────────┼───────────────┐
-         │               │               │
-    [hasStarvation]  [isGameOver]        │
-         │               │               │
-    ┌────▼────┐     ┌────▼────┐          │
-    │starvation│────►│  ended  │          │
-    └─────────┘     └─────────┘          │
-         │ [!isGameOver]                  │
-         └────────────────────────────────┘
+                    [isGameOver]
+                         │
+                    ┌────▼────┐
+                    │  ended  │
+                    └─────────┘
+
+        ┌─────────┐
+        │ paused  │ ◄── PLAYER_DISCONNECTED (from playing)
+        └────┬────┘
+             │ PLAYER_RECONNECTED
+             └──► playing
 ```
 
 ### Machine Definition
 
 ```typescript
-import { setup, assign, createActor, and, not } from 'xstate';
-import { GameState, GameEvent, MoveCommand, Player } from '@jarls/shared';
+import { setup, assign, createActor } from 'xstate';
+import { GameState, MoveCommand } from '@jarls/shared';
 
-interface MachineContext extends GameState {}
+interface MachineContext extends GameState {
+  disconnectedPlayers: Set<string>;
+  turnTimerMs: number | null;
+}
 
 type MachineEvent =
-  | { type: 'PLAYER_JOINED'; playerId: string; name: string }
+  | { type: 'PLAYER_JOINED'; playerId: string; playerName: string; isAI?: boolean }
   | { type: 'PLAYER_LEFT'; playerId: string }
   | { type: 'START_GAME' }
   | { type: 'MAKE_MOVE'; playerId: string; command: MoveCommand }
-  | { type: 'END_TURN'; playerId: string }
-  | { type: 'SURRENDER'; playerId: string }
-  | { type: 'STARVATION_CHOICE'; playerId: string; pieceId: string }
-  | { type: 'TURN_TIMEOUT' };
+  | { type: 'PLAYER_DISCONNECTED'; playerId: string }
+  | { type: 'PLAYER_RECONNECTED'; playerId: string };
 
 const gameMachine = setup({
   types: {
@@ -93,71 +95,129 @@ const gameMachine = setup({
 
     isPlayersTurn: ({ context, event }) => {
       if (!('playerId' in event)) return false;
-      const currentPlayer = context.players[context.currentPlayerIndex];
-      return currentPlayer?.id === event.playerId && !currentPlayer.isEliminated;
+      return context.currentPlayerId === event.playerId;
     },
 
     isValidMove: ({ context, event }) => {
       if (event.type !== 'MAKE_MOVE') return false;
-      const result = validateMove(context, event.playerId, event.command);
-      return result.valid;
+      const result = applyMove(context, event.playerId, event.command);
+      return result.success;
     },
 
-    isGameOver: ({ context }) => context.winner !== null,
+    isGameOver: ({ context }) => context.winnerId !== null,
 
-    hasStarvation: ({ context }) =>
-      context.roundsWithoutElimination >= context.config.starvationRounds,
+    isTurnTimerEnabled: ({ context }) => context.turnTimerMs !== null,
 
-    allStarvationChoicesMade: ({ context }) =>
-      context.pendingStarvation?.every((c) => c.choice !== undefined) ?? false,
+    isCurrentPlayerDisconnecting: ({ context, event }) => {
+      if (event.type !== 'PLAYER_DISCONNECTED') return false;
+      return context.currentPlayerId === event.playerId;
+    },
   },
 
   actions: {
     addPlayer: assign({
-      /* ... */
+      players: ({ context, event }) => {
+        if (event.type !== 'PLAYER_JOINED') return context.players;
+        const newPlayer = {
+          id: event.playerId,
+          name: event.playerName,
+          color: context.players.length === 0 ? '#e63946' : '#457b9d',
+          isEliminated: false,
+          isAI: event.isAI ?? false,
+        };
+        return [...context.players, newPlayer];
+      },
     }),
-    removePlayer: assign({
-      /* ... */
+
+    initializeBoard: assign(({ context }) => {
+      const generated = createInitialState(
+        context.players.map((p) => p.name),
+        context.turnTimerMs,
+        context.config.boardRadius
+      );
+      return {
+        ...context,
+        pieces: generated.pieces,
+        holes: generated.holes,
+        phase: 'playing',
+        currentPlayerId: context.players[0].id,
+      };
     }),
-    initializeBoard: assign({
-      /* ... */
+
+    applyMoveAction: assign(({ context, event }) => {
+      if (event.type !== 'MAKE_MOVE') return context;
+      const result = applyMove(context, event.playerId, event.command);
+      return {
+        ...context,
+        pieces: result.newState.pieces,
+        players: result.newState.players,
+        currentPlayerId: result.newState.currentPlayerId,
+        turnNumber: result.newState.turnNumber,
+        roundNumber: result.newState.roundNumber,
+        winnerId: result.newState.winnerId,
+        winCondition: result.newState.winCondition,
+        phase: result.newState.phase,
+      };
     }),
-    applyMove: assign({
-      /* ... */
+
+    markPlayerDisconnected: assign(({ context, event }) => {
+      if (event.type !== 'PLAYER_DISCONNECTED') return {};
+      const newDisconnected = new Set(context.disconnectedPlayers);
+      newDisconnected.add(event.playerId);
+      return { disconnectedPlayers: newDisconnected };
     }),
-    advanceTurn: assign({
-      /* ... */
+
+    markPlayerReconnected: assign(({ context, event }) => {
+      if (event.type !== 'PLAYER_RECONNECTED') return {};
+      const newDisconnected = new Set(context.disconnectedPlayers);
+      newDisconnected.delete(event.playerId);
+      return { disconnectedPlayers: newDisconnected };
     }),
-    checkWinConditions: assign({
-      /* ... */
-    }),
-    triggerStarvation: assign({
-      /* ... */
-    }),
-    resolveStarvation: assign({
-      /* ... */
-    }),
-    recordStarvationChoice: assign({
-      /* ... */
-    }),
-    setWinner: assign({
-      /* ... */
+
+    autoSkipTurn: assign(({ context }) => {
+      // Advance turn without making a move
+      return advanceTurnSkip(context);
     }),
   },
 
   delays: {
-    turnTimeout: ({ context }) => (context.config.turnTimerSeconds ?? 60) * 1000,
+    turnTimer: ({ context }) => context.turnTimerMs ?? 2_147_483_647,
+    disconnectTimer: () => 120_000, // 2 minutes
   },
 }).createMachine({
-  id: 'jarlsGame',
+  id: 'game',
   initial: 'lobby',
-  context: ({ input }) => createInitialContext(input),
+  context: ({ input }) => ({
+    id: input.gameId,
+    phase: 'lobby',
+    config: input.config,
+    players: [],
+    pieces: [],
+    holes: [],
+    currentPlayerId: null,
+    turnNumber: 0,
+    roundNumber: 0,
+    firstPlayerIndex: 0,
+    roundsSinceElimination: 0,
+    winnerId: null,
+    winCondition: null,
+    moveHistory: [],
+    turnTimerMs: input.config.turnTimerMs ?? null,
+    disconnectedPlayers: new Set<string>(),
+  }),
 
   states: {
     lobby: {
       on: {
-        PLAYER_JOINED: { actions: 'addPlayer' },
-        PLAYER_LEFT: { actions: 'removePlayer' },
+        PLAYER_JOINED: {
+          guard: ({ context }) => context.players.length < context.config.playerCount,
+          actions: 'addPlayer',
+        },
+        PLAYER_LEFT: {
+          actions: assign({
+            players: ({ context, event }) => context.players.filter((p) => p.id !== event.playerId),
+          }),
+        },
         START_GAME: {
           guard: 'hasEnoughPlayers',
           target: 'setup',
@@ -175,58 +235,59 @@ const gameMachine = setup({
       states: {
         awaitingMove: {
           after: {
-            turnTimeout: {
-              target: 'turnEnding',
-              actions: 'advanceTurn',
+            turnTimer: {
+              guard: 'isTurnTimerEnabled',
+              actions: 'autoSkipTurn',
+              target: 'checkingGameEnd',
             },
           },
           on: {
             MAKE_MOVE: {
-              guard: and(['isPlayersTurn', 'isValidMove']),
-              actions: ['applyMove', 'checkWinConditions'],
-              target: 'turnEnding',
+              guard: ({ context, event }) => {
+                if (event.playerId !== context.currentPlayerId) return false;
+                const result = applyMove(context, event.playerId, event.command);
+                return result.success;
+              },
+              actions: 'applyMoveAction',
+              target: 'checkingGameEnd',
             },
-            END_TURN: {
-              guard: 'isPlayersTurn',
-              target: 'turnEnding',
-            },
-            SURRENDER: {
-              guard: 'isPlayersTurn',
-              actions: ['eliminatePlayer', 'checkWinConditions'],
-              target: 'turnEnding',
-            },
+            PLAYER_DISCONNECTED: [
+              {
+                guard: 'isCurrentPlayerDisconnecting',
+                actions: 'markPlayerDisconnected',
+                target: '#game.paused',
+              },
+              {
+                actions: 'markPlayerDisconnected',
+              },
+            ],
           },
         },
-        turnEnding: {
-          entry: 'advanceTurn',
-          always: [
-            { guard: 'isGameOver', target: '#jarlsGame.ended' },
-            { guard: 'hasStarvation', target: '#jarlsGame.starvation' },
-            { target: 'awaitingMove' },
-          ],
+        checkingGameEnd: {
+          always: [{ guard: 'isGameOver', target: '#game.ended' }, { target: 'awaitingMove' }],
         },
       },
     },
 
-    starvation: {
-      entry: 'triggerStarvation',
-      on: {
-        STARVATION_CHOICE: {
-          actions: 'recordStarvationChoice',
+    paused: {
+      after: {
+        disconnectTimer: {
+          // After 2 minutes, remain paused (future: AI takeover)
         },
       },
-      always: [
-        {
-          guard: and(['allStarvationChoicesMade']),
-          actions: ['resolveStarvation', 'checkWinConditions'],
-          target: 'playing',
+      on: {
+        PLAYER_RECONNECTED: {
+          actions: 'markPlayerReconnected',
+          target: '#game.playing.awaitingMove',
         },
-      ],
+        PLAYER_DISCONNECTED: {
+          actions: 'markPlayerDisconnected',
+        },
+      },
     },
 
     ended: {
       type: 'final',
-      entry: 'setWinner',
     },
   },
 });
@@ -254,8 +315,8 @@ describe('Game State Machine', () => {
     const actor = createActor(gameMachine, { input: defaultInput });
     actor.start();
 
-    actor.send({ type: 'PLAYER_JOINED', playerId: 'p1', name: 'Alice' });
-    actor.send({ type: 'PLAYER_JOINED', playerId: 'p2', name: 'Bob' });
+    actor.send({ type: 'PLAYER_JOINED', playerId: 'p1', playerName: 'Alice' });
+    actor.send({ type: 'PLAYER_JOINED', playerId: 'p2', playerName: 'Bob' });
     actor.send({ type: 'START_GAME' });
 
     expect(actor.getSnapshot().value).toEqual({ playing: 'awaitingMove' });
@@ -265,7 +326,7 @@ describe('Game State Machine', () => {
     const actor = createActor(gameMachine, { input: defaultInput });
     actor.start();
 
-    actor.send({ type: 'PLAYER_JOINED', playerId: 'p1', name: 'Alice' });
+    actor.send({ type: 'PLAYER_JOINED', playerId: 'p1', playerName: 'Alice' });
     actor.send({ type: 'START_GAME' });
 
     expect(actor.getSnapshot().value).toBe('lobby');
@@ -279,10 +340,10 @@ describe('Game State Machine', () => {
     actor.send({
       type: 'MAKE_MOVE',
       playerId: 'p2',
-      command: { pieceId: 'p2_w1', to: { q: 1, r: 0 } },
+      command: { pieceId: 'p2_w1', destination: { q: 1, r: 0 } },
     });
 
-    expect(actor.getSnapshot().context).toEqual(beforeContext);
+    expect(actor.getSnapshot().context.turnNumber).toBe(beforeContext.turnNumber);
   });
 
   test('transitions to ended on throne victory', () => {
@@ -291,19 +352,36 @@ describe('Game State Machine', () => {
     actor.send({
       type: 'MAKE_MOVE',
       playerId: 'p1',
-      command: { pieceId: 'p1_j', to: THRONE },
+      command: { pieceId: 'p1_j', destination: THRONE },
     });
 
     expect(actor.getSnapshot().value).toBe('ended');
-    expect(actor.getSnapshot().context.winner).toBe('p1');
+    expect(actor.getSnapshot().context.winnerId).toBe('p1');
   });
 
   test('turn timer advances turn', async () => {
-    const actor = createStartedGame({ turnTimerSeconds: 1 });
+    const actor = createStartedGame({ turnTimerMs: 1000 });
 
     await new Promise((r) => setTimeout(r, 1100));
 
-    expect(actor.getSnapshot().context.currentPlayerIndex).toBe(1);
+    expect(actor.getSnapshot().context.currentPlayerId).not.toBe('p1');
+  });
+
+  test('pauses game on current player disconnect', () => {
+    const actor = createStartedGame();
+
+    actor.send({ type: 'PLAYER_DISCONNECTED', playerId: 'p1' });
+
+    expect(actor.getSnapshot().value).toBe('paused');
+  });
+
+  test('resumes game on player reconnect', () => {
+    const actor = createStartedGame();
+
+    actor.send({ type: 'PLAYER_DISCONNECTED', playerId: 'p1' });
+    actor.send({ type: 'PLAYER_RECONNECTED', playerId: 'p1' });
+
+    expect(actor.getSnapshot().value).toEqual({ playing: 'awaitingMove' });
   });
 });
 ```
@@ -413,45 +491,6 @@ export class GamePersistence {
     actor.start();
     return actor;
   }
-
-  async replayFromEvents(gameId: string): Promise<ActorRefFrom<typeof gameMachine>> {
-    // Get initial config
-    const configResult = await this.pool.query(
-      'SELECT state_snapshot FROM game_snapshots WHERE game_id = $1',
-      [gameId]
-    );
-    const initialSnapshot = JSON.parse(configResult.rows[0].state_snapshot);
-
-    // Get all events in order
-    const eventsResult = await this.pool.query(
-      'SELECT payload FROM game_events WHERE game_id = $1 ORDER BY version',
-      [gameId]
-    );
-
-    // Create fresh actor and replay
-    const actor = createActor(gameMachine, {
-      input: { gameId, config: initialSnapshot.context.config },
-    });
-    actor.start();
-
-    for (const row of eventsResult.rows) {
-      const event = JSON.parse(row.payload);
-      actor.send(event);
-    }
-
-    return actor;
-  }
-
-  async getEventHistory(gameId: string): Promise<MachineEvent[]> {
-    const result = await this.pool.query(
-      'SELECT payload, created_at FROM game_events WHERE game_id = $1 ORDER BY version',
-      [gameId]
-    );
-    return result.rows.map((r) => ({
-      ...JSON.parse(r.payload),
-      timestamp: r.created_at,
-    }));
-  }
 }
 ```
 
@@ -467,22 +506,10 @@ export class GamePersistence {
 
 ```typescript
 describe('Game Persistence', () => {
-  let persistence: GamePersistence;
-  let pool: Pool;
-
-  beforeAll(async () => {
-    pool = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
-    persistence = new GamePersistence(pool);
-  });
-
-  afterAll(async () => {
-    await pool.end();
-  });
-
   test('save and restore game', async () => {
     const actor1 = createActor(gameMachine, { input: testInput });
     actor1.start();
-    actor1.send({ type: 'PLAYER_JOINED', playerId: 'p1', name: 'Alice' });
+    actor1.send({ type: 'PLAYER_JOINED', playerId: 'p1', playerName: 'Alice' });
 
     await persistence.save('test-game-1', actor1);
 
@@ -491,22 +518,12 @@ describe('Game Persistence', () => {
     expect(actor2?.getSnapshot().context.players[0].name).toBe('Alice');
   });
 
-  test('event replay matches snapshot', async () => {
-    const actor = createStartedGameWithMoves();
-    await persistence.save('test-game-2', actor);
-
-    const replayed = await persistence.replayFromEvents('test-game-2');
-    const restored = await persistence.restore('test-game-2');
-
-    expect(replayed.getSnapshot().context).toEqual(restored?.getSnapshot().context);
-  });
-
   test('handles concurrent save conflict', async () => {
     const actor1 = await persistence.restore('test-game-1');
     const actor2 = await persistence.restore('test-game-1');
 
-    actor1?.send({ type: 'PLAYER_JOINED', playerId: 'p2', name: 'Bob' });
-    actor2?.send({ type: 'PLAYER_JOINED', playerId: 'p3', name: 'Charlie' });
+    actor1?.send({ type: 'PLAYER_JOINED', playerId: 'p2', playerName: 'Bob' });
+    actor2?.send({ type: 'PLAYER_JOINED', playerId: 'p3', playerName: 'Charlie' });
 
     await persistence.save('test-game-1', actor1!);
 
@@ -535,148 +552,6 @@ Manage multiple concurrent games in memory with persistence backing.
 - [ ] Implement game cleanup on end
 - [ ] Implement recovery on server start
 
-### Game Manager
-
-```typescript
-import { createActor, ActorRefFrom } from 'xstate';
-import { v4 as uuid } from 'uuid';
-import { gameMachine } from './machine';
-import { GamePersistence } from './persistence';
-import { GameConfig, GameState, MoveCommand } from '@jarls/shared';
-
-export class GameManager {
-  private games = new Map<string, ActorRefFrom<typeof gameMachine>>();
-
-  constructor(private persistence: GamePersistence) {}
-
-  async create(config: Partial<GameConfig> = {}): Promise<{ gameId: string }> {
-    const gameId = uuid();
-    const fullConfig = { ...DEFAULT_CONFIG, ...config };
-
-    const actor = createActor(gameMachine, {
-      input: { gameId, config: fullConfig },
-    });
-    actor.start();
-
-    // Subscribe to state changes for persistence
-    actor.subscribe(async (snapshot) => {
-      await this.persistence.save(gameId, actor);
-    });
-
-    this.games.set(gameId, actor);
-    await this.persistence.save(gameId, actor);
-
-    return { gameId };
-  }
-
-  async join(
-    gameId: string,
-    playerName: string
-  ): Promise<{ playerId: string; sessionToken: string }> {
-    const actor = await this.getActor(gameId);
-    if (!actor) throw new GameNotFoundError(gameId);
-
-    const snapshot = actor.getSnapshot();
-    if (snapshot.value !== 'lobby') {
-      throw new GameAlreadyStartedError(gameId);
-    }
-
-    const playerId = uuid();
-    const sessionToken = generateSecureToken();
-
-    actor.send({ type: 'PLAYER_JOINED', playerId, name: playerName });
-
-    // Store session
-    await this.persistence.saveSession(gameId, playerId, playerName, sessionToken);
-
-    return { playerId, sessionToken };
-  }
-
-  async start(gameId: string): Promise<void> {
-    const actor = await this.getActor(gameId);
-    if (!actor) throw new GameNotFoundError(gameId);
-
-    actor.send({ type: 'START_GAME' });
-  }
-
-  async makeMove(gameId: string, playerId: string, command: MoveCommand): Promise<MoveResult> {
-    const actor = await this.getActor(gameId);
-    if (!actor) throw new GameNotFoundError(gameId);
-
-    const beforeSnapshot = actor.getSnapshot();
-
-    actor.send({ type: 'MAKE_MOVE', playerId, command });
-
-    const afterSnapshot = actor.getSnapshot();
-
-    // Check if move was accepted
-    if (afterSnapshot.context.turnNumber === beforeSnapshot.context.turnNumber) {
-      return { success: false, error: 'INVALID_MOVE' };
-    }
-
-    return {
-      success: true,
-      events: afterSnapshot.context.lastMoveEvents,
-      newState: afterSnapshot.context,
-    };
-  }
-
-  async getState(gameId: string): Promise<GameState | null> {
-    const actor = await this.getActor(gameId);
-    return actor?.getSnapshot().context ?? null;
-  }
-
-  async listGames(filter?: { status?: string }): Promise<GameSummary[]> {
-    const games: GameSummary[] = [];
-
-    for (const [gameId, actor] of this.games) {
-      const snapshot = actor.getSnapshot();
-      if (!filter?.status || snapshot.value === filter.status) {
-        games.push({
-          gameId,
-          status: snapshot.value as string,
-          playerCount: snapshot.context.players.length,
-          maxPlayers: snapshot.context.config.playerCount,
-          createdAt: snapshot.context.createdAt,
-        });
-      }
-    }
-
-    return games;
-  }
-
-  async recover(): Promise<number> {
-    // Called on server start to restore active games
-    const activeGames = await this.persistence.getActiveGames();
-    let recovered = 0;
-
-    for (const gameId of activeGames) {
-      const actor = await this.persistence.restore(gameId);
-      if (actor && actor.getSnapshot().value !== 'ended') {
-        this.games.set(gameId, actor);
-        recovered++;
-      }
-    }
-
-    return recovered;
-  }
-
-  private async getActor(gameId: string): Promise<ActorRefFrom<typeof gameMachine> | null> {
-    // Check memory first
-    if (this.games.has(gameId)) {
-      return this.games.get(gameId)!;
-    }
-
-    // Try to restore from database
-    const actor = await this.persistence.restore(gameId);
-    if (actor) {
-      this.games.set(gameId, actor);
-    }
-    return actor;
-  }
-}
-```
-
 ### Definition of Done
 
 - [ ] Multiple games can run concurrently
@@ -689,12 +564,6 @@ export class GameManager {
 
 ```typescript
 describe('Game Manager', () => {
-  let manager: GameManager;
-
-  beforeEach(() => {
-    manager = new GameManager(mockPersistence);
-  });
-
   test('creates game with unique ID', async () => {
     const { gameId: id1 } = await manager.create();
     const { gameId: id2 } = await manager.create();
@@ -769,4 +638,6 @@ describe('Game Manager', () => {
 
 ---
 
-_Phase 2 Status: Not Started_
+_Phase 2 Status: Complete_
+_Updated: 2026-02-01_
+_Removed: Starvation state_

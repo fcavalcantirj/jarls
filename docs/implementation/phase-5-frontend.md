@@ -24,7 +24,7 @@ Render the game board using honeycomb-grid and Canvas/SVG.
 - [ ] Render hexagonal board with correct radius
 - [ ] Render hex grid lines
 - [ ] Render Throne (center hex)
-- [ ] Render Shields
+- [ ] Render Holes (board hazards)
 - [ ] Render pieces (Jarls and Warriors)
 - [ ] Handle board scaling to viewport
 - [ ] Implement smooth 60fps rendering
@@ -47,7 +47,7 @@ interface RenderConfig {
     board: string;
     hexBorder: string;
     throne: string;
-    shield: string;
+    hole: string;
     players: string[];
   };
 }
@@ -58,7 +58,7 @@ const DEFAULT_CONFIG: RenderConfig = {
     board: '#2d3436',
     hexBorder: '#636e72',
     throne: '#ffd700',
-    shield: '#7f8c8d',
+    hole: '#1a1a2e',
     players: ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c'],
   },
 };
@@ -107,15 +107,11 @@ export class BoardRenderer {
     // Render throne
     this.renderThrone(centerX, centerY);
 
-    // Render shields
-    state.pieces
-      .filter((p) => p.type === 'shield')
-      .forEach((shield) => this.renderShield(shield, centerX, centerY));
+    // Render holes
+    state.holes.forEach((hole) => this.renderHole(hole, centerX, centerY));
 
     // Render pieces
-    state.pieces
-      .filter((p) => p.type !== 'shield')
-      .forEach((piece) => this.renderPiece(piece, state, centerX, centerY));
+    state.pieces.forEach((piece) => this.renderPiece(piece, state, centerX, centerY));
   }
 
   private renderBoardHexes(state: GameState, centerX: number, centerY: number): void {
@@ -159,16 +155,16 @@ export class BoardRenderer {
     ctx.fillText('👑', pixel.x, pixel.y);
   }
 
-  private renderShield(shield: Piece, centerX: number, centerY: number): void {
+  private renderHole(hole: AxialCoord, centerX: number, centerY: number): void {
     const { ctx, config } = this;
-    const pixel = this.hexToPixel(shield.position, centerX, centerY);
+    const pixel = this.hexToPixel(hole, centerX, centerY);
 
     ctx.beginPath();
     this.drawHexPath(pixel.x, pixel.y);
-    ctx.fillStyle = config.colors.shield;
+    ctx.fillStyle = config.colors.hole;
     ctx.fill();
 
-    // Shield icon
+    // Hazard indicator
     ctx.font = `${config.hexSize * 0.5}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -316,7 +312,7 @@ interface RenderHighlights {
 - [ ] Board renders correctly for all player counts (2-6)
 - [ ] Pieces are visually distinguishable by player
 - [ ] Jarls are visually distinct from Warriors
-- [ ] Throne and Shields clearly visible
+- [ ] Throne and Holes clearly visible
 - [ ] Board scales responsively
 - [ ] Smooth 60fps rendering
 
@@ -833,7 +829,6 @@ Implement all UI elements for game information and controls.
 - [ ] Move history panel (optional)
 - [ ] Combat preview tooltip
 - [ ] Win/lose modal
-- [ ] Starvation warning/selection UI
 - [ ] Settings menu
 - [ ] Responsive layout
 
@@ -945,33 +940,6 @@ function GameEndModal({ state, playerId, onPlayAgain, onLeave }) {
     </div>
   );
 }
-
-// Starvation Selection
-function StarvationSelection({ choices, playerId, onSelect }) {
-  const myChoice = choices.find(c => c.playerId === playerId);
-
-  if (!myChoice || myChoice.choice) return null;
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal starvation-modal">
-        <h2>Starvation!</h2>
-        <p>Choose which Warrior must be sacrificed:</p>
-        <div className="warrior-choices">
-          {myChoice.candidates.map(pieceId => (
-            <button
-              key={pieceId}
-              onClick={() => onSelect(pieceId)}
-              className="warrior-choice"
-            >
-              Warrior at {getPiecePosition(pieceId)}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 ```
 
 ### Definition of Done
@@ -981,7 +949,6 @@ function StarvationSelection({ choices, playerId, onSelect }) {
 - [ ] Player list shows piece counts
 - [ ] Combat preview accurate and helpful
 - [ ] Win/lose screen appears correctly
-- [ ] Starvation UI works
 - [ ] Responsive on mobile
 
 ### Test Cases

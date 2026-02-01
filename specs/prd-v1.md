@@ -35,22 +35,22 @@ A turn-based strategy game where victory comes from:
 | **Momentum**         | Moving 2 hexes before attacking grants +1 attack           |
 | **Chain Pushing**    | Pushed pieces push whatever is behind them                 |
 | **Edge Elimination** | Pieces pushed off the board are permanently removed        |
-| **Compression**      | Shields and Throne stop chains without eliminating         |
+| **Compression**      | Throne stops chains without eliminating                    |
+| **Holes**            | Board hazards that eliminate pieces pushed into them       |
 
 ### 2.3 Pieces
 
-| Piece       | Strength | Movement             | Special                              |
-| ----------- | -------- | -------------------- | ------------------------------------ |
-| **Jarl**    | 2        | 1 hex (2 with draft) | Only piece that can enter Throne     |
-| **Warrior** | 1        | 1-2 hexes straight   | Provides draft/support for Jarl      |
-| **Shield**  | ∞        | Immovable            | Neutral obstacle, causes compression |
+| Piece       | Strength | Movement             | Special                          |
+| ----------- | -------- | -------------------- | -------------------------------- |
+| **Jarl**    | 2        | 1 hex (2 with draft) | Only piece that can enter Throne |
+| **Warrior** | 1        | 1-2 hexes straight   | Provides draft/support for Jarl  |
 
 ### 2.4 Board Setup (2-Player MVP)
 
 - Board radius: 3 (37 hexes)
-- Shields: 5 (symmetrically placed)
 - Warriors per player: 5
 - Jarls start at opposite edges, equidistant from Throne
+- Holes: Variable based on terrain type (calm/treacherous/chaotic)
 
 ---
 
@@ -102,7 +102,8 @@ A turn-based strategy game where victory comes from:
 
 - All pieces in chain move in push direction
 - Edge pushes eliminate pieces
-- Shield/Throne compression stops chain without elimination
+- Hole pushes eliminate pieces
+- Throne compression stops chain without elimination
 - **Critical:** Jarls cannot be pushed onto Throne
 
 #### FR-008: Win Conditions
@@ -111,21 +112,13 @@ A turn-based strategy game where victory comes from:
 - **Last Standing:** Only one Jarl remains
 - Throne takes precedence over Last Standing
 
-#### FR-009: Starvation Mechanic
-
-- Triggers after 10 rounds with no elimination
-- Each player loses 1 Warrior (furthest from Throne)
-- Tie-breaker: Player chooses which Warrior
-- Repeats every 5 rounds until resolution
-- Jarl eliminated if no Warriors remain after grace period
-
-#### FR-010: Disconnection Handling
+#### FR-009: Disconnection Handling
 
 - 2-minute reconnection window
-- AI takes over after window expires
+- Game pauses during disconnection
 - Player can resume control on reconnection
 
-#### FR-011: Spectator Mode
+#### FR-010: Spectator Mode
 
 - Unlimited spectators per game
 - Real-time state updates
@@ -133,30 +126,30 @@ A turn-based strategy game where victory comes from:
 
 ### 3.2 AI Opponent
 
-#### FR-012: AI Difficulty Levels
+#### FR-011: AI Difficulty Levels
 
 | Level  | Behavior                                                 |
 | ------ | -------------------------------------------------------- |
 | Easy   | Random valid moves                                       |
 | Medium | Heuristic-based (prioritizes winning moves, avoids edge) |
-| Hard   | Minimax with evaluation (optional for MVP)               |
+| Hard   | LLM-powered (Groq) strategic AI                          |
 
-#### FR-013: AI Behavior
+#### FR-012: AI Behavior
 
 - 500-1500ms thinking delay for UX
 - 2-second timeout maximum
-- Takes over disconnected players
+- Fallback to random moves on error
 
 ### 3.3 User Interface
 
-#### FR-014: Game Board
+#### FR-013: Game Board
 
 - Hexagonal grid rendered on canvas
 - Clear piece distinction (Jarl vs Warrior, player colors)
 - Throne highlighted at center
-- Shields visually distinct
+- Holes visually distinct
 
-#### FR-015: Move Interaction
+#### FR-014: Move Interaction
 
 - Click/tap to select own piece
 - Valid moves highlighted (green for move, red for attack)
@@ -164,27 +157,27 @@ A turn-based strategy game where victory comes from:
 - Combat preview on hover over attack destination
 - Click destination to execute move
 
-#### FR-016: Game State Display
+#### FR-015: Game State Display
 
 - Current player indicator
 - Turn timer (if enabled)
 - Player list with piece counts
 - Your-turn notification
 
-#### FR-017: Animations
+#### FR-016: Animations
 
 - Smooth piece movement (200ms)
 - Staggered chain push animation (80ms delay per link)
 - Dramatic elimination animation (fly off board)
 - 60fps target
 
-#### FR-018: Game End
+#### FR-017: Game End
 
 - Victory/Defeat modal
 - Win condition displayed
 - Play Again / Leave options
 
-#### FR-019: Responsive Design
+#### FR-018: Responsive Design
 
 - Desktop and mobile support
 - Touch input on mobile devices
@@ -304,7 +297,6 @@ player_sessions (
 | `playTurn` | `{ command: MoveCommand }` | Execute move |
 | `startGame` | `{}` | Start game (host) |
 | `getValidMoves` | `{ pieceId }` | Request valid moves |
-| `starvationChoice` | `{ pieceId }` | Select warrior for starvation |
 | `spectate` | `{ gameId }` | Join as spectator |
 
 **Server → Client:**
@@ -315,7 +307,6 @@ player_sessions (
 | `gameEnded` | `{ winner, condition }` | Game over |
 | `playerJoined` | `{ player }` | New player joined |
 | `playerLeft` | `{ playerId }` | Player disconnected |
-| `starvationRequired` | `{ choices }` | Starvation selection needed |
 
 ---
 
@@ -338,13 +329,12 @@ player_sessions (
 - Combat resolution (Attack vs Defense)
 - Push chain resolution
 - Win condition detection
-- Starvation mechanic
 - **Deliverable:** Complete game logic with tests
 
 ### Phase 2: Game State Machine
 
 - XState v5 state machine
-- States: lobby → setup → playing → ended
+- States: lobby → setup → playing → paused → ended
 - Turn timer integration
 - Game persistence (PostgreSQL)
 - Game manager service
@@ -362,8 +352,8 @@ player_sessions (
 
 - RandomAI (easy)
 - HeuristicAI (medium)
+- GroqAI (hard) - LLM-powered
 - AI integration with game manager
-- Disconnection takeover
 - **Deliverable:** Single-player vs AI mode
 
 ### Phase 5: Frontend
@@ -443,9 +433,8 @@ player_sessions (
 2. Complete 2-player game (last standing)
 3. Push chain with multi-elimination
 4. Throne compression (Jarl cannot be pushed onto Throne)
-5. Starvation trigger and resolution
-6. Disconnection and AI takeover
-7. Turn timeout auto-skip
+5. Disconnection and reconnection
+6. Turn timeout auto-skip
 
 ---
 
@@ -457,8 +446,7 @@ player_sessions (
 - [ ] AI opponent plays valid moves at all difficulties
 - [ ] Both win conditions function correctly
 - [ ] Push chains resolve correctly in all scenarios
-- [ ] Starvation mechanic works
-- [ ] Disconnection handling with AI takeover
+- [ ] Disconnection handling works
 - [ ] Responsive on desktop and mobile
 - [ ] < 5 critical bugs in testing
 
@@ -480,7 +468,6 @@ player_sessions (
 | Ranked matchmaking | ELO-based competitive play               |
 | Game replays       | Watch completed games                    |
 | Fog of War mode    | Optional visibility rules                |
-| Draft Shields      | Strategic shield placement phase         |
 | Team Mode          | 2v2 and 3v3 variants                     |
 | Mobile app         | Native iOS/Android (PWA or React Native) |
 | Cosmetics          | Custom piece skins, board themes         |
@@ -508,13 +495,13 @@ Result:
 
 ### B. Board Scaling Table
 
-| Players | Board Radius | Total Hexes | Shields | Warriors/Player |
-| ------- | ------------ | ----------- | ------- | --------------- |
-| 2       | 3            | 37          | 5       | 5               |
-| 3       | 5            | 91          | 4       | 5               |
-| 4       | 6            | 127         | 4       | 4               |
-| 5       | 7            | 169         | 3       | 4               |
-| 6       | 8            | 217         | 3       | 4               |
+| Players | Board Radius | Total Hexes | Warriors/Player |
+| ------- | ------------ | ----------- | --------------- |
+| 2       | 3            | 37          | 5               |
+| 3       | 5            | 91          | 5               |
+| 4       | 6            | 127         | 4               |
+| 5       | 7            | 169         | 4               |
+| 6       | 8            | 217         | 4               |
 
 ### C. Key Documents Reference
 
@@ -524,6 +511,6 @@ Result:
 
 ---
 
-_Document Version: 1.0_
-_Created: 2026-01-25_
-_Based on: jarls-ruleset-v04.md (v0.4.1), game-rules-v1.md, implementation docs_
+_Document Version: 1.1_
+_Updated: 2026-02-01_
+_Removed: Starvation mechanic, Shield pieces_

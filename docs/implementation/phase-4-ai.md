@@ -23,7 +23,7 @@ Implement AI that can evaluate positions and generate valid moves.
 - [ ] Implement `HeuristicAI` (evaluates positions)
 - [ ] Implement position evaluation function
 - [ ] Implement move scoring
-- [ ] Implement `MinimaxAI` (looks ahead) - optional
+- [ ] Implement `GroqAI` (LLM-powered) - hard difficulty
 - [ ] Add configurable thinking time
 
 ### AI Interface
@@ -298,9 +298,8 @@ export class MinimaxAI implements AIPlayer {
 
 - [ ] RandomAI plays legal moves
 - [ ] HeuristicAI makes sensible moves
-- [ ] MinimaxAI looks ahead (optional)
+- [ ] GroqAI provides strategic play (hard difficulty)
 - [ ] All AIs respond within 2 seconds
-- [ ] AIs handle all game phases (starvation choices)
 
 ### Test Cases
 
@@ -350,15 +349,6 @@ describe('AI Move Generation', () => {
     const elapsed = Date.now() - start;
 
     expect(elapsed).toBeLessThan(2000);
-  });
-
-  test('AI handles starvation choice', async () => {
-    const ai = new HeuristicAI();
-    const starvationState = createStateWithStarvation('ai_player');
-
-    const choice = await ai.makeStarvationChoice(starvationState, 'ai_player', ['w1', 'w2']);
-
-    expect(['w1', 'w2']).toContain(choice);
   });
 });
 ```
@@ -554,4 +544,5 @@ describe('AI Game Integration', () => {
 
 ---
 
-_Phase 4 Status: Not Started_
+_Phase 4 Status: Complete_
+_Updated: 2026-02-01_

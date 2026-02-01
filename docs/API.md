@@ -71,9 +71,9 @@ List all games, optionally filtered by status. No authentication required.
 
 **Query Parameters**
 
-| Param  | Type   | Required | Description                                                              |
-| ------ | ------ | -------- | ------------------------------------------------------------------------ |
-| status | string | No       | Filter by game phase: `lobby`, `setup`, `playing`, `starvation`, `ended` |
+| Param  | Type   | Required | Description                                                          |
+| ------ | ------ | -------- | -------------------------------------------------------------------- |
+| status | string | No       | Filter by game phase: `lobby`, `setup`, `playing`, `paused`, `ended` |
 
 **Response** `200 OK`
 
@@ -153,16 +153,14 @@ Get current game state. **Requires authentication.**
     "config": {
       "playerCount": 2,
       "boardRadius": 3,
-      "shieldCount": 5,
-      "warriorCount": 5
+      "warriorsPerPlayer": 5
     },
     "players": [
       {
         "id": "player-id",
         "name": "Alice",
         "color": "#FF0000",
-        "isEliminated": false,
-        "roundsSinceLastWarrior": null
+        "isEliminated": false
       }
     ],
     "pieces": [
@@ -173,6 +171,7 @@ Get current game state. **Requires authentication.**
         "position": { "q": 0, "r": -3 }
       }
     ],
+    "holes": [{ "q": 1, "r": 1 }],
     "currentPlayerId": "player-id",
     "turnNumber": 5,
     "roundNumber": 1,
@@ -317,10 +316,11 @@ Stack traces are included in development mode only.
 ```typescript
 {
   id: string;
-  phase: "lobby" | "setup" | "playing" | "starvation" | "ended";
+  phase: "lobby" | "setup" | "playing" | "paused" | "ended";
   config: GameConfig;
   players: Player[];
   pieces: Piece[];
+  holes: AxialCoord[];
   currentPlayerId: string | null;
   turnNumber: number;
   roundNumber: number;
@@ -339,7 +339,7 @@ Stack traces are included in development mode only.
   name: string;
   color: string;
   isEliminated: boolean;
-  roundsSinceLastWarrior?: number | null;
+  isAI: boolean;
 }
 ```
 
@@ -348,8 +348,8 @@ Stack traces are included in development mode only.
 ```typescript
 {
   id: string;
-  type: 'jarl' | 'warrior' | 'shield';
-  playerId: string | null; // null for shields
+  type: 'jarl' | 'warrior';
+  playerId: string;
   position: {
     q: number;
     r: number;
@@ -393,3 +393,8 @@ Stack traces are included in development mode only.
   pushDirection: number; // HexDirection (0-5)
 }
 ```
+
+---
+
+_Updated: 2026-02-01_
+_Removed: Starvation phase, Shield pieces_

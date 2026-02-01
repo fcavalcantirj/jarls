@@ -12,13 +12,13 @@ This document captures all rule clarifications and design decisions made during 
 
 ### Scope
 
-| Item             | Decision                                                                 |
-| ---------------- | ------------------------------------------------------------------------ |
-| Platform         | Web (browser-based)                                                      |
-| MVP Player Count | 2-player only (architecture supports 2-6)                                |
-| AI Opponent      | Yes                                                                      |
-| Multiplayer      | Online (not hot-seat)                                                    |
-| Optional Rules   | None in v1 (Fog of War, Draft Shields, Sudden Death, Team Mode deferred) |
+| Item             | Decision                                                  |
+| ---------------- | --------------------------------------------------------- |
+| Platform         | Web (browser-based)                                       |
+| MVP Player Count | 2-player only (architecture supports 2-6)                 |
+| AI Opponent      | Yes                                                       |
+| Multiplayer      | Online (not hot-seat)                                     |
+| Optional Rules   | None in v1 (Fog of War, Sudden Death, Team Mode deferred) |
 
 ---
 
@@ -162,29 +162,8 @@ Players cannot voluntarily pass. If legal moves exist, one must be taken.
 
 1. **Reconnection Window:** 2 minutes
 2. **During Window:** Game waits, turn timer paused
-3. **After Window:** AI takes over the disconnected player
-4. **Reconnection After AI:** Player can reconnect and resume control
-
----
-
-## Starvation Mechanic
-
-### Distance Calculation
-
-"Furthest from Throne" is calculated using **hex distance (shortest path)**, ignoring obstacles.
-
-```
-hexDistance(piece.position, THRONE_POSITION)
-```
-
-Shields and other pieces do NOT affect distance calculation.
-
-### Elimination
-
-When starvation triggers and a player has no Warriors:
-
-- Jarl is **immediately eliminated** after the 5-round grace period
-- No partial damage or health system
+3. **After Window:** Game remains paused (future: AI takeover)
+4. **Reconnection:** Player can reconnect and resume control
 
 ---
 
@@ -204,11 +183,10 @@ The game is called **Jarls** (not "Norse Wars").
 
 ## Reference: Strength Values
 
-| Piece   | Strength      |
-| ------- | ------------- |
-| Warrior | 1             |
-| Jarl    | 2             |
-| Shield  | ∞ (immovable) |
+| Piece   | Strength |
+| ------- | -------- |
+| Warrior | 1        |
+| Jarl    | 2        |
 
 ## Reference: Attack Formula
 
@@ -240,6 +218,6 @@ IF Attack ≤ Defense THEN Blocked (attacker stops adjacent)
 
 ---
 
-_Document Version: 1.0_
-_Created: 2026-01-25_
-_Based on interview session with game designer_
+_Document Version: 1.1_
+_Updated: 2026-02-01_
+_Removed: Starvation mechanic, Shield pieces_
